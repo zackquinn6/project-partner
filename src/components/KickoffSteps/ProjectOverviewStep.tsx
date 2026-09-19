@@ -921,14 +921,14 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
   const TierIcon = tierVisual.Icon;
 
   return (
-    <div className="space-y-3">
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
+    <div className="flex min-h-full flex-1 flex-col">
+      <Card className="flex min-h-full flex-1 flex-col">
+        <CardHeader className="shrink-0 p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
             Project Match
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 p-2 sm:p-3">
+        <CardContent className="flex flex-1 flex-col space-y-3 p-2 sm:p-3">
           <section className="space-y-3" aria-label="Project fit recommendation">
             {matchProjectName ? (
               <p className="font-display text-base font-semibold leading-tight text-foreground sm:text-lg">
@@ -981,7 +981,7 @@ export const ProjectOverviewStep: React.FC<ProjectOverviewStepProps> = ({
             </div>
           </section>
 
-          <Accordion type="single" collapsible defaultValue={undefined} className="w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
+          <Accordion type="single" collapsible defaultValue={undefined} className="mt-auto w-full rounded-lg border bg-muted/20 px-1.5 sm:px-2">
             <AccordionItem value="project-details" className="border-none">
               <AccordionTrigger className="py-2 text-xs font-semibold hover:no-underline sm:py-2.5 sm:text-sm">
                 More project details

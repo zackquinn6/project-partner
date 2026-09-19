@@ -464,11 +464,13 @@ export const ProjectToolsStep: React.FC<ProjectToolsStepProps> = ({
 
   if (compact) {
     return (
-      <Card>
-        <CardHeader className="p-2 sm:p-3 lg:pb-1">
+      <Card className="flex min-h-full flex-1 flex-col">
+        <CardHeader className="shrink-0 p-2 sm:p-3 lg:pb-1">
           <CardTitle className="font-display text-xl font-semibold lg:text-lg">Plan Setup</CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 p-2 sm:space-y-3 sm:p-3 lg:space-y-2">{inner}</CardContent>
+        <CardContent className="flex flex-1 flex-col space-y-3 p-2 sm:space-y-3 sm:p-3 lg:space-y-2">
+          {inner}
+        </CardContent>
       </Card>
     );
   }

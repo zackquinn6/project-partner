@@ -454,9 +454,9 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
   }
 
   return (
-    <>
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
+    <div className="flex min-h-full flex-1 flex-col">
+      <Card className="flex min-h-full flex-1 flex-col">
+        <CardHeader className="shrink-0 p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
             Profile
             {isCompleted ? (
@@ -466,7 +466,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
             ) : null}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-2 p-2 sm:space-y-3 sm:p-3">
+        <CardContent className="flex flex-1 flex-col space-y-2 p-2 sm:space-y-3 sm:p-3">
           {renderProfileView()}
           
           {!isCompleted && !existingProfile && (
@@ -519,6 +519,6 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
           avoidProjects: existingProfile?.avoid_projects ?? null,
         }} 
       />
-    </>
+    </div>
   );
 };

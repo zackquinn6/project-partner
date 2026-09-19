@@ -896,7 +896,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
       : 'Project');
 
   return (
-    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3 md:h-[min(800px,calc(100dvh-5rem))] md:min-h-[min(800px,calc(100dvh-5rem))]">
+    <div className="mx-auto flex h-full min-h-0 w-full max-w-6xl flex-col gap-2 overflow-hidden p-2 sm:gap-3 sm:p-3">
       <div className="flex shrink-0 items-start justify-between gap-2">
         <Card className="min-w-0 flex-1">
           <CardContent className="space-y-2 p-2.5 sm:p-3">
@@ -972,8 +972,10 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         </Card>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
-        {renderCurrentStep()}
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain [-webkit-overflow-scrolling:touch]">
+          <div className="flex min-h-full flex-col">{renderCurrentStep()}</div>
+        </div>
       </div>
 
       <Card className="z-10 h-[5.5rem] shrink-0 border-t bg-background">

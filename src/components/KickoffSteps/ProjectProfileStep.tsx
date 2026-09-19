@@ -756,9 +756,9 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const selectedHome = homes.find((h) => h.id === selectedHomeId) ?? homes[0] ?? null;
 
   return (
-    <>
-      <Card>
-        <CardHeader className="p-2 sm:p-3">
+    <div className="flex min-h-full flex-1 flex-col">
+      <Card className="flex min-h-full flex-1 flex-col">
+        <CardHeader className="shrink-0 p-2 sm:p-3">
           <CardTitle className="font-display text-xl font-semibold leading-tight">
             Goals
             {isCompleted ? (
@@ -768,7 +768,7 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
             ) : null}
           </CardTitle>
         </CardHeader>
-        <CardContent className="space-y-3 p-2 sm:p-3">
+        <CardContent className="flex flex-1 flex-col space-y-3 p-2 sm:p-3">
           <div className="grid gap-3 rounded-lg border bg-muted/20 px-3 py-3 sm:grid-cols-2">
             <div className="min-w-0">
               <Label htmlFor="goals-project-name" className="mb-1.5 block text-sm font-medium">
@@ -1074,6 +1074,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
         open={showHomeManager}
         onOpenChange={handleHomeManagerClose}
       />
-    </>
+    </div>
   );
 };
