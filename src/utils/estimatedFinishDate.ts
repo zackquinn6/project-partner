@@ -235,3 +235,65 @@ export function shouldRefreshEstimatedFinishDate(
   return hoursSinceRefresh >= 24;
 }
 
+/** True when Project Scheduler has produced at least one schedule event. */
+export function hasActiveProjectSchedule(projectRun: ProjectRun | null | undefined): boolean {
+  const events = projectRun?.schedule_events?.events;
+  return Array.isArray(events) && events.length > 0;
+}
+
+/** Latest end datetime from saved Project Scheduler events. */
+export function finishDateFromScheduleEvents(
+  projectRun: ProjectRun | null | undefined,
+): Date | null {
+  const events = projectRun?.schedule_events?.events;
+  if (!Array.isArray(events) || events.length === 0) return null;
+
+  const endDates = events
+    .map((event: { date?: string; duration?: number; endTime?: string }) => {
+      if (event.date) {
+        const d = new Date(event.date);
+        if (typeof event.duration === 'number' && !Number.isNaN(event.duration)) {
+          d.setMinutes(d.getMinutes() + event.duration);
+        }
+        return d;
+      }
+      if (event.endTime) return new Date(event.endTime);
+      return null;
+    })
+    .filter((d): d is Date => d !== null && !Number.isNaN(d.getTime()));
+
+  if (endDates.length === 0) return null;
+  return endDates.reduce((latest, d) => (d > latest ? d : latest));
+}
+
+function finishDateFromKickoffTimeline(
+  projectRun: ProjectRun | null | undefined,
+): Date | null {
+  const raw = projectRun?.initial_timeline?.trim();
+  if (!raw) return null;
+  const dateOnly = raw.length >= 10 ? raw.slice(0, 10) : raw;
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(dateOnly)) return null;
+  const d = new Date(`${dateOnly}T12:00:00`);
+  return Number.isNaN(d.getTime()) ? null : d;
+}
+
+/**
+ * Goal Finish for workflow chrome:
+ * - calculated schedule end when Project Scheduler has an active plan
+ * - otherwise kickoff Goals timeline
+ */
+export function goalFinishDateFromProjectRun(
+  projectRun: ProjectRun | null | undefined,
+): Date | null {
+  if (hasActiveProjectSchedule(projectRun)) {
+    return finishDateFromScheduleEvents(projectRun);
+  }
+  return finishDateFromKickoffTimeline(projectRun);
+}
+
+/** Compact calendar label for Goal Finish (no relative phrasing). */
+export function formatGoalFinishDate(date: Date | null | undefined): string | null {
+  if (!date || Number.isNaN(date.getTime())) return null;
+  return format(date, 'MMM d, yyyy');
+}
+

@@ -15,7 +15,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { ProgressReportingStyleDialog } from './ProgressReportingStyleDialog';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
-import { formatEstimatedFinishDate } from '@/utils/estimatedFinishDate';
+import { formatEstimatedFinishDate, goalFinishDateFromProjectRun, formatGoalFinishDate } from '@/utils/estimatedFinishDate';
 import { usePartnerAppSettings } from '@/hooks/usePartnerAppSettings';
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
@@ -417,6 +417,17 @@ export function WorkflowSidebar({
     if (!inProgressOperation) return null;
     return inProgressOperation.split('-')[0];
   }, [inProgressOperation]);
+
+  const goalFinishDate = useMemo(
+    () => goalFinishDateFromProjectRun(projectRun),
+    [projectRun],
+  );
+  const goalFinishLabel = formatGoalFinishDate(goalFinishDate) ?? 'N/A';
+  const estFinishLabel = estimatedFinishDateLoading
+    ? 'Calculating...'
+    : estimatedFinishDate
+      ? formatEstimatedFinishDate(estimatedFinishDate)
+      : 'N/A';
   
   
   return <Sidebar collapsible="offcanvas">
@@ -480,21 +491,38 @@ export function WorkflowSidebar({
                     <Progress value={progress} className="h-2" />
                   </div>
 
-                  {/* Estimated Finish Date */}
-                  <div className="flex items-center justify-between text-xs">
-                    <div className="flex items-center gap-1.5 text-muted-foreground">
-                      <Calendar className="h-3 w-3" />
-                      <span>Est. Finish</span>
+                  {/* Goal Finish + Estimated Finish (values open Project Scheduler) */}
+                  <div className="space-y-1">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>Goal Finish</span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={onViewScheduleClick}
+                        className="text-[10px] font-medium text-primary underline-offset-2 hover:underline"
+                      >
+                        {goalFinishLabel}
+                      </button>
                     </div>
-                    <span className="font-medium text-foreground">
+                    <div className="flex items-center justify-between text-xs">
+                      <div className="flex items-center gap-1.5 text-muted-foreground">
+                        <Calendar className="h-3 w-3" />
+                        <span>Est. Finish</span>
+                      </div>
                       {estimatedFinishDateLoading ? (
-                        <span className="text-muted-foreground text-[10px]">Calculating...</span>
-                      ) : estimatedFinishDate ? (
-                        <span className="text-[10px]">{formatEstimatedFinishDate(estimatedFinishDate)}</span>
+                        <span className="text-muted-foreground text-[10px]">{estFinishLabel}</span>
                       ) : (
-                        <span className="text-muted-foreground text-[10px]">TBD</span>
+                        <button
+                          type="button"
+                          onClick={onViewScheduleClick}
+                          className="text-[10px] font-medium text-primary underline-offset-2 hover:underline"
+                        >
+                          {estFinishLabel}
+                        </button>
                       )}
-                    </span>
+                    </div>
                   </div>
 
                   {/* Instruction Detail Level */}

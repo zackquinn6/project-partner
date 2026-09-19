@@ -1539,7 +1539,7 @@ export default function UserView({
                          scheduleEvents.events.length > 0;
       
       if (!hasSchedule) {
-        // Project hasn't been scheduled yet - show TBD
+        // Project hasn't been scheduled yet - show N/A for Est. Finish
         setEstimatedFinishDate(null);
         setLastFinishDateRefresh(new Date());
         return;
@@ -1579,7 +1579,7 @@ export default function UserView({
         }
       }
       
-      // If we can't extract a date from events, show TBD
+      // If we can't extract a date from events, show N/A
       setEstimatedFinishDate(null);
       setLastFinishDateRefresh(new Date());
     } catch (error) {
@@ -4203,7 +4203,7 @@ export default function UserView({
           }
           const previousLabel = estimatedFinishDate
             ? formatEstimatedFinishDate(estimatedFinishDate)
-            : 'TBD';
+            : 'N/A';
           const delta = await applyScheduleSlip({
             projectRun: currentProjectRun,
             project: workflowTemplateProject,
