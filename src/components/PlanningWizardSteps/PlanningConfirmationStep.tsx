@@ -329,11 +329,11 @@ export function PlanningConfirmationStep({
           <Separator />
 
           <section>
-            <h3 className="mb-2 text-sm font-semibold text-foreground">Key scope decisions</h3>
+            <h3 className="mb-2 text-sm font-semibold text-foreground">Scope Decisions</h3>
             {standardRows.length === 0 &&
             necessaryRows.length === 0 &&
             generalRows.length === 0 &&
-            spaceRows.length === 0 ? (
+            spaceRows.length <= 1 ? (
               <p className="text-sm text-muted-foreground">
                 {hasStoredScopeContext
                   ? 'No alternate or optional scope choices were needed for this run.'
@@ -341,7 +341,7 @@ export function PlanningConfirmationStep({
               </p>
             ) : (
               <div className="space-y-4">
-                {spaceRows.length > 0 ? (
+                {spaceRows.length > 1 ? (
                   <div>
                     <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
                       Spaces
@@ -370,7 +370,6 @@ export function PlanningConfirmationStep({
                 ) : null}
                 {standardRows.length > 0 ? (
                   <div>
-                    <p className="mb-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">Standard path</p>
                     <ul className="space-y-2 text-sm">
                       {standardRows.map(([phaseId, vals]) => (
                         <li key={phaseId} className="rounded-md border bg-muted/30 px-3 py-2">
