@@ -1279,7 +1279,7 @@ function RiskFocusDashboard({
                         className="h-1.5 w-1.5 shrink-0 rounded-full bg-warning-soft"
                         aria-hidden
                       />
-                      <span className="font-display text-xl font-bold tabular-nums leading-[22px] text-warning-soft-foreground">
+                      <span className="font-display text-xl font-bold tabular-nums leading-[22px] text-warning-soft">
                         {medium}
                       </span>
                     </div>
