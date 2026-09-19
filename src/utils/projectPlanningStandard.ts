@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.4.0';
+export const PLANNING_STANDARD_VERSION = '1.4.1';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -219,7 +219,7 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     id: 'risks-vs-pfmea',
     title: 'Risks vs PFMEA',
     rule:
-      'Project risks (Step 4) cover timeline and budget only. Quality failure modes belong in PFMEA (Step 9), not the risk register.',
+      'Project risks (Step 4) cover safety, schedule, and budget. Quality failure modes belong in PFMEA (Step 9), not the risk register. Risk titles name a concrete cause or failure mode a user can mitigate (e.g. "Expired thinset or mortar past use-by date", "Shelf-expired adhesives or finishes"), not a vague category ("Low-quality materials") or an outcome of many risks ("Underestimating project time").',
   },
   {
     id: 'alternates',

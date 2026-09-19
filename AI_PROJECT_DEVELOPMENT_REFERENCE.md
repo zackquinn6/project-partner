@@ -94,7 +94,7 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.4.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.4.1` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -239,7 +239,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 ### Cross-cutting product rules
 
 - **Waiting steps (drying, curing)** (`waiting-steps`): Engineer all waiting steps (e.g. paint dry, curing) as their own step with specific wait times, and set workers needed = 0.
-- **Risks vs PFMEA** (`risks-vs-pfmea`): Project risks (Step 4) cover timeline and budget only. Quality failure modes belong in PFMEA (Step 9), not the risk register.
+- **Risks vs PFMEA** (`risks-vs-pfmea`): Project risks (Step 4) cover safety, schedule, and budget. Quality failure modes belong in PFMEA (Step 9), not the risk register. Risk titles name a concrete cause or failure mode a user can mitigate (e.g. "Expired thinset or mortar past use-by date", "Shelf-expired adhesives or finishes"), not a vague category ("Low-quality materials") or an outcome of many risks ("Underestimating project time").
 - **Tools and materials alternates** (`alternates`): Where a step requires tools or materials, define primary items and alternate options when users may substitute brand, type, or pack size.
 - **No em-dashes in catalog prose** (`no-em-dashes`): Do not use em-dashes in authored catalog / user-facing prose (descriptions, challenges, step instructions, risk copy). Use standard dashes or hyphens.
 - **Actions vs database tables** (`actions-vs-db`): Hierarchy is Phase → Operation → Step → Action. Actions are instructional micro-units inside step_instructions content; they are not a separate database table. DB tables stop at operation_steps + step_instructions.
@@ -498,6 +498,13 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 
 **Mitigation completeness:** Every identified risk must include `mitigation_actions` that, taken together, can bring residual severity to **medium or low** (ideally **low**). Do not leave a risk whose full mitigation set still leaves residual **high**. Prefer concrete, checkable actions; set `mitigation_effort_level` honestly so Risk Radar can sort easiest-first.
 
+**Risk title rules (concrete cause, not category or outcome):**
+
+1. **Name the failure mode the user can act on.** Titles must be specific enough that the mitigation set is obvious and checkable. Prefer product- or process-specific causes over umbrella labels.
+2. **Do not author vague material categories.** Bad: `Low-quality materials`. Good (foundation / cross-project): `Shelf-expired adhesives or finishes`. Good (Tile Flooring): `Expired thinset or mortar past use-by date`. Good (paint project): `Expired paint that will not lay flat`. Mitigations differ by product (date codes vs grade vs dye lot), so the title must pick one cause.
+3. **Do not author outcomes of many risks as if they were causes.** Bad: `Underestimating project time` (that is what happens when stockouts, wrong tools, helper no-shows, hidden damage, etc. fire). Put the schedule impact on those causal rows instead of a separate "we took too long" risk.
+4. **Foundation vs project template.** Standard Foundation may keep only causes that stay specific and mitigable across DIY (e.g. shelf-expired adhesives). Project templates author the project-specific material and process causes. Template rows win title collisions over foundation at run sync.
+
 **Risk Radar copy rules (strategy, actions, recommendation, benefit, descriptions):**
 
 1. **Do not use the word "proper"** (or "properly"). Define the standard instead - what measurement, product limit, coverage %, cure hours, or visible pass/fail looks like.
@@ -508,7 +515,7 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 | Field | Type / enums | Authoring rule |
 | ----- | ------------ | -------------- |
 | `project_id` | uuid | Root template |
-| `risk_title` | string | Required |
+| `risk_title` | string | Required; concrete cause per title rules above (not a vague category or multi-risk outcome) |
 | `risk_description` | string \| null | Optional; narrative often in `benefit`; follow copy rules above |
 | `likelihood` | string \| null | `low` / `medium` / `high` |
 | `severity` / `impact` | string \| null | `low` / `medium` / `high` (UI uses severity) |
@@ -815,6 +822,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | Step 4 risk title rules: concrete cause/failure mode only; ban vague categories (e.g. Low-quality materials) and multi-risk outcomes (e.g. Underestimating project time); examples for foundation, tile, paint; planning standard v1.4.1 | Risk Radar showed unactionable general risks; mitigations are product-specific |
 | 2026-09-18 | §H trigger/H.1/H.5: "Build out content for project X ref ai dev guide" requires commit, push, and naming migration path(s); explicit exception to author Standard Foundation when user asks for standard phases | Build-out requests must leave applyable migrations and push; foundation content was previously blocked by the catalog-only scope rule |
 | 2026-09-18 | Planning standard v1.4.0: three content axes (instruction / quality / customization), Professional naming vs skill_level; op-level min_quality_goal wired; project_run_quality_levels snapshot at run create | Dual-axis assessment follow-up |
 | 2026-09-18 | §H.5 / §A: author one SQL file per guide step during development, then concatenate into a single `<slug>_<scope>_bundle.sql` before commit; delete per-step drafts in the same commit. Schema migrations stay separate from content bundles | Tile quality-gated build out shipped as many step files; ship surface should be one applyable file |
