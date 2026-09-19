@@ -100,7 +100,7 @@ export async function applyScheduleSlip(params: {
 
   const previousLabel = previousFinish
     ? formatEstimatedFinishDate(previousFinish)
-    : 'TBD';
+    : 'N/A';
   const nextLabel = formatEstimatedFinishDate(nextFinish);
   const daysDelta =
     previousFinish && nextFinish

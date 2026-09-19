@@ -189,7 +189,7 @@ export async function calculateEstimatedFinishDate(
  * Shows both "in x days" and actual date, e.g. "in 5 days on Nov 27"
  */
 export function formatEstimatedFinishDate(date: Date | null): string {
-  if (!date) return 'TBD';
+  if (!date) return 'N/A';
   
   const today = new Date();
   today.setHours(0, 0, 0, 0);
