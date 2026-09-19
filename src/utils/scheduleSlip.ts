@@ -75,12 +75,13 @@ export async function applyScheduleSlip(params: {
       slippedRun,
       project,
       workflowPhases,
-      completed
+      completed,
+      'slip'
     );
     if (regenerated) {
       const { data } = await supabase
         .from('project_runs')
-        .select('schedule_events')
+        .select('schedule_events, first_schedule_finish_at')
         .eq('id', projectRun.id)
         .maybeSingle();
       if (data?.schedule_events) {
@@ -90,6 +91,9 @@ export async function applyScheduleSlip(params: {
           ...slippedRun,
           schedule_events: nextSchedule,
           planEndDate: slippedTarget,
+          firstScheduleFinishAt: data.first_schedule_finish_at
+            ? new Date(data.first_schedule_finish_at)
+            : slippedRun.firstScheduleFinishAt,
           updatedAt: new Date(),
         });
       }

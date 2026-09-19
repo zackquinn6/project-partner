@@ -3613,6 +3613,7 @@ export type Database = {
           end_date: string | null
           estimated_time: string | null
           estimated_total_time: string | null
+          first_schedule_finish_at: string | null
           home_id: string | null
           id: string
           initial_budget: string | null
@@ -3667,6 +3668,7 @@ export type Database = {
           end_date?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
+          first_schedule_finish_at?: string | null
           home_id?: string | null
           id?: string
           initial_budget?: string | null
@@ -3721,6 +3723,7 @@ export type Database = {
           end_date?: string | null
           estimated_time?: string | null
           estimated_total_time?: string | null
+          first_schedule_finish_at?: string | null
           home_id?: string | null
           id?: string
           initial_budget?: string | null
@@ -3771,6 +3774,41 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_schedule_revisions: {
+        Row: {
+          created_at: string
+          finish_at: string
+          id: string
+          project_run_id: string
+          schedule_events: Json
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          finish_at: string
+          id?: string
+          project_run_id: string
+          schedule_events: Json
+          source: string
+        }
+        Update: {
+          created_at?: string
+          finish_at?: string
+          id?: string
+          project_run_id?: string
+          schedule_events?: Json
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_schedule_revisions_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
             referencedColumns: ["id"]
           },
         ]

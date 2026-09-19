@@ -1492,6 +1492,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_timeline: preservedTimeline !== undefined ? preservedTimeline : null,
           initial_sizing: preservedSizing !== undefined ? preservedSizing : null,
           initial_quality_goal: preservedQualityGoal !== undefined ? preservedQualityGoal : null,
+          ...(projectRun.firstScheduleFinishAt
+            ? { first_schedule_finish_at: projectRun.firstScheduleFinishAt.toISOString() }
+            : {}),
           updated_at: new Date().toISOString(),
           ...(projectRun.planningCompletedAt != null
             ? {
@@ -1738,6 +1741,9 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
           initial_timeline: freshRun.initial_timeline || null,
           initial_sizing: (freshRun.initial_sizing as any) || null,
           initial_quality_goal: (freshRun.initial_quality_goal as 'good' | 'great' | 'professional' | null) || null,
+          firstScheduleFinishAt: freshRun.first_schedule_finish_at
+            ? new Date(freshRun.first_schedule_finish_at)
+            : undefined,
           quality_control_settings: parseQualityControlSettingsColumn(freshRun.quality_control_settings),
           planningCompletedAt: freshRun.planning_completed_at
             ? new Date(freshRun.planning_completed_at)

@@ -42,6 +42,8 @@ import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
 import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
 import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
+import { finishDateFromScheduleEventsBlob } from '@/utils/estimatedFinishDate';
+import { recordProjectScheduleRevision } from '@/utils/recordProjectScheduleRevision';
 import { collectMemberBlackoutDates, toEngineWorker } from '@/utils/buildWorkerAvailability';
 import { usHolidaysInRange } from '@/utils/usHolidays';
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
@@ -1274,30 +1276,37 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
   const persistScheduleToProject = async (result: SchedulingResult): Promise<boolean> => {
     try {
+      const scheduleEvents = {
+        events: result.scheduledTasks.map(task => ({
+          id: task.taskId,
+          date: format(task.startTime, 'yyyy-MM-dd'),
+          phaseId: schedulingTasks.find(t => t.id === task.taskId)?.phaseId || '',
+          operationId: schedulingTasks.find(t => t.id === task.taskId)?.operationId || '',
+          duration: Math.round((task.endTime.getTime() - task.startTime.getTime()) / 60000),
+          notes: schedulingTasks.find(t => t.id === task.taskId)?.title || '',
+          assignedTo: (task as any).assignedTo || ''
+        })),
+        teamMembers: teamMembers,
+        globalSettings: {
+          quietHours: quietHours,
+          noWorkOnHolidays,
+        },
+        lunchDuration: lunchDuration,
+        scheduleTempo: scheduleTempo,
+        planningMode: planningMode,
+        lastGeneratedAt: new Date().toISOString(),
+        lastScheduledAt: new Date().toISOString()
+      };
+
+      const finishAt = finishDateFromScheduleEventsBlob(scheduleEvents);
+      const firstScheduleFinishAt =
+        projectRun.firstScheduleFinishAt ?? finishAt ?? undefined;
+
       const updatedProjectRun = {
         ...projectRun,
         schedule_optimization_method: scheduleOptimizationMethod,
-        schedule_events: {
-          events: result.scheduledTasks.map(task => ({
-            id: task.taskId,
-            date: format(task.startTime, 'yyyy-MM-dd'),
-            phaseId: schedulingTasks.find(t => t.id === task.taskId)?.phaseId || '',
-            operationId: schedulingTasks.find(t => t.id === task.taskId)?.operationId || '',
-            duration: Math.round((task.endTime.getTime() - task.startTime.getTime()) / 60000),
-            notes: schedulingTasks.find(t => t.id === task.taskId)?.title || '',
-            assignedTo: (task as any).assignedTo || ''
-          })),
-          teamMembers: teamMembers,
-          globalSettings: {
-            quietHours: quietHours,
-            noWorkOnHolidays,
-          },
-          lunchDuration: lunchDuration,
-          scheduleTempo: scheduleTempo,
-          planningMode: planningMode,
-          lastGeneratedAt: new Date().toISOString(),
-          lastScheduledAt: new Date().toISOString()
-        },
+        schedule_events: scheduleEvents,
+        firstScheduleFinishAt,
         calendar_integration: {
           scheduledDays: result.scheduledTasks.reduce((acc, task) => {
             const dateKey = format(task.startTime, 'yyyy-MM-dd');
@@ -1323,6 +1332,12 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         }
       };
       await updateProjectRun(updatedProjectRun);
+      await recordProjectScheduleRevision({
+        projectRunId: projectRun.id,
+        scheduleEvents,
+        source: 'manual',
+        currentFirstScheduleFinishAt: projectRun.firstScheduleFinishAt,
+      });
       schedulingEngine.commitSchedule(result);
       setLastScheduledDate(new Date().toISOString());
       window.dispatchEvent(new CustomEvent('project-scheduler-updated', {

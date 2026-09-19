@@ -241,11 +241,16 @@ export function hasActiveProjectSchedule(projectRun: ProjectRun | null | undefin
   return Array.isArray(events) && events.length > 0;
 }
 
-/** Latest end datetime from saved Project Scheduler events. */
-export function finishDateFromScheduleEvents(
-  projectRun: ProjectRun | null | undefined,
+/** Latest end datetime from a schedule_events blob. */
+export function finishDateFromScheduleEventsBlob(
+  scheduleEvents:
+    | ProjectRun['schedule_events']
+    | { events?: Array<{ date?: string; duration?: number; endTime?: string }> }
+    | Record<string, unknown>
+    | null
+    | undefined,
 ): Date | null {
-  const events = projectRun?.schedule_events?.events;
+  const events = (scheduleEvents as { events?: unknown } | null | undefined)?.events;
   if (!Array.isArray(events) || events.length === 0) return null;
 
   const endDates = events
@@ -266,6 +271,13 @@ export function finishDateFromScheduleEvents(
   return endDates.reduce((latest, d) => (d > latest ? d : latest));
 }
 
+/** Latest end datetime from saved Project Scheduler events (current / latest blob). */
+export function finishDateFromScheduleEvents(
+  projectRun: ProjectRun | null | undefined,
+): Date | null {
+  return finishDateFromScheduleEventsBlob(projectRun?.schedule_events);
+}
+
 function finishDateFromKickoffTimeline(
   projectRun: ProjectRun | null | undefined,
 ): Date | null {
@@ -279,14 +291,18 @@ function finishDateFromKickoffTimeline(
 
 /**
  * Goal Finish for workflow chrome:
- * - calculated schedule end when Project Scheduler has an active plan
+ * - first Project Scheduler revision finish when locked
  * - otherwise kickoff Goals timeline
  */
 export function goalFinishDateFromProjectRun(
   projectRun: ProjectRun | null | undefined,
 ): Date | null {
-  if (hasActiveProjectSchedule(projectRun)) {
-    return finishDateFromScheduleEvents(projectRun);
+  if (projectRun?.firstScheduleFinishAt) {
+    const d =
+      projectRun.firstScheduleFinishAt instanceof Date
+        ? projectRun.firstScheduleFinishAt
+        : new Date(projectRun.firstScheduleFinishAt);
+    if (!Number.isNaN(d.getTime())) return d;
   }
   return finishDateFromKickoffTimeline(projectRun);
 }

@@ -284,6 +284,11 @@ export interface ProjectRun {
   initial_quality_goal?: 'good' | 'great' | 'professional';
   /** Scheduler absolute deadline; seeded once from initial_timeline + 30 days */
   latest_acceptable_date?: string;
+  /**
+   * Finish date from the first Project Scheduler revision (immutable once set).
+   * Goal Finish in workflow chrome; Est Finish uses the latest schedule_events.
+   */
+  firstScheduleFinishAt?: Date;
   schedule_optimization_method?: 'single-piece-flow' | 'batch-flow'; // Workflow navigation method: single-piece-flow (default) processes one space at a time through custom phases; batch-flow processes all spaces through one phase before moving to the next
   progress_reporting_style?: 'linear' | 'exponential' | 'time-based'; // Progress calculation method: linear (step count), exponential (weighted), or time-based (uses time estimates)
 

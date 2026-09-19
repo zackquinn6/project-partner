@@ -12,6 +12,8 @@ import {
   type SchedulingTask,
 } from '@/utils/schedulingPrerequisiteDeps';
 import { parseCustomizationDecisions } from '@/utils/customizationDecisions';
+import { finishDateFromScheduleEventsBlob } from '@/utils/estimatedFinishDate';
+import { recordProjectScheduleRevision, type ScheduleRevisionSource } from '@/utils/recordProjectScheduleRevision';
 
 /**
  * Checks if a schedule needs to be regenerated (older than 1 day)
@@ -47,7 +49,8 @@ export async function autoRegenerateSchedule(
   projectRun: ProjectRun,
   project: Project,
   workflowPhases: Phase[],
-  completedSteps: Set<string>
+  completedSteps: Set<string>,
+  revisionSource: ScheduleRevisionSource = 'auto_regen'
 ): Promise<boolean> {
   try {
     const scheduleEvents = projectRun.schedule_events as any;
@@ -311,24 +314,31 @@ export async function autoRegenerateSchedule(
     const result = schedulingEngine.computeSchedule(schedulingInputs);
     
     // Save the regenerated schedule
+    const scheduleEvents = {
+      events: result.scheduledTasks.map(task => ({
+        id: task.taskId,
+        date: format(task.startTime, 'yyyy-MM-dd'),
+        phaseId: sortedTasks.find(t => t.id === task.taskId)?.phaseId || '',
+        operationId: sortedTasks.find(t => t.id === task.taskId)?.operationId || '',
+        duration: Math.round((task.endTime.getTime() - task.startTime.getTime()) / 60000),
+        notes: sortedTasks.find(t => t.id === task.taskId)?.title || '',
+        assignedTo: (task as any).assignedTo || ''
+      })),
+      teamMembers: teamMembers,
+      globalSettings: globalSettings,
+      scheduleTempo: scheduleTempo,
+      planningMode: planningMode,
+      lastGeneratedAt: new Date().toISOString() // Store generation timestamp
+    };
+
+    const finishAt = finishDateFromScheduleEventsBlob(scheduleEvents);
+    const firstScheduleFinishAt =
+      projectRun.firstScheduleFinishAt ?? finishAt ?? undefined;
+
     const updatedProjectRun = {
       ...projectRun,
-      schedule_events: {
-        events: result.scheduledTasks.map(task => ({
-          id: task.taskId,
-          date: format(task.startTime, 'yyyy-MM-dd'),
-          phaseId: sortedTasks.find(t => t.id === task.taskId)?.phaseId || '',
-          operationId: sortedTasks.find(t => t.id === task.taskId)?.operationId || '',
-          duration: Math.round((task.endTime.getTime() - task.startTime.getTime()) / 60000),
-          notes: sortedTasks.find(t => t.id === task.taskId)?.title || '',
-          assignedTo: (task as any).assignedTo || ''
-        })),
-        teamMembers: teamMembers,
-        globalSettings: globalSettings,
-        scheduleTempo: scheduleTempo,
-        planningMode: planningMode,
-        lastGeneratedAt: new Date().toISOString() // Store generation timestamp
-      },
+      schedule_events: scheduleEvents,
+      firstScheduleFinishAt,
       calendar_integration: {
         scheduledDays: result.scheduledTasks.reduce((acc, task) => {
           const dateKey = format(task.startTime, 'yyyy-MM-dd');
@@ -355,18 +365,34 @@ export async function autoRegenerateSchedule(
     };
     
     // Update project run in database
+    const updatePayload: {
+      schedule_events: typeof scheduleEvents;
+      calendar_integration: typeof updatedProjectRun.calendar_integration;
+      first_schedule_finish_at?: string;
+    } = {
+      schedule_events: updatedProjectRun.schedule_events,
+      calendar_integration: updatedProjectRun.calendar_integration,
+    };
+    if (!projectRun.firstScheduleFinishAt && firstScheduleFinishAt) {
+      updatePayload.first_schedule_finish_at = firstScheduleFinishAt.toISOString();
+    }
+
     const { error } = await supabase
       .from('project_runs')
-      .update({
-        schedule_events: updatedProjectRun.schedule_events,
-        calendar_integration: updatedProjectRun.calendar_integration
-      })
+      .update(updatePayload)
       .eq('id', projectRun.id);
     
     if (error) {
       console.error('Error saving auto-regenerated schedule:', error);
       return false;
     }
+
+    await recordProjectScheduleRevision({
+      projectRunId: projectRun.id,
+      scheduleEvents,
+      source: revisionSource,
+      currentFirstScheduleFinishAt: projectRun.firstScheduleFinishAt,
+    });
     
     // Dispatch refresh event
     window.dispatchEvent(new CustomEvent('project-scheduler-updated', {
