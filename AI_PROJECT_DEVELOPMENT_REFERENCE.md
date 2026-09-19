@@ -94,7 +94,7 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.4.1` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.4.2` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -136,7 +136,7 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 | **Great** (`great`) | Strong DIY finish; tighter tolerances and cleaner detailing. | Core path plus standard best-practice steps. Default for new runs. |
 | **Professional** (`professional`) | Near-trade finish; strictest tolerances and presentation. | Great path plus extra prep and finish steps (sanding, leveling systems, seal always, extra QC, etc.). |
 
-- Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.
+- Every catalog template that ships quality goals authors three project_quality_levels rows (kickoff_summary + outcome + process). kickoff_summary is the one-line kickoff Goals blurb for that project and level. Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.
 
 ### Project structure
 
@@ -246,7 +246,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Step instruction sections** (`step-instruction-sections`): Background/Need-to-Know is valuable domain context (why it matters, timing, complexity, how the app helps) - not a restatement of what the step is. Instructions are numbered sequential actions only; do not number explanatory status or completion notes as their own steps - put that in Background or fold it into an adjacent action. Error-Recovery uses full-sentence context so the user can diagnose quickly (e.g. "If your list is missing something, finish your plan").
 - **Owned vs standard and adopted phases** (`owned-vs-adopted-phases`): A project only owns the phases authored on it. Standard foundation phases and phases linked or adopted from another template are read-only inside this project: their phases, operations, steps, instructions, and enrichments are edited in the source template instead. Project content work covers owned phases only; gaps found in a standard or adopted phase get reported to the owner of that template, not patched locally.
 - **Content completeness per step** (`content-completeness`): A project is content complete when every step in every owned phase satisfies the step requirements above: three instruction levels, outputs, tools, materials, process variables, time estimates, quality checks, and failure modes where relevant. Partial coverage is a gap list, not a finished project, so audit every owned step rather than the ones most recently touched.
-- **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.
+- **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template, including kickoff_summary for the kickoff Goals one-liner. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.
 - **Content axes (instruction, quality, customization)** (`content-axes`): Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.
 - **Professional naming (quality vs skill)** (`professional-naming`): Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.
 <!-- PLANNING_STANDARD:END -->
@@ -655,7 +655,7 @@ Related tables, all part of a complete PFMEA:
 
 If the user is uncomfortable with the listed challenges, they may choose not to move forward; that is intentional. Write so a quick read surfaces the real hard parts without hype or hedging.
 
-### Step 11 — Quality goals (`project_quality_levels` + `min_quality_goal`)
+### Step 11 - Quality goals (`project_quality_levels` + `min_quality_goal`)
 
 **Product meaning:** Good / Great / Professional are both **outcome** and **process**. Shared ladder and authoring rules live in the generated planning standard (`quality-goals`). This step is the SQL/field catalog.
 
@@ -667,6 +667,7 @@ If the user is uncomfortable with the listed challenges, they may choose not to 
 | ------ | ---- |
 | `project_id` | Root catalog template id |
 | `quality_level` | `good` \| `great` \| `professional` (UNIQUE with `project_id`) |
+| `kickoff_summary` | Very short project-specific blurb for kickoff Goals (what this level means for this project). Required when shipping quality goals. |
 | `outcome_summary` | What the finish looks like at this level (tolerances, appearance, serviceability) |
 | `process_summary` | What work this level requires (prep, QC, finish) |
 | `vs_lower_summary` | Required on `great` and `professional`: impact of choosing this instead of the level below. NULL on `good` |
@@ -822,6 +823,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-18 | Step 11: `kickoff_summary` on `project_quality_levels` / run snapshot; kickoff Goals shows short per-level blurbs and drops Instruction detail + long impact panel | Kickoff needs project-specific meaning without the full outcome/process panel |
 | 2026-09-18 | Step 4 risk title rules: concrete cause/failure mode only; ban vague categories (e.g. Low-quality materials) and multi-risk outcomes (e.g. Underestimating project time); examples for foundation, tile, paint; planning standard v1.4.1 | Risk Radar showed unactionable general risks; mitigations are product-specific |
 | 2026-09-18 | §H trigger/H.1/H.5: "Build out content for project X ref ai dev guide" requires commit, push, and naming migration path(s); explicit exception to author Standard Foundation when user asks for standard phases | Build-out requests must leave applyable migrations and push; foundation content was previously blocked by the catalog-only scope rule |
 | 2026-09-18 | Planning standard v1.4.0: three content axes (instruction / quality / customization), Professional naming vs skill_level; op-level min_quality_goal wired; project_run_quality_levels snapshot at run create | Dual-axis assessment follow-up |

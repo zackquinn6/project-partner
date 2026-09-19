@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.4.1';
+export const PLANNING_STANDARD_VERSION = '1.4.2';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -96,7 +96,7 @@ export const QUALITY_GOAL_LEVEL_STANDARD = {
     },
   ],
   authoringRule:
-    'Every catalog template that ships quality goals authors three project_quality_levels rows (outcome + process). Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.',
+    'Every catalog template that ships quality goals authors three project_quality_levels rows (kickoff_summary + outcome + process). kickoff_summary is the one-line kickoff Goals blurb for that project and level. Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.',
 } as const;
 
 export type PlanningTopicId = (typeof PLANNING_TOPIC_IDS)[number];
@@ -261,7 +261,7 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     id: 'quality-goals',
     title: 'Quality goals (Good / Great / Professional)',
     rule:
-      'Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.',
+      'Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template, including kickoff_summary for the kickoff Goals one-liner. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.',
   },
   {
     id: 'content-axes',

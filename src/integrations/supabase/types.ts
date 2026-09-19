@@ -2865,6 +2865,7 @@ export type Database = {
           created_at: string
           example_image_urls: Json
           id: string
+          kickoff_summary: string | null
           outcome_summary: string
           process_summary: string
           project_id: string
@@ -2876,6 +2877,7 @@ export type Database = {
           created_at?: string
           example_image_urls?: Json
           id?: string
+          kickoff_summary?: string | null
           outcome_summary: string
           process_summary: string
           project_id: string
@@ -2887,6 +2889,7 @@ export type Database = {
           created_at?: string
           example_image_urls?: Json
           id?: string
+          kickoff_summary?: string | null
           outcome_summary?: string
           process_summary?: string
           project_id?: string
@@ -3255,6 +3258,7 @@ export type Database = {
           created_at: string
           example_image_urls: Json
           id: string
+          kickoff_summary: string | null
           outcome_summary: string
           process_summary: string
           project_run_id: string
@@ -3267,6 +3271,7 @@ export type Database = {
           created_at?: string
           example_image_urls?: Json
           id?: string
+          kickoff_summary?: string | null
           outcome_summary: string
           process_summary: string
           project_run_id: string
@@ -3279,6 +3284,7 @@ export type Database = {
           created_at?: string
           example_image_urls?: Json
           id?: string
+          kickoff_summary?: string | null
           outcome_summary?: string
           process_summary?: string
           project_run_id?: string

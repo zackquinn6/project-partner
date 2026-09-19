@@ -21,35 +21,16 @@ import {
   DEFAULT_QUALITY_GOAL,
   parseQualityGoalColumn,
   isQualityGoal,
+  type QualityGoal,
 } from '@/utils/qualityGoal';
-import { QualityGoalImpactPanel } from '@/components/QualityGoalImpactPanel';
-import type { Phase } from '@/interfaces/Project';
+import {
+  loadProjectQualityLevelBundles,
+  levelForGoal,
+} from '@/utils/projectQualityLevels';
 import {
   instructionLevelFromProfileSkill,
   type InstructionLevelPreference,
 } from '@/utils/instructionLevelFromProfile';
-
-const INSTRUCTION_LEVEL_OPTIONS: {
-  value: InstructionLevelPreference;
-  label: string;
-  preview: string;
-}[] = [
-  {
-    value: 'beginner',
-    label: 'Beginner',
-    preview: 'Same steps; more scaffolding and why-it-matters detail.',
-  },
-  {
-    value: 'intermediate',
-    label: 'Intermediate',
-    preview: 'Same steps; balanced guidance for a typical DIYer.',
-  },
-  {
-    value: 'advanced',
-    label: 'Advanced',
-    preview: 'Same steps; leaner copy for experienced users.',
-  },
-];
 
 const DEFAULT_INSTRUCTION_LEVEL: InstructionLevelPreference = 'intermediate';
 
@@ -204,6 +185,48 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
   const [templateBudgetPerTypicalSize, setTemplateBudgetPerTypicalSize] = useState<string | null>(null);
   const [templateEstimatedTotalTime, setTemplateEstimatedTotalTime] = useState<string | null>(null);
   const [templateEconomicsLoaded, setTemplateEconomicsLoaded] = useState(false);
+  const [kickoffSummaries, setKickoffSummaries] = useState<
+    Partial<Record<QualityGoal, string>>
+  >({});
+
+  useEffect(() => {
+    const hostProjectId = currentProjectRun?.projectId;
+    const projectRunId = currentProjectRun?.id;
+    if (!hostProjectId && !projectRunId) {
+      setKickoffSummaries({});
+      return;
+    }
+
+    let cancelled = false;
+    void loadProjectQualityLevelBundles(hostProjectId ? [hostProjectId] : [], {
+      projectRunId,
+    })
+      .then((bundles) => {
+        if (cancelled) return;
+        const hostBundle =
+          bundles.find((b) => b.projectId === hostProjectId) ?? bundles[0];
+        if (!hostBundle) {
+          setKickoffSummaries({});
+          return;
+        }
+        const next: Partial<Record<QualityGoal, string>> = {};
+        for (const option of QUALITY_GOAL_OPTIONS) {
+          const level = levelForGoal(hostBundle, option.value);
+          if (level?.kickoff_summary) {
+            next[option.value] = level.kickoff_summary;
+          }
+        }
+        setKickoffSummaries(next);
+      })
+      .catch((error) => {
+        console.error('Failed to load kickoff quality summaries:', error);
+        if (!cancelled) setKickoffSummaries({});
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [currentProjectRun?.projectId, currentProjectRun?.id]);
 
   useEffect(() => {
     const fetchScalingUnitAndItemType = async () => {
@@ -1070,54 +1093,6 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
           </div>
 
           <div className="space-y-3 rounded-lg border bg-card p-3">
-            <p className="text-sm font-medium leading-none">Instruction detail</p>
-            <RadioGroup
-              value={projectForm.instructionLevelPreference}
-              onValueChange={(value) => {
-                if (
-                  value !== 'beginner' &&
-                  value !== 'intermediate' &&
-                  value !== 'advanced'
-                ) {
-                  return;
-                }
-                setProjectForm((prev) => ({
-                  ...prev,
-                  instructionLevelPreference: value,
-                }));
-              }}
-              className="grid grid-cols-3 gap-2"
-            >
-              {INSTRUCTION_LEVEL_OPTIONS.map((option) => (
-                <Label
-                  key={option.value}
-                  htmlFor={`kickoff-instruction-${option.value}`}
-                  className={cn(
-                    'flex cursor-pointer items-center justify-center gap-2 rounded-md border px-2 py-2 text-sm font-medium transition-colors',
-                    projectForm.instructionLevelPreference === option.value
-                      ? 'border-primary bg-primary/10 text-primary'
-                      : 'border-border bg-background text-muted-foreground hover:bg-muted/40'
-                  )}
-                >
-                  <RadioGroupItem
-                    value={option.value}
-                    id={`kickoff-instruction-${option.value}`}
-                    className="sr-only"
-                  />
-                  {option.label}
-                </Label>
-              ))}
-            </RadioGroup>
-            <p className="text-xs text-muted-foreground">
-              {
-                INSTRUCTION_LEVEL_OPTIONS.find(
-                  (o) => o.value === projectForm.instructionLevelPreference,
-                )?.preview
-              }
-            </p>
-          </div>
-
-          <div className="space-y-3 rounded-lg border bg-card p-3">
             <p className="text-sm font-medium leading-none">Quality goal</p>
             <RadioGroup
               value={projectForm.initialQualityGoal}
@@ -1150,16 +1125,27 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
                 </Label>
               ))}
             </RadioGroup>
-            <QualityGoalImpactPanel
-              draftGoal={projectForm.initialQualityGoal}
-              hostProjectId={currentProjectRun?.projectId}
-              projectRunId={currentProjectRun?.id}
-              phases={
-                (Array.isArray(currentProjectRun?.phases)
-                  ? currentProjectRun?.phases
-                  : []) as Phase[]
-              }
-            />
+            {QUALITY_GOAL_OPTIONS.some((option) => kickoffSummaries[option.value]) ? (
+              <ul className="space-y-1.5 text-xs text-muted-foreground">
+                {QUALITY_GOAL_OPTIONS.map((option) => {
+                  const summary = kickoffSummaries[option.value];
+                  if (!summary) return null;
+                  return (
+                    <li
+                      key={option.value}
+                      className={cn(
+                        'leading-snug',
+                        projectForm.initialQualityGoal === option.value &&
+                          'font-medium text-foreground',
+                      )}
+                    >
+                      <span className="font-medium">{option.label}: </span>
+                      {summary}
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : null}
           </div>
         </CardContent>
       </Card>

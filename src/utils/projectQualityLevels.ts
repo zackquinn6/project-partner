@@ -6,6 +6,8 @@ export type ProjectQualityLevelRow = {
   id: string;
   project_id: string;
   quality_level: QualityGoal;
+  /** Short kickoff Goals blurb; null when not authored yet. */
+  kickoff_summary: string | null;
   outcome_summary: string;
   process_summary: string;
   vs_lower_summary: string | null;
@@ -77,7 +79,7 @@ async function loadBundlesFromRunSnapshot(
   const { data, error } = await supabase
     .from('project_run_quality_levels')
     .select(
-      'id, source_project_id, source_project_name, quality_level, outcome_summary, process_summary, vs_lower_summary, example_image_urls',
+      'id, source_project_id, source_project_name, quality_level, kickoff_summary, outcome_summary, process_summary, vs_lower_summary, example_image_urls',
     )
     .eq('project_run_id', projectRunId);
 
@@ -102,6 +104,10 @@ async function loadBundlesFromRunSnapshot(
       id: row.id,
       project_id: row.source_project_id,
       quality_level: qualityLevel,
+      kickoff_summary:
+        typeof row.kickoff_summary === 'string' && row.kickoff_summary.trim()
+          ? row.kickoff_summary.trim()
+          : null,
       outcome_summary: row.outcome_summary,
       process_summary: row.process_summary,
       vs_lower_summary: row.vs_lower_summary,
@@ -148,7 +154,7 @@ export async function loadProjectQualityLevelBundles(
   const { data: levels, error: levelsError } = await supabase
     .from('project_quality_levels')
     .select(
-      'id, project_id, quality_level, outcome_summary, process_summary, vs_lower_summary, example_image_urls',
+      'id, project_id, quality_level, kickoff_summary, outcome_summary, process_summary, vs_lower_summary, example_image_urls',
     )
     .in('project_id', projectIds);
 
@@ -174,6 +180,10 @@ export async function loadProjectQualityLevelBundles(
       id: row.id,
       project_id: row.project_id,
       quality_level: qualityLevel,
+      kickoff_summary:
+        typeof row.kickoff_summary === 'string' && row.kickoff_summary.trim()
+          ? row.kickoff_summary.trim()
+          : null,
       outcome_summary: row.outcome_summary,
       process_summary: row.process_summary,
       vs_lower_summary: row.vs_lower_summary,
