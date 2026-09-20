@@ -314,7 +314,7 @@ export async function autoRegenerateSchedule(
     const result = schedulingEngine.computeSchedule(schedulingInputs);
     
     // Save the regenerated schedule
-    const scheduleEvents = {
+    const regeneratedScheduleEvents = {
       events: result.scheduledTasks.map(task => ({
         id: task.taskId,
         date: format(task.startTime, 'yyyy-MM-dd'),
@@ -331,13 +331,13 @@ export async function autoRegenerateSchedule(
       lastGeneratedAt: new Date().toISOString() // Store generation timestamp
     };
 
-    const finishAt = finishDateFromScheduleEventsBlob(scheduleEvents);
+    const finishAt = finishDateFromScheduleEventsBlob(regeneratedScheduleEvents);
     const firstScheduleFinishAt =
       projectRun.firstScheduleFinishAt ?? finishAt ?? undefined;
 
     const updatedProjectRun = {
       ...projectRun,
-      schedule_events: scheduleEvents,
+      schedule_events: regeneratedScheduleEvents,
       firstScheduleFinishAt,
       calendar_integration: {
         scheduledDays: result.scheduledTasks.reduce((acc, task) => {
@@ -366,7 +366,7 @@ export async function autoRegenerateSchedule(
     
     // Update project run in database
     const updatePayload: {
-      schedule_events: typeof scheduleEvents;
+      schedule_events: typeof regeneratedScheduleEvents;
       calendar_integration: typeof updatedProjectRun.calendar_integration;
       first_schedule_finish_at?: string;
     } = {
