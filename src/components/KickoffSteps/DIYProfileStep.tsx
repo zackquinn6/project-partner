@@ -22,6 +22,7 @@ import {
   DIYTraitEditDialog,
   type DIYTraitKind,
 } from '@/components/KickoffSteps/DIYTraitEditDialog';
+import { KeySkillAssessmentForm } from '@/components/KeySkillAssessmentForm';
 import {
   collectOwnedToolCoreIds,
   enrichOwnedToolsWithCatalogPhotos,
@@ -35,6 +36,8 @@ interface DIYProfileStepProps {
   onOutputToggle?: (outputId: string) => void;
   /** Notify kickoff shell to reload user_profiles for Project Match. */
   onProfileSaved?: () => void;
+  /** Template id for project-specific key skill refresh. */
+  templateProjectId?: string | null;
 }
 
 /** Project style labels (matches workshop My Profile). */
@@ -103,6 +106,7 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
   checkedOutputs = new Set(),
   onOutputToggle,
   onProfileSaved,
+  templateProjectId,
 }) => {
   const { user } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
@@ -468,6 +472,18 @@ export const DIYProfileStep: React.FC<DIYProfileStepProps> = ({
         </CardHeader>
         <CardContent className="flex flex-1 flex-col space-y-2 p-2 sm:space-y-3 sm:p-3">
           {renderProfileView()}
+
+          {user?.id && existingProfile && (
+            <div className="space-y-2 border-t pt-3">
+              <h3 className="text-sm font-semibold">Key skills for this project</h3>
+              <KeySkillAssessmentForm
+                userId={user.id}
+                templateProjectId={templateProjectId}
+                description="Refresh proficiency for skills this project uses. Unrated skills are treated as low for risk."
+                onSaved={() => onProfileSaved?.()}
+              />
+            </div>
+          )}
           
           {!isCompleted && !existingProfile && (
             <div className="text-center p-3 bg-muted/50 rounded-lg border border-muted">

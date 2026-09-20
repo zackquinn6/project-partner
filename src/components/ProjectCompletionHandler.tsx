@@ -3,6 +3,7 @@ import { useEnhancedAchievements } from '@/hooks/useEnhancedAchievements';
 import { useAuth } from '@/contexts/AuthContext';
 import { supabase } from '@/integrations/supabase/client';
 import { reevaluateProjectRunRiskLogic } from '@/utils/applyProjectRiskLogic';
+import { recordSkillExperienceForCompletedRun } from '@/utils/recordSkillExperience';
 
 interface ProjectCompletionHandlerProps {
   projectRunId?: string;
@@ -90,6 +91,18 @@ export function ProjectCompletionHandler({
           );
 
           await checkAndUnlockAchievements(projectRun);
+
+          if (projectRun.project_id) {
+            try {
+              await recordSkillExperienceForCompletedRun({
+                userId: user.id,
+                projectRunId,
+                templateProjectId: projectRun.project_id,
+              });
+            } catch (skillExpError) {
+              console.error('Skill experience update after completion failed:', skillExpError);
+            }
+          }
 
           // The run that just finished is now history. Re-evaluating here means the behavioral
           // signals it produced are folded in before the user starts anything else.

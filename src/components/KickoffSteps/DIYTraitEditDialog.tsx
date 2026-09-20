@@ -172,10 +172,21 @@ export function DIYTraitEditDialog({
     if (!user?.id || selected == null) return;
     setSaving(true);
     try {
+      const overallProficiency =
+        trait === 'skill'
+          ? selected === 'newbie'
+            ? 15
+            : selected === 'confident'
+              ? 50
+              : selected === 'hero'
+                ? 85
+                : null
+          : undefined;
       const { error } = await supabase.from('user_profiles').upsert(
         {
           user_id: user.id,
           [copy.column]: selected as PMFocus | string,
+          ...(overallProficiency !== undefined ? { overall_proficiency: overallProficiency } : {}),
           updated_at: new Date().toISOString(),
         },
         { onConflict: 'user_id' }

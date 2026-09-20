@@ -31,6 +31,7 @@ import {
   instructionLevelFromProfileSkill,
   type InstructionLevelPreference,
 } from '@/utils/instructionLevelFromProfile';
+import { ProjectVariationRiskFields } from '@/components/ProjectVariationRiskFields';
 
 const DEFAULT_INSTRUCTION_LEVEL: InstructionLevelPreference = 'intermediate';
 
@@ -1067,6 +1068,16 @@ export const ProjectProfileStep: React.FC<ProjectProfileStepProps> = ({ onComple
               </ul>
             ) : null}
           </div>
+
+          {user?.id && currentProjectRun?.id && (
+            <div className="space-y-2 border-t pt-3">
+              <h3 className="text-sm font-semibold">Project risk context</h3>
+              <ProjectVariationRiskFields
+                userId={user.id}
+                projectRunId={currentProjectRun.id}
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
 

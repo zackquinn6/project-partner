@@ -716,6 +716,7 @@ export const KickoffWorkflow: React.FC<KickoffWorkflowProps> = ({
         return (
           <DIYProfileStep
             {...stepProps}
+            templateProjectId={currentProjectRun?.projectId}
             onProfileSaved={() => setProfileReloadToken((t) => t + 1)}
           />
         );

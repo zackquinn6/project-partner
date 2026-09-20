@@ -38,6 +38,7 @@ import { PartnerAppToggles } from './PartnerAppToggles';
 import { AiFeatureToggles } from '@/components/admin/AiFeatureToggles';
 import { PublicSiteSettingsCard } from '@/components/admin/PublicSiteSettingsCard';
 import { AppManager } from './AppManager';
+import { ProjectSkillAssessmentsAdmin } from '@/components/ProjectSkillAssessmentsAdmin';
 import { Card as SettingCard, CardHeader as SettingCardHeader, CardTitle as SettingCardTitle, CardDescription as SettingCardDescription, CardContent as SettingCardContent } from '@/components/ui/card';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { Label as SettingLabel } from '@/components/ui/label';
@@ -316,11 +317,10 @@ export const AdminView: React.FC = () => {
       id: 'skill-assessments',
       requireFullAdmin: true,
       title: 'Project Skill Assessments',
-      description: 'Configure per-project-type skill checks and view how users rate themselves',
-      actionLabel: 'Learn more',
+      description: 'Manage the skill catalog and attach key skills to project templates',
+      actionLabel: 'Open',
       icon: GraduationCap,
       onOpen: () => setProjectSkillAssessmentsOpen(true),
-      comingSoon: true,
     },
   ];
 
@@ -494,26 +494,14 @@ export const AdminView: React.FC = () => {
         <AppManager open={appManagerOpen} onOpenChange={setAppManagerOpen} />
 
         <Dialog open={projectSkillAssessmentsOpen} onOpenChange={setProjectSkillAssessmentsOpen}>
-          <DialogContent className="sm:max-w-lg">
+          <DialogContent className="sm:max-w-2xl">
             <DialogHeader>
-              <DialogTitle className="flex flex-wrap items-center gap-2">
-                Project Skill Assessments
-                <Badge variant="secondary">Coming soon</Badge>
-              </DialogTitle>
+              <DialogTitle>Project Skill Assessments</DialogTitle>
               <DialogDescription className="sr-only">
-                Planned admin tools for project-specific user skill assessments.
+                Manage skill catalog and attach key skills to templates.
               </DialogDescription>
             </DialogHeader>
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              For each project type, you will be able to create assessments for users to determine their
-              skill levels - including experience, formal training, and technical knowledge. User responses
-              will map to beginner, intermediate, or advanced tiers per project template and will be stored
-              on their profile (in addition to their general DIY skill level). Until then, the product
-              defaults everyone to beginner for each project type.
-            </p>
-            <Button className="w-full" type="button" onClick={() => setProjectSkillAssessmentsOpen(false)}>
-              Close
-            </Button>
+            <ProjectSkillAssessmentsAdmin onClose={() => setProjectSkillAssessmentsOpen(false)} />
           </DialogContent>
         </Dialog>
 

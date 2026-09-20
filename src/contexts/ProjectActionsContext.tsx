@@ -1516,7 +1516,10 @@ export const ProjectActionsProvider: React.FC<ProjectActionsProviderProps> = ({ 
                     ? null
                     : JSON.stringify(mergeQualityControlSettings(preservedQualityControlSettings))
               }
-            : {})
+            : {}),
+          ...((projectRun as any).open_decision_count !== undefined
+            ? { open_decision_count: (projectRun as any).open_decision_count }
+            : {}),
         };
 
         const { error } = await supabase

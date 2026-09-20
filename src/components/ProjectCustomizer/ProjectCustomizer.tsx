@@ -1004,9 +1004,15 @@ export const ProjectCustomizer: React.FC<ProjectCustomizerProps> = ({
         completedTools.push('scope');
       }
 
+      const generalChoices = customizationState.generalProjectChoices ?? {};
+      const openDecisionCount = filteredGeneralProjectDecisions.filter(
+        (decision) => !Boolean(generalChoices[decision.id])
+      ).length;
+
       const updatedProjectRun = {
         ...currentProjectRun,
         phases: orderedPhases,
+        open_decision_count: openDecisionCount,
         customization_decisions: {
           ...existingDecisions,
           ...customizationState,

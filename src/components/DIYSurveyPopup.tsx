@@ -580,6 +580,14 @@ export default function DIYSurveyPopup({
             full_name: answers.fullName,
             nickname: answers.nickname,
             skill_level: answers.skillLevel,
+            overall_proficiency:
+              answers.skillLevel === 'newbie'
+                ? 15
+                : answers.skillLevel === 'confident'
+                  ? 50
+                  : answers.skillLevel === 'hero'
+                    ? 85
+                    : null,
             physical_capability: answers.physicalCapability,
             home_ownership: answers.homeOwnership,
             home_build_year: answers.homeBuildYear,

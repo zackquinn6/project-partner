@@ -1,8 +1,7 @@
 export type InstructionLevelPreference = 'beginner' | 'intermediate' | 'advanced';
 
 /**
- * Maps `user_profiles.skill_level` (survey / DIY profile) to workflow detail level.
- * Survey stores newbie | confident | hero; templates may use Beginner | Intermediate | Advanced.
+ * Maps profile skill (legacy text or overall proficiency 0-100) to workflow detail level.
  */
 export function instructionLevelFromProfileSkill(
   skillLevel: string | null | undefined
@@ -14,4 +13,13 @@ export function instructionLevelFromProfileSkill(
   if (s === 'confident' || s === 'intermediate') return 'intermediate';
   if (s === 'hero' || s === 'advanced') return 'advanced';
   return null;
+}
+
+export function instructionLevelFromProficiency(
+  proficiency: number | null | undefined
+): InstructionLevelPreference | null {
+  if (typeof proficiency !== 'number' || !Number.isFinite(proficiency)) return null;
+  if (proficiency < 35) return 'beginner';
+  if (proficiency < 65) return 'intermediate';
+  return 'advanced';
 }

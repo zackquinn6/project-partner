@@ -20,6 +20,13 @@ import {
 import { isTriageType, riskDimensionForTriageType } from '@/utils/reworkEngine';
 import { resolveTemplateFamily, type TemplateFamily } from '@/utils/templateFamilies';
 import type { RiskDimension } from '@/utils/riskDimensions';
+import {
+  ASSUMED_LOW_PROFICIENCY,
+  assumeAdverseBoolean,
+  assumeHighNumeric,
+  assumeLowNumeric,
+  legacySkillLevelToProficiency,
+} from '@/utils/skillAssumptions';
 
 export type RiskSignalGroup = 'profile' | 'tools' | 'environment' | 'behavior';
 
@@ -80,6 +87,184 @@ export const RISK_SIGNALS = {
     valueType: 'number',
     label: 'Marked this project type as one to avoid',
     description: '1 when the user flagged this project type as one they would rather avoid, 0 when they did not.',
+  },
+  'profile.overall_proficiency': {
+    group: 'profile',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Overall DIY proficiency',
+    description:
+      '0 to 100 overall proficiency. Missing values resolve as assumed low proficiency so incomplete assessment raises risk.',
+  },
+  'profile.key_skill_proficiency_min': {
+    group: 'profile',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Weakest key-skill proficiency for this project',
+    description:
+      'Minimum 0-100 proficiency across template key skills. Unrated skills count as assumed low.',
+  },
+  'profile.key_skill_proficiency_median': {
+    group: 'profile',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Median key-skill proficiency for this project',
+    description: 'Median 0-100 proficiency across template key skills, with unrated skills assumed low.',
+  },
+  'profile.key_skill_experience_hours': {
+    group: 'profile',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Key-skill experience hours for this project',
+    description: 'Total practiced hours across template key skills. Zero when none recorded.',
+  },
+  'profile.key_skill_proficiency_for_step': {
+    group: 'profile',
+    scope: 'step',
+    valueType: 'number',
+    label: 'Key-skill proficiency for this step',
+    description:
+      'Minimum proficiency among skills linked to the step (or template key skills if none). Unrated assumed low.',
+  },
+  'profile.key_skill_experience_hours_for_step': {
+    group: 'profile',
+    scope: 'step',
+    valueType: 'number',
+    label: 'Key-skill experience hours for this step',
+    description: 'Practiced hours for skills linked to the step.',
+  },
+  'environment.live_in_during_project': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Living in the home during the project',
+    description: '1 when occupied remodel, 0 when vacant. Unknown assumes occupied (higher risk).',
+  },
+  'environment.occupants_at_risk': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Occupants sensitive to dust or disruption',
+    description: '1 when kids, pets, or respiratory sensitivity apply. Unknown assumes yes.',
+  },
+  'environment.temporary_kitchen_bath': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Relying on temporary kitchen or bath',
+    description: '1 when temporary living systems are in use. Unknown assumes yes.',
+  },
+  'environment.dust_containment_planned': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Dust containment planned',
+    description: '1 when containment is planned, 0 when not. Unknown assumes not planned.',
+  },
+  'environment.concealed_conditions_likelihood': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Concealed conditions likelihood',
+    description: '0 to 10 discovery risk. Unknown assumes high (10).',
+  },
+  'environment.moisture_substrate_concern': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Moisture or substrate concern',
+    description: '1 when moisture/substrate is a concern. Unknown assumes yes.',
+  },
+  'environment.access_constrained': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Access constrained',
+    description: '1 when parking, haul path, or site access is constrained. Unknown assumes yes.',
+  },
+  'environment.permit_required': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Permit required',
+    description: '1 when a permit is required. Unknown assumes yes.',
+  },
+  'environment.outdoor_season_conflict': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Outdoor work conflicts with season',
+    description: '1 when outdoor work conflicts with weather/season. Unknown assumes conflict.',
+  },
+  'environment.inspection_lag_days': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Inspection lag days',
+    description: 'Expected inspection wait in days. Unknown assumes 14.',
+  },
+  'environment.contingency_percent': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Budget contingency percent',
+    description: '0 to 100 contingency set aside. Unknown assumes 0 (higher budget risk).',
+  },
+  'environment.finance_constraint': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Finance constraint',
+    description: '1 when cash/credit is constrained. Unknown assumes yes.',
+  },
+  'environment.long_lead_item_count': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Long-lead item count',
+    description: 'Count of long-lead materials. Unknown assumes 3.',
+  },
+  'environment.material_readiness_ratio': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Material readiness ratio',
+    description: '0 to 1 materials ready. Unknown assumes 0.',
+  },
+  'environment.helper_count': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Helper count',
+    description: 'Number of helpers. Unknown assumes 0 (solo).',
+  },
+  'environment.work_solo': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Working solo',
+    description: '1 when working alone. Unknown assumes yes.',
+  },
+  'environment.trade_lead_time_days': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Trade booking lead time days',
+    description: 'Days to book a needed trade. Unknown assumes 21.',
+  },
+  'environment.ppe_ventilation_ready': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'PPE and ventilation ready',
+    description: '1 when PPE/ventilation are ready, 0 when not. Unknown assumes not ready.',
+  },
+  'environment.open_decision_count': {
+    group: 'environment',
+    scope: 'run',
+    valueType: 'number',
+    label: 'Open micro-decision count',
+    description: 'Unresolved project decisions. Unknown assumes at least 1 when decisions exist.',
   },
   'tools.step_tool_count': {
     group: 'tools',
@@ -645,11 +830,15 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
     spacesResult,
     stepsResult,
     ownedTools,
+    keySkillsResult,
+    ratingsResult,
+    experienceResult,
+    stepSkillsResult,
   ] = await Promise.all([
     supabase
       .from('user_profiles')
       .select(
-        'skill_level, physical_capability, project_skills, avoid_projects, home_build_year, home_ownership'
+        'skill_level, overall_proficiency, physical_capability, project_skills, avoid_projects, home_build_year, home_ownership, live_in_during_project, occupants_at_risk, temporary_kitchen_bath, dust_containment_planned, helper_count, work_solo, contingency_percent, finance_constraint'
       )
       .eq('user_id', userId)
       .maybeSingle(),
@@ -666,7 +855,9 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
       .maybeSingle(),
     supabase
       .from('project_runs')
-      .select('schedule_events')
+      .select(
+        'schedule_events, concealed_conditions_likelihood, moisture_substrate_concern, access_constrained, permit_required, outdoor_season_conflict, inspection_lag_days, long_lead_item_count, material_readiness_ratio, open_decision_count, trade_lead_time_days, ppe_ventilation_ready, customization_decisions'
+      )
       .eq('id', projectRunId)
       .maybeSingle(),
     supabase
@@ -680,6 +871,22 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
           .in('id', [...operationStepIds])
       : Promise.resolve({ data: [], error: null }),
     loadUserOwnedTools(userId),
+    supabase
+      .from('project_key_skills')
+      .select('skill_id, display_order, required_for_kickoff')
+      .eq('project_id', templateProjectId)
+      .order('display_order', { ascending: true }),
+    supabase.from('user_skill_ratings').select('skill_id, proficiency, assumed_low').eq('user_id', userId),
+    supabase
+      .from('user_skill_experience')
+      .select('skill_id, experience_seconds')
+      .eq('user_id', userId),
+    operationStepIds.length > 0
+      ? supabase
+          .from('operation_step_skills')
+          .select('operation_step_id, skill_id')
+          .in('operation_step_id', [...operationStepIds])
+      : Promise.resolve({ data: [], error: null }),
   ]);
 
   for (const [label, result] of [
@@ -689,6 +896,10 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
     ['project_runs', runResult],
     ['project_run_spaces', spacesResult],
     ['operation_steps', stepsResult],
+    ['project_key_skills', keySkillsResult],
+    ['user_skill_ratings', ratingsResult],
+    ['user_skill_experience', experienceResult],
+    ['operation_step_skills', stepSkillsResult],
   ] as const) {
     if (result.error) {
       throw new Error(`Risk signal load failed reading ${label}: ${result.error.message}`);
@@ -759,6 +970,106 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
   );
   const behavior = await resolveBehaviorSignals(context, templateFamily);
 
+  const proficiencyBySkill = new Map<string, number>();
+  for (const row of ratingsResult.data ?? []) {
+    proficiencyBySkill.set(row.skill_id, row.proficiency);
+  }
+  const experienceSecondsBySkill = new Map<string, number>();
+  for (const row of experienceResult.data ?? []) {
+    experienceSecondsBySkill.set(row.skill_id, Number(row.experience_seconds) || 0);
+  }
+
+  const templateSkillIds = (keySkillsResult.data ?? []).map((row) => row.skill_id);
+  const templateProficiencies = templateSkillIds.map((skillId) =>
+    proficiencyBySkill.has(skillId)
+      ? proficiencyBySkill.get(skillId)!
+      : ASSUMED_LOW_PROFICIENCY
+  );
+  const templateExperienceHours =
+    templateSkillIds.reduce(
+      (sum, skillId) => sum + (experienceSecondsBySkill.get(skillId) ?? 0) / 3600,
+      0
+    );
+
+  const medianOf = (values: number[]): number => {
+    if (values.length === 0) return ASSUMED_LOW_PROFICIENCY;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 1 ? sorted[mid] : (sorted[mid - 1] + sorted[mid]) / 2;
+  };
+
+  const overallFromProfile =
+    firstNumber(profile?.overall_proficiency) ??
+    legacySkillLevelToProficiency(profile?.skill_level ?? null);
+
+  const stepSkillsByStep = new Map<string, string[]>();
+  for (const row of stepSkillsResult.data ?? []) {
+    const list = stepSkillsByStep.get(row.operation_step_id) ?? [];
+    list.push(row.skill_id);
+    stepSkillsByStep.set(row.operation_step_id, list);
+  }
+
+  const runRow = runResult.data;
+  const liveIn = assumeAdverseBoolean(profile?.live_in_during_project as boolean | null);
+  const occupants = assumeAdverseBoolean(profile?.occupants_at_risk as boolean | null);
+  const tempKitchen = assumeAdverseBoolean(profile?.temporary_kitchen_bath as boolean | null);
+  const dustContainmentReady =
+    profile?.dust_containment_planned === true
+      ? { value: 1, assumed: false }
+      : profile?.dust_containment_planned === false
+        ? { value: 0, assumed: false }
+        : { value: 0, assumed: true };
+
+  const concealed = assumeHighNumeric(
+    firstNumber(runRow?.concealed_conditions_likelihood),
+    10
+  );
+  const moisture = assumeAdverseBoolean(runRow?.moisture_substrate_concern as boolean | null);
+  const access = assumeAdverseBoolean(runRow?.access_constrained as boolean | null);
+  const permit = assumeAdverseBoolean(runRow?.permit_required as boolean | null);
+  const season = assumeAdverseBoolean(runRow?.outdoor_season_conflict as boolean | null);
+  const inspectionLag = assumeHighNumeric(firstNumber(runRow?.inspection_lag_days), 14);
+  const contingency = assumeLowNumeric(firstNumber(profile?.contingency_percent), 0);
+  const finance = assumeAdverseBoolean(profile?.finance_constraint as boolean | null);
+  const longLead = assumeHighNumeric(firstNumber(runRow?.long_lead_item_count), 3);
+  const materialReady = assumeLowNumeric(firstNumber(runRow?.material_readiness_ratio), 0);
+  const helperCount = assumeLowNumeric(firstNumber(profile?.helper_count), 0);
+  const workSolo =
+    profile?.work_solo === true || profile?.work_solo === false
+      ? { value: profile.work_solo ? 1 : 0, assumed: false }
+      : helperCount.value === 0
+        ? { value: 1, assumed: helperCount.assumed }
+        : { value: 0, assumed: false };
+  const tradeLead = assumeHighNumeric(firstNumber(runRow?.trade_lead_time_days), 21);
+  const ppeReady =
+    runRow?.ppe_ventilation_ready === true
+      ? { value: 1, assumed: false }
+      : runRow?.ppe_ventilation_ready === false
+        ? { value: 0, assumed: false }
+        : { value: 0, assumed: true };
+
+  const customization = runRow?.customization_decisions;
+  let openDecisionCount: RiskSignal;
+  if (typeof runRow?.open_decision_count === 'number' && Number.isFinite(runRow.open_decision_count)) {
+    openDecisionCount = resolved(runRow.open_decision_count);
+  } else if (
+    customization &&
+    typeof customization === 'object' &&
+    !Array.isArray(customization) &&
+    (customization as Record<string, unknown>).generalProjectChoices &&
+    typeof (customization as Record<string, unknown>).generalProjectChoices === 'object'
+  ) {
+    // Count is explicitly stored when available; otherwise unresolved decisions are unknown → assume at least one open if choices object exists empty of values.
+    const choices = (customization as Record<string, unknown>).generalProjectChoices as Record<
+      string,
+      unknown
+    >;
+    const answered = Object.values(choices).filter((v) => v !== null && v !== undefined && v !== '').length;
+    openDecisionCount = resolved(answered === 0 ? 1 : 0);
+  } else {
+    openDecisionCount = resolved(assumeHighNumeric(null, 1).value);
+  }
+
   const toolSignalsByStepId = new Map<string, Record<ToolStepSignalKey, RiskSignal>>();
   for (const step of stepsResult.data ?? []) {
     toolSignalsByStepId.set(step.id, stepToolSignals(parseStepTools(step.tools), ownedTools));
@@ -769,11 +1080,28 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
     const tools = toolSignalsByStepId.get(stepId);
     const stepBehavior = behavior.byStepId.get(stepId);
     if (!tools || !stepBehavior) {
-      // The step id does not exist, so there is nothing to say about it. Leaving it out means
-      // rules that target it record no_step_context rather than reading an invented value.
       continue;
     }
-    byStepId[stepId] = { ...tools, ...stepBehavior };
+    const linkedSkills = stepSkillsByStep.get(stepId) ?? templateSkillIds;
+    const stepProficiencies = linkedSkills.map((skillId) =>
+      proficiencyBySkill.has(skillId)
+        ? proficiencyBySkill.get(skillId)!
+        : ASSUMED_LOW_PROFICIENCY
+    );
+    const stepExperienceHours = linkedSkills.reduce(
+      (sum, skillId) => sum + (experienceSecondsBySkill.get(skillId) ?? 0) / 3600,
+      0
+    );
+    byStepId[stepId] = {
+      ...tools,
+      ...stepBehavior,
+      'profile.key_skill_proficiency_for_step': resolved(
+        stepProficiencies.length === 0
+          ? ASSUMED_LOW_PROFICIENCY
+          : Math.min(...stepProficiencies)
+      ),
+      'profile.key_skill_experience_hours_for_step': resolved(stepExperienceHours),
+    };
   }
 
   return {
@@ -787,6 +1115,16 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
       'profile.physical_capability': textSignal(profile?.physical_capability, profileMissing),
       'profile.project_type_skill_rating': projectTypeSkillRating,
       'profile.avoids_project_type': avoidsProjectType,
+      'profile.overall_proficiency': resolved(
+        overallFromProfile === null ? ASSUMED_LOW_PROFICIENCY : overallFromProfile
+      ),
+      'profile.key_skill_proficiency_min': resolved(
+        templateProficiencies.length === 0
+          ? ASSUMED_LOW_PROFICIENCY
+          : Math.min(...templateProficiencies)
+      ),
+      'profile.key_skill_proficiency_median': resolved(medianOf(templateProficiencies)),
+      'profile.key_skill_experience_hours': resolved(templateExperienceHours),
       'environment.home_build_year':
         buildYear === null ? unresolved(profileMissing) : resolved(buildYear),
       'environment.home_ownership': textSignal(profile?.home_ownership, profileMissing),
@@ -795,6 +1133,25 @@ export async function resolveRiskSignals(context: RiskSignalContext): Promise<Ri
       'environment.largest_space_scale_value':
         spaceScales.length === 0 ? unresolved('not_recorded') : resolved(Math.max(...spaceScales)),
       'environment.schedule_tempo': textSignal(scheduleTempoRaw, 'not_recorded'),
+      'environment.live_in_during_project': resolved(liveIn.value ? 1 : 0),
+      'environment.occupants_at_risk': resolved(occupants.value ? 1 : 0),
+      'environment.temporary_kitchen_bath': resolved(tempKitchen.value ? 1 : 0),
+      'environment.dust_containment_planned': resolved(dustContainmentReady.value),
+      'environment.concealed_conditions_likelihood': resolved(concealed.value),
+      'environment.moisture_substrate_concern': resolved(moisture.value ? 1 : 0),
+      'environment.access_constrained': resolved(access.value ? 1 : 0),
+      'environment.permit_required': resolved(permit.value ? 1 : 0),
+      'environment.outdoor_season_conflict': resolved(season.value ? 1 : 0),
+      'environment.inspection_lag_days': resolved(inspectionLag.value),
+      'environment.contingency_percent': resolved(contingency.value),
+      'environment.finance_constraint': resolved(finance.value ? 1 : 0),
+      'environment.long_lead_item_count': resolved(longLead.value),
+      'environment.material_readiness_ratio': resolved(materialReady.value),
+      'environment.helper_count': resolved(helperCount.value),
+      'environment.work_solo': resolved(workSolo.value),
+      'environment.trade_lead_time_days': resolved(tradeLead.value),
+      'environment.ppe_ventilation_ready': resolved(ppeReady.value),
+      'environment.open_decision_count': openDecisionCount,
     },
     byStepId,
   };

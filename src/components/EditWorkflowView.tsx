@@ -28,6 +28,7 @@ import { CompactMaterialsTable } from '@/components/CompactMaterialsTable';
 import { CompactProcessVariablesTable } from '@/components/CompactProcessVariablesTable';
 import { CompactOutputsTable } from '@/components/CompactOutputsTable';
 import { CompactTimeEstimation, CompactTimeEstimationReadOnly } from '@/components/CompactTimeEstimation';
+import { OperationStepSkillsEditor } from '@/components/OperationStepSkillsEditor';
 import { CompactPpeTable } from '@/components/CompactPpeTable';
 import { CompactAppsSection } from '@/components/CompactAppsSection';
 import { AppsLibraryDialog } from '@/components/AppsLibraryDialog';
@@ -2693,6 +2694,9 @@ export default function EditWorkflowView({
                       onWorkersChange={workersNeeded => updateEditingStep('workersNeeded', workersNeeded)}
                       onSkillLevelChange={skillLevel => updateEditingStep('skillLevel', skillLevel)}
                     />
+                    {editingStep.id && !String(editingStep.id).startsWith('temp') && (
+                      <OperationStepSkillsEditor operationStepId={editingStep.id} />
+                    )}
                   </CardContent>
                 </Card>
 

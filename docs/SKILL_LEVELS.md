@@ -1,117 +1,91 @@
-# Skill Level System Documentation
+# Skill and experience system
 
-This document clarifies the three separate skill level systems in the application.
+This document describes how proficiency (skill) and experience work for personalization, kickoff matching, and the risk engine.
 
-## Overview
+**Skill = proficiency (0-100).** How well the person can perform a capability.  
+**Experience = time practiced.** Seconds/hours and completion counts for that capability.  
+They are related but not the same: someone can have low skill and rising experience, or high skill with little recent practice.
 
-There are **three distinct skill level variables** that serve different purposes:
-
-1. **User Skill Level** (from "Build Your Profile")
-2. **Project Overall Skill Level** 
-3. **Step Skill Level**
-
-All three are stored in **relational database tables** (not JSON).
+For risk evaluation mechanics, see [`RISK_ENGINE.md`](RISK_ENGINE.md). For product thesis, see [`APP_THESIS_AND_GOALS.md`](APP_THESIS_AND_GOALS.md).
 
 ---
 
-## 1. User Skill Level
+## Layers
 
-**Purpose**: Represents the user's overall DIY experience level from their profile.
+### 1. Baseline skill catalog (`skill_definitions`)
 
-**Storage**: `profiles.skill_level` (TEXT column)
+Shared DIY capabilities authors attach to projects (seeded baseline, admin-extensible). Examples: site prep and protection, layout and measuring, mixing materials, cutting, waterproofing, finish work, ladder work, QC checks.
 
-**Options** (3):
-- `'newbie'` - Beginner user
-- `'confident'` - Intermediate user  
-- `'hero'` - Advanced user
+Skills are **content-correlated** (what the project asks the person to do). They are **not** owned by PFMEA. PFMEA and the risk register may **read** proficiency/experience through risk signals and rules.
 
-**Source**: Set during the DIY survey/profile creation ("Build Your Profile")
+### 2. Template key skills (`project_key_skills`)
 
-**Constraint**: `CHECK (skill_level IS NULL OR skill_level IN ('newbie', 'confident', 'hero'))`
+Authors select which catalog skills matter for a project template, order them, and mark which are required at kickoff assessment.
 
-**Usage**: Used for personalization, recommendations, and matching users to appropriate projects.
+### 3. Step skill links (`operation_step_skills`) optional
 
----
+A step may require one or more key skills (primary/secondary) with an optional minimum proficiency hint for authors. This does not replace `operation_steps.skill_level` band labels used for instruction detail until those bands are fully derived from proficiency.
 
-## 2. Project Overall Skill Level
+### 4. User proficiency (`user_skill_ratings`)
 
-**Purpose**: Represents the overall skill level required for the entire project template.
+Per user, per skill: proficiency 0-100, source (`assessment` | `inferred` | `achievement` | `assumed_low`).
 
-**Storage**: `projects.skill_level` (TEXT column)
+### 5. User experience (`user_skill_experience`)
 
-**Options** (4):
-- `'Beginner'` - Beginner skill level required
-- `'Intermediate'` - Intermediate skill level required
-- `'Advanced'` - Advanced skill level required
-- `'Professional'` - Professional contractor level required
+Per user, per skill: `experience_seconds`, `completion_count`, `last_practiced_at`. Updated from completed work and practiced time.
 
-**Source**: Set by admin when creating/editing project templates in Project Management
+### 6. Overall proficiency (`user_profiles.overall_proficiency`)
 
-**Constraint**: `CHECK (skill_level IS NULL OR skill_level IN ('Beginner', 'Intermediate', 'Advanced', 'Professional'))`
+Single 0-100 DIY overall, **project-dependent in interpretation** when combined with template key skills. Migrated from legacy `skill_level` text:
 
-**Usage**: 
-- Default value for all steps when creating a new project run
-- Used for project filtering and recommendations
-- Displayed in project catalog and project information
+| Legacy `skill_level` | Mapped overall proficiency |
+|----------------------|----------------------------|
+| `newbie` | 15 |
+| `confident` | 50 |
+| `hero` | 85 |
+
+UI may still show band labels derived from ranges; the store of record for risk is 0-100.
 
 ---
 
-## 3. Step Skill Level
+## Legacy systems (still present)
 
-**Purpose**: Represents the skill level required for a specific workflow step.
+Until fully retired from matching UI:
 
-**Storage**: `template_steps.skill_level` (TEXT column)
-
-**Options** (4):
-- `'Beginner'` - Beginner skill level required for this step
-- `'Intermediate'` - Intermediate skill level required for this step
-- `'Advanced'` - Advanced skill level required for this step
-- `'Professional'` - Professional contractor level required for this step
-
-**Source**: 
-- Defaults to project skill level when creating project runs
-- Can be individually set per step in Edit Workflow / Step Editor
-
-**Constraint**: `CHECK (skill_level IS NULL OR skill_level IN ('Beginner', 'Intermediate', 'Advanced', 'Professional'))`
-
-**Usage**:
-- Allows different steps within the same project to have different skill requirements
-- Used for step-level filtering and recommendations
-- Can override project default on a per-step basis
+| System | Storage | Role going forward |
+|--------|---------|-------------------|
+| Profile text skill | `user_profiles.skill_level` (`newbie` / `confident` / `hero`) | Legacy; prefer `overall_proficiency` |
+| Broad project buckets | `user_profiles.project_skills` JSON | Migrated into `user_skill_ratings` where names map |
+| Per-template text | `user_project_skill_levels.skill_level` | Prefer key-skill ratings for the template’s skills |
+| Project band | `projects.skill_level` (Beginner…Professional) | Catalog / instruction default band |
+| Step band | `operation_steps.skill_level` | Instruction detail; optional key-skill links added beside it |
 
 ---
 
-## Key Differences
+## Assessment UX
 
-| Aspect | User Skill Level | Project Skill Level | Step Skill Level |
-|--------|-----------------|-------------------|------------------|
-| **Options** | 3 (newbie, confident, hero) | 4 (Beginner, Intermediate, Advanced, Professional) | 4 (Beginner, Intermediate, Advanced, Professional) |
-| **Table** | `profiles` | `projects` | `template_steps` |
-| **Set By** | User (DIY survey) | Admin (project template) | Admin (step editor) or defaults to project |
-| **Scope** | User profile | Entire project | Individual step |
-| **Purpose** | User personalization | Project requirements | Step-specific requirements |
+1. **Profile / skill assessment questionnaire** - rate relevant skills 0-100; see experience separately.
+2. **Run kickoff refresh** - confirm or update skills attached to the chosen template before risk re-evaluation.
+3. **Admin Project Skill Assessments** - manage catalog and attach skills to templates/steps (replaces coming-soon placeholder).
 
 ---
 
-## Default Behavior
+## Risk engine policy
 
-When creating a new project run:
-1. All steps default to the **project skill level** if step skill level is not set
-2. If a step has an explicit skill level set, it uses that instead
-3. User skill level is **never** used as a default for projects or steps
-
----
-
-## Code References
-
-- **User Skill Level**: `profiles.skill_level`, values: `'newbie'`, `'confident'`, `'hero'`
-- **Project Skill Level**: `projects.skill_level`, values: `'Beginner'`, `'Intermediate'`, `'Advanced'`, `'Professional'`
-- **Step Skill Level**: `template_steps.skill_level`, values: `'Beginner'`, `'Intermediate'`, `'Advanced'`, `'Professional'`
+- New signals (Phase 1): overall proficiency, key-skill proficiency aggregates (min/median/for-step), experience hours aggregates.
+- **Missing proficiency = assumed low skill** → higher occurrence risk; audit records `assumed_low_skill`.
+- Incomplete information does not mean “skip personalization”; it means a **more conservative** risk picture.
+- Severity is never adjusted by skill or experience.
 
 ---
 
-## Migration History
+## Achievements and completions
 
-- `20251120230000_add_skill_level_to_template_steps.sql` - Added step skill level column
-- `20251120231000_add_skill_level_constraints.sql` - Added CHECK constraints for all three skill levels
+Completing project runs and practiced step time increases **experience** on the skills linked to that work. Proficiency does not jump to “expert” from a single completion; any proficiency nudge from achievements must be calibrated and sourced as `achievement`.
 
+---
+
+## Migration history
+
+- Legacy constraints: `20251120230000_add_skill_level_to_template_steps.sql`, `20251120231000_add_skill_level_constraints.sql`
+- Key-skill catalog and ratings: `20260920010000_skill_definitions_and_ratings.sql` (Phase 1)

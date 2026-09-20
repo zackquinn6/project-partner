@@ -248,9 +248,15 @@ contains a threshold or a verdict, so all judgment lives in rule data. There is 
 for an ad hoc signal.
 
 A signal that cannot be resolved is reported unresolved with a reason, never averaged,
-defaulted, or guessed. Reasons: no profile row, not recorded, no match, no step context, not
+defaulted, or guessed - **except** proficiency/experience signals under the Phase 1 policy
+below. Reasons: no profile row, not recorded, no match, no step context, not
 applicable, no history. A rule reading an unresolved signal does not fire, and the skip is
 recorded.
+
+**Phase 1 skill/experience exception:** missing key-skill proficiency resolves as
+**assumed low proficiency** (audited as `assumed_low_skill`) so incomplete assessment raises
+risk rather than silently skipping personalization. Do not invent high skill. See
+`docs/SKILL_LEVELS.md`.
 
 | Signal | Scope | Type |
 | --- | --- | --- |
@@ -259,6 +265,12 @@ recorded.
 | `profile.physical_capability` | run | text |
 | `profile.project_type_skill_rating` | run | number |
 | `profile.avoids_project_type` | run | number |
+| `profile.overall_proficiency` | run | number |
+| `profile.key_skill_proficiency_min` | run | number |
+| `profile.key_skill_proficiency_median` | run | number |
+| `profile.key_skill_experience_hours` | run | number |
+| `profile.key_skill_proficiency_for_step` | step | number |
+| `profile.key_skill_experience_hours_for_step` | step | number |
 | `tools.step_tool_count` | step | number |
 | `tools.step_tools_owned_count` | step | number |
 | `tools.step_tools_missing_count` | step | number |
@@ -269,6 +281,25 @@ recorded.
 | `environment.space_count` | run | number |
 | `environment.largest_space_scale_value` | run | number |
 | `environment.schedule_tempo` | run | text |
+| `environment.live_in_during_project` | run | number |
+| `environment.occupants_at_risk` | run | number |
+| `environment.temporary_kitchen_bath` | run | number |
+| `environment.dust_containment_planned` | run | number |
+| `environment.concealed_conditions_likelihood` | run | number |
+| `environment.moisture_substrate_concern` | run | number |
+| `environment.access_constrained` | run | number |
+| `environment.permit_required` | run | number |
+| `environment.outdoor_season_conflict` | run | number |
+| `environment.inspection_lag_days` | run | number |
+| `environment.contingency_percent` | run | number |
+| `environment.finance_constraint` | run | number |
+| `environment.long_lead_item_count` | run | number |
+| `environment.material_readiness_ratio` | run | number |
+| `environment.helper_count` | run | number |
+| `environment.work_solo` | run | number |
+| `environment.trade_lead_time_days` | run | number |
+| `environment.ppe_ventilation_ready` | run | number |
+| `environment.open_decision_count` | run | number |
 | `behavior.family_rework_count` | run | number |
 | `behavior.family_rework_count_quality` | run | number |
 | `behavior.family_rework_count_safety` | run | number |
@@ -282,10 +313,15 @@ recorded.
 | `behavior.step_stall_count` | step | number |
 | `behavior.step_pace_ratio_median` | step | number |
 
+`profile.overall_proficiency` and the `profile.key_skill_*` signals are Phase 1 additions
+backed by `skill_definitions`, `project_key_skills`, `operation_step_skills`,
+`user_skill_ratings`, and `user_skill_experience`. Legacy text skill signals remain until
+callers finish migrating.
+
 Sources: `user_profiles` and `user_project_skill_levels` for profile, `user_tools` matched
 against step tool lists for tools, `user_profiles` plus `home_risks` plus `project_run_spaces`
 plus `project_runs.schedule_events` for environment, and `rework_events` plus `stuck_events`
-plus `user_projects_runtime` for behavior.
+plus `user_projects_runtime` for behavior. Key-skill tables above for proficiency/experience.
 
 Two details that matter:
 

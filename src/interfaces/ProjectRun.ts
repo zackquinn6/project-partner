@@ -53,6 +53,8 @@ export interface ProjectRun {
   effortLevel?: Project['effortLevel'];
   skillLevel?: Project['skillLevel'];
   estimatedTime?: string;
+  /** Unanswered micro-decisions count for risk personalization. */
+  open_decision_count?: number | null;
   
   // Budget tracking data
   budget_data?: {

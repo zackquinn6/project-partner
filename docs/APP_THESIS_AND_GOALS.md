@@ -123,6 +123,90 @@ When a user starts a run, three layers apply in order:
 
 That applied list is what surfaces in Risk Radar, planning walkthroughs, and inline on the active step. Key Characteristics are the shorter register: the specific items where **this user’s attention** decides the outcome. That is the technical expression of “execute the critical few.”
 
+**Severity is never personalized.** Rules may move occurrence and detection only (or include/exclude an item).
+
+### Factors that adjust a user’s risk profile (as-built signals)
+
+Closed vocabulary in `src/utils/riskSignals.ts`. A signal is a raw fact; judgment lives in `project_risk_rules`. Effects: `adjust_occurrence`, `adjust_detection`, `include`, `exclude`.
+
+#### Profile (run)
+
+| Signal | Measures |
+|--------|----------|
+| `profile.project_skill_level` | Skill level set for this template (legacy text; migrating to key-skill proficiency) |
+| `profile.overall_skill_level` | Overall self-rated skill (legacy text; migrating to `overall_proficiency` 0-100) |
+| `profile.physical_capability` | Lifting / exertion level |
+| `profile.project_type_skill_rating` | 0-100 rating for this project type (legacy broad buckets) |
+| `profile.avoids_project_type` | 1 if user flagged this type to avoid, else 0 |
+
+#### Tools (step)
+
+| Signal | Measures |
+|--------|----------|
+| `tools.step_tool_count` | Tools the step lists |
+| `tools.step_tools_owned_count` | Owned or covered by alternate |
+| `tools.step_tools_missing_count` | Missing from inventory |
+| `tools.step_tools_owned_ratio` | Owned share (0-1) |
+
+#### Environment (run)
+
+| Signal | Measures |
+|--------|----------|
+| `environment.home_build_year` | Year home built |
+| `environment.home_ownership` | Own vs rent |
+| `environment.home_material_risk_count` | Hazardous-era materials overlapping build year |
+| `environment.space_count` | Spaces on this run |
+| `environment.largest_space_scale_value` | Largest space scale |
+| `environment.schedule_tempo` | `fast_track` / `steady` / `extended` |
+
+#### Behavior (run + step)
+
+| Signal | Scope | Measures |
+|--------|-------|----------|
+| `behavior.family_rework_count` | run | Past problems in this template family |
+| `behavior.family_rework_count_quality` | run | Quality-dimension rework |
+| `behavior.family_rework_count_safety` | run | Safety rework |
+| `behavior.family_rework_count_schedule` | run | Schedule rework |
+| `behavior.family_rework_count_budget` | run | Budget rework |
+| `behavior.family_stall_count` | run | Stuck events in family |
+| `behavior.family_median_unstick_seconds` | run | Median time to unstick |
+| `behavior.completed_step_count` | run | Steps started and finished in app |
+| `behavior.pace_ratio_median` | run | Median actual/estimate time |
+| `behavior.step_rework_count` | step | Prior problems on this step |
+| `behavior.step_stall_count` | step | Prior stalls on this step |
+| `behavior.step_pace_ratio_median` | step | Pace on this exact step |
+
+**Total today: 28 signals.** Behavioral family counts stay unresolved until the user has history (absence of evidence is not evidence of low risk).
+
+### Key skill and experience model (Phase 1)
+
+Coarse “medium DIY = medium tile project” matching is not useful. Projects are broken into **key skills** authors attach from a baseline catalog (content-correlated; not owned by PFMEA). PFMEA and the risk register **consume** skill data through rules.
+
+| Concept | Meaning | Scale |
+|---------|---------|-------|
+| **Skill (proficiency)** | How well the person can perform the skill | 0-100 |
+| **Experience** | Time spent practicing the skill | seconds / hours + completion counts |
+
+- Template authors select key skills; steps may optionally require specific skills.
+- Users rate proficiency via assessment questionnaire and refresh at run kickoff.
+- Completions and practiced time drive **experience**; proficiency stays assessment-led unless evidence supports a calibrated nudge.
+- Legacy 3-tier profile labels (`newbie` / `confident` / `hero`) migrate to overall proficiency bands; catalog matching can still show bands derived from 0-100.
+
+**Missing-data policy (skill/experience and other variation factors):** incomplete information means **higher risk**. Unrated key skills resolve as **assumed low proficiency** (audited as `assumed_low_skill`), not as “rule skipped.” Do not invent high skill. Severity still never moves.
+
+### Ideal risk-factor inventory (phased)
+
+| Group | Status | Phase |
+|-------|--------|-------|
+| Key skill proficiency + experience | Implemented | 1 |
+| Occupied living + site/discovery | Implemented | 2 |
+| Schedule dependencies, weather/season, permits | Implemented (tempo + variation fields) | 3 |
+| Budget, contingency, supply/lead times | Implemented | 4 |
+| Helpers/trades, richer tools, safety environment | Implemented (ownership + helpers/PPE signals) | 5 |
+| Scope / micro-decision completeness | Implemented (`open_decision_count`) | 6 |
+| In-run behavior (rework/stall/pace) | Have | - |
+| House era / ownership / materials count | Have | - |
+
 ---
 
 ## How to use this document
@@ -138,4 +222,4 @@ If the answer is weak on all four, it is probably not thesis-aligned.
 
 ---
 
-*Created: September 2026. Updated with risk-engine summary. Revise when positioning, tiers, or primary project domains change.*
+*Created: September 2026. Updated with risk-engine summary, signal inventory, key-skill model, and ideal-factor phases. Revise when positioning, tiers, or primary project domains change.*
