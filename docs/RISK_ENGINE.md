@@ -193,6 +193,12 @@ reordering an output no longer silently repoints a failure mode at a different r
 `src/utils/pfmeaRequirementSync.ts` reconciles requirements with outputs and flags orphans
 rather than deleting them.
 
+A requirement is a measurable limit that can fail. A failure mode is that limit stated as the
+anti-requirement (what went wrong), not a vague process narrative. Example: requirement
+"substrate flatness <=1/8 in in 10 ft for LFT"; failure mode "substrate variation exceeds
+1/8 in in 10 ft under a straightedge". Causes hold why it happened; effects hold what the
+user lives with afterward.
+
 Roll-up per failure mode, all in `src/utils/pfmeaRiskMetrics.ts`:
 
 - **Severity** is the highest severity among the failure mode's effects. Worst consequence
@@ -586,13 +592,44 @@ owner of the run through `project_runs.user_id`. Read access for run assembly is
 `can_caller_read_template_risk_authoring`, which is granted to `authenticated` (unlike
 `can_caller_edit_project`, whose EXECUTE is revoked from members).
 
+## 9a. Tile Flooring reliability content
+
+Migration `20260920100000_tile_reliability_content_bundle` seeds Tile Flooring Installation (and
+companion branch packs) so quality, schedule, and budget intents can be personalized.
+
+**Quality (PFMEA).** Core Prep/Install/Finish steps carry requirements that are measurable
+limits, with failure modes written as anti-requirements (the limit stated as what went wrong).
+Example: requirement substrate flatness `<=1/8 in in 10 ft` (LFT); failure mode substrate
+variation exceeds that straightedge limit. Membrane and backer paths have distinct FMs.
+Professional clip/final FMs were rewritten to the same anti-requirement form.
+
+**Register (safety / schedule / budget).** Concrete-cause rows on cut, inspect, layout, set,
+and grout steps (silica, PPE, solo handling, cure-before-grout, missing wet saw, open
+decisions, moisture discovery, self-leveler overrun, cut waste). Expired thinset remains.
+
+**Skills.** `project_key_skills` and `operation_step_skills` attach the baseline catalog
+(substrate-flatness, mixing-materials, cutting, layout, finish, waterproofing, heavy lifting,
+inspection, site-prep) so assumed-low and kickoff ratings resolve.
+
+**Rules.** Seeded `project_risk_rules` adjust occurrence from key-skill proficiency, moisture /
+concealed conditions, PPE, dust + live-in, solo work, missing tools, open decisions, and low
+contingency. Branch-trigger risks include when flatness/moisture or fixture adjacency says a
+companion project is required.
+
+**Branches.** Membrane vs backer FMs are authored separately; both appear on a run until a path
+signal exists (documented in the branch migration NOTICE). Companion templates Self-Leveler
+Application, Toilet Replacement, Baseboard & Trim Replacement, and Apply Caulking get register
+risks when those projects exist; tile mitigations name those companions.
+
+Apply those migrations before expecting Radar personalization on Tile runs.
+
 ## 9. Gaps and known problems
 
 Things this document would otherwise imply exist.
 
-**No rules are seeded.** `project_risk_rules` ships empty. Every mechanism in Stage 2 is
-wired, but until an author writes rules, personalization is a no-op and applied scores equal
-template scores. The engine is real; the content is not there yet.
+**Rules are not seeded for every template.** Stage 2 is wired globally. Tile Flooring
+Installation now has seeded `project_risk_rules` (see §9a). Other catalog templates still ship
+without rules, so personalization there remains a no-op until authored.
 
 **Foundation risks are not part of the four-component system.** They reach the run and appear
 in Risk Radar, but Stage 1 loading only reads `project_risks` for the template root. Foundation
@@ -628,10 +665,10 @@ tell a real 5 from a defaulted one in existing data.
 problems contradict authored occurrence, and stops there. Nothing feeds observed frequency back
 into an occurrence score automatically, by design for now, since the sample per step is small.
 
-**No classifications are authored yet.** The KC columns ship nullable with no backfill, so until
-an author sets occurrence drivers, every run's KC register is empty and the Priorities window
-shows nothing. The authoring surfaces report the count of unclassified causes and risks, which
-is the number to work down.
+**Classifications are sparse outside Tile.** KC columns ship nullable. Tile reliability PFMEA
+causes and register risks set `occurrence_driver` / prevention strength so those lines can
+enter the KC register. Other templates may still leave drivers unclassified, which empties
+Priorities for those runs. The authoring surfaces report unclassified counts to work down.
 
 **The KC urgency test reads the failure mode, not the cause.** Stage 2 moves one occurrence per
 item, and an item is a failure mode, so the applied Action Priority belongs to the failure mode
