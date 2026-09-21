@@ -2,6 +2,11 @@
 -- Consolidates Phase 1-5: core PFMEA (anti-requirement FMs), register risks,
 -- key skills, personalization rules, and branch/companion packs.
 -- ASCII only. Apply after skill_definitions and prior tile quality/PFMEA migrations.
+-- Live owned step titles (Prepare subfloor / Install / Grout & Finish) - not the older docs names:
+-- Spread mortar for membrane, Embed membrane and detail seams, Cut and fit backer panels,
+-- Fasten backer to subfloor, Tape or mesh seams and embed, Layout and reference lines,
+-- Cut tiles to layout, Spread mortar and verify coverage, Set tile beat-in and check plane,
+-- Cure thinset before grouting, Pack grout and initial clean.
 
 -- ==== BEGIN 20260920100000_tile_reliability_core_pfmea.sql ====
 -- Tile reliability Phase 1: core Prep/Install/Finish PFMEA (anti-requirement FMs).
@@ -102,6 +107,10 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
     AND lower(btrim(os.step_title)) = 'clean and inspect subfloor'
   LIMIT 1;
 
@@ -110,7 +119,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply thinset for membrane'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'spread mortar for membrane'
   LIMIT 1;
 
   SELECT os.id INTO v_step_membrane
@@ -118,7 +131,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'install uncoupling membrane'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'embed membrane and detail seams'
   LIMIT 1;
 
   SELECT os.id INTO v_step_cut_backer
@@ -126,7 +143,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'cut backer board to size'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'cut and fit backer panels'
   LIMIT 1;
 
   SELECT os.id INTO v_step_fasten_backer
@@ -134,7 +155,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'fasten backer board to subfloor'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'fasten backer to subfloor'
   LIMIT 1;
 
   SELECT os.id INTO v_step_tape_backer
@@ -142,7 +167,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'tape and seal seams'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'tape or mesh seams and embed'
   LIMIT 1;
 
   SELECT os.id INTO v_step_layout
@@ -150,7 +179,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'plan tile layout'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'layout and reference lines'
   LIMIT 1;
 
   SELECT os.id INTO v_step_cut_tile
@@ -158,7 +191,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'measure and cut tiles'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'cut tiles to layout'
   LIMIT 1;
 
   SELECT os.id INTO v_step_thinset_set
@@ -166,7 +203,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply thinset mortar'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'spread mortar and verify coverage'
   LIMIT 1;
 
   SELECT os.id INTO v_step_place
@@ -174,7 +215,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'place and level tiles'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'set tile, beat-in, and check plane'
   LIMIT 1;
 
   SELECT os.id INTO v_step_prep_grout
@@ -182,7 +227,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'prepare joints for grout'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'cure thinset before grouting'
   LIMIT 1;
 
   SELECT os.id INTO v_step_apply_grout
@@ -190,7 +239,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply grout to joints'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'pack grout and initial clean'
   LIMIT 1;
 
   IF v_step_inspect IS NULL
@@ -206,7 +259,7 @@ BEGIN
      OR v_step_prep_grout IS NULL
      OR v_step_apply_grout IS NULL THEN
     RAISE EXCEPTION
-      'Tile core steps missing (inspect=%, thinset_mem=%, membrane=%, cut_backer=%, fasten=%, tape=%, layout=%, cut_tile=%, thinset_set=%, place=%, prep_grout=%, apply_grout=%).',
+      'Tile core steps missing (inspect=%, thinset_mem=%, membrane=%, cut_backer=%, fasten=%, tape=%, layout=%, cut_tile=%, thinset_set=%, place=%, cure_or_prep_grout=%, apply_grout=%).',
       v_step_inspect, v_step_thinset_mem, v_step_membrane, v_step_cut_backer, v_step_fasten_backer,
       v_step_tape_backer, v_step_layout, v_step_cut_tile, v_step_thinset_set, v_step_place,
       v_step_prep_grout, v_step_apply_grout;
@@ -519,7 +572,7 @@ BEGIN
     WHERE id = v_step_place;
   END IF;
 
-  -- Prepare joints: out-pg-cure
+  -- Cure thinset before grouting: out-pg-cure
   SELECT coalesce(outputs, '[]'::jsonb) INTO v_outputs
   FROM public.operation_steps WHERE id = v_step_prep_grout;
   IF jsonb_typeof(v_outputs) IS DISTINCT FROM 'array' THEN
@@ -1245,6 +1298,7 @@ DECLARE
   v_step_thinset_set uuid;
   v_step_place uuid;
   v_step_prep_grout uuid;
+  v_step_cure uuid;
   v_step_apply_grout uuid;
   v_step_heavy uuid;
 
@@ -1275,6 +1329,10 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
     AND lower(btrim(os.step_title)) = 'clean and inspect subfloor'
   LIMIT 1;
 
@@ -1283,7 +1341,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply thinset for membrane'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'spread mortar for membrane'
   LIMIT 1;
 
   SELECT os.id INTO v_step_membrane
@@ -1291,7 +1353,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'install uncoupling membrane'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'embed membrane and detail seams'
   LIMIT 1;
 
   SELECT os.id INTO v_step_fasten_backer
@@ -1299,7 +1365,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'fasten backer board to subfloor'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'fasten backer to subfloor'
   LIMIT 1;
 
   SELECT os.id INTO v_step_tape_backer
@@ -1307,7 +1377,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'tape and seal seams'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'tape or mesh seams and embed'
   LIMIT 1;
 
   SELECT os.id INTO v_step_layout
@@ -1315,7 +1389,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'plan tile layout'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'layout and reference lines'
   LIMIT 1;
 
   SELECT os.id INTO v_step_cut_tile
@@ -1323,7 +1401,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'measure and cut tiles'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'cut tiles to layout'
   LIMIT 1;
 
   SELECT os.id INTO v_step_thinset_set
@@ -1331,7 +1413,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply thinset mortar'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'spread mortar and verify coverage'
   LIMIT 1;
 
   SELECT os.id INTO v_step_place
@@ -1339,7 +1425,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'place and level tiles'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'set tile, beat-in, and check plane'
   LIMIT 1;
 
   SELECT os.id INTO v_step_prep_grout
@@ -1347,7 +1437,23 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
     AND lower(btrim(os.step_title)) = 'prepare joints for grout'
+  LIMIT 1;
+
+  SELECT os.id INTO v_step_cure
+  FROM public.operation_steps os
+  JOIN public.phase_operations po ON po.id = os.operation_id
+  JOIN public.project_phases pp ON pp.id = po.phase_id
+  WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'cure thinset before grouting'
   LIMIT 1;
 
   SELECT os.id INTO v_step_apply_grout
@@ -1355,7 +1461,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply grout to joints'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'pack grout and initial clean'
   LIMIT 1;
 
   IF v_step_inspect IS NULL
@@ -1368,15 +1478,16 @@ BEGIN
      OR v_step_thinset_set IS NULL
      OR v_step_place IS NULL
      OR v_step_prep_grout IS NULL
+     OR v_step_cure IS NULL
      OR v_step_apply_grout IS NULL THEN
     RAISE EXCEPTION
-      'Tile register steps missing (inspect=%, thinset_mem=%, membrane=%, fasten=%, tape=%, layout=%, cut_tile=%, thinset_set=%, place=%, prep_grout=%, apply_grout=%).',
+      'Tile register steps missing (inspect=%, thinset_mem=%, membrane=%, fasten=%, tape=%, layout=%, cut_tile=%, thinset_set=%, place=%, prep_grout=%, cure=%, apply_grout=%).',
       v_step_inspect, v_step_thinset_mem, v_step_membrane, v_step_fasten_backer,
       v_step_tape_backer, v_step_layout, v_step_cut_tile, v_step_thinset_set, v_step_place,
-      v_step_prep_grout, v_step_apply_grout;
+      v_step_prep_grout, v_step_cure, v_step_apply_grout;
   END IF;
 
-  v_step_heavy := coalesce(v_step_fasten_backer, v_step_place);
+  v_step_heavy := v_step_fasten_backer;
 
   SELECT coalesce(max(r.display_order), 0) INTO v_display_order
   FROM public.project_risks r
@@ -1567,7 +1678,7 @@ BEGIN
       occurrence_driver, prevention_strength, mitigation_strategy, mitigation_actions,
       recommendation, benefit, display_order
     ) VALUES (
-      v_risk_10b1, v_project_id, v_step_prep_grout,
+      v_risk_10b1, v_project_id, v_step_cure,
       'Grouting started before thinset cure window',
       'Opening joints and packing grout inside the bag cure window shifts tile and weakens the bed.',
       'schedule', 6, 5, 3, 'medium', 'medium',
@@ -1581,7 +1692,7 @@ BEGIN
           'completed', false
         ),
         jsonb_build_object(
-          'action', 'Block Prepare Joints on the schedule until bag cure hours elapse at the measured temperature',
+          'action', 'Block Cure thinset before grouting until bag cure hours elapse at the measured temperature',
           'benefit', 'Stops calendar-day guessing from starting grout early',
           'completed', false
         ),
@@ -2562,6 +2673,10 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
     AND lower(btrim(os.step_title)) = 'clean and inspect subfloor'
   LIMIT 1;
 
@@ -2570,7 +2685,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'install uncoupling membrane'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'embed membrane and detail seams'
   LIMIT 1;
 
   SELECT os.id INTO v_step_layout
@@ -2578,7 +2697,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'plan tile layout'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'layout and reference lines'
   LIMIT 1;
 
   SELECT os.id INTO v_step_place
@@ -2586,7 +2709,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'place and level tiles'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'set tile, beat-in, and check plane'
   LIMIT 1;
 
   SELECT os.id INTO v_step_apply_grout
@@ -2594,7 +2721,11 @@ BEGIN
   JOIN public.phase_operations po ON po.id = os.operation_id
   JOIN public.project_phases pp ON pp.id = po.phase_id
   WHERE pp.project_id = v_project_id
-    AND lower(btrim(os.step_title)) = 'apply grout to joints'
+    AND pp.is_standard IS NOT TRUE
+    AND pp.is_linked IS NOT TRUE
+    AND pp.source_phase_id IS NULL
+    AND pp.source_project_id IS NULL
+    AND lower(btrim(os.step_title)) = 'pack grout and initial clean'
   LIMIT 1;
 
   IF v_step_inspect IS NULL OR v_step_membrane IS NULL OR v_step_layout IS NULL
