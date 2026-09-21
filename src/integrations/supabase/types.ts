@@ -2046,6 +2046,48 @@ export type Database = {
         }
         Relationships: []
       }
+      operation_step_skills: {
+        Row: {
+          created_at: string
+          id: string
+          importance: string
+          minimum_proficiency_hint: number | null
+          operation_step_id: string
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          importance?: string
+          minimum_proficiency_hint?: number | null
+          operation_step_id: string
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          importance?: string
+          minimum_proficiency_hint?: number | null
+          operation_step_id?: string
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "operation_step_skills_operation_step_id_fkey"
+            columns: ["operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "operation_step_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       operation_steps: {
         Row: {
           allow_content_edit: boolean | null
@@ -2688,6 +2730,48 @@ export type Database = {
             columns: ["source_operation_id"]
             isOneToOne: false
             referencedRelation: "phase_operations"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_key_skills: {
+        Row: {
+          created_at: string
+          display_order: number
+          id: string
+          project_id: string
+          required_for_kickoff: boolean
+          skill_id: string
+        }
+        Insert: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          project_id: string
+          required_for_kickoff?: boolean
+          skill_id: string
+        }
+        Update: {
+          created_at?: string
+          display_order?: number
+          id?: string
+          project_id?: string
+          required_for_kickoff?: boolean
+          skill_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_key_skills_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_key_skills_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_definitions"
             referencedColumns: ["id"]
           },
         ]
@@ -3500,6 +3584,41 @@ export type Database = {
           },
         ]
       }
+      project_run_schedule_revisions: {
+        Row: {
+          created_at: string
+          finish_at: string
+          id: string
+          project_run_id: string
+          schedule_events: Json
+          source: string
+        }
+        Insert: {
+          created_at?: string
+          finish_at: string
+          id?: string
+          project_run_id: string
+          schedule_events: Json
+          source: string
+        }
+        Update: {
+          created_at?: string
+          finish_at?: string
+          id?: string
+          project_run_id?: string
+          schedule_events?: Json
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_schedule_revisions_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_run_spaces: {
         Row: {
           created_at: string
@@ -3597,11 +3716,13 @@ export type Database = {
       }
       project_runs: {
         Row: {
+          access_constrained: boolean | null
           accountability_partner: string | null
           actual_end_date: string | null
           budget_data: Json | null
           category: string | null
           completed_steps: Json | null
+          concealed_conditions_likelihood: number | null
           created_at: string
           current_operation_id: string | null
           current_phase_id: string | null
@@ -3620,18 +3741,26 @@ export type Database = {
           initial_quality_goal: string | null
           initial_sizing: Json | null
           initial_timeline: string | null
+          inspection_lag_days: number | null
           instruction_level_preference: string | null
           is_manual_entry: boolean | null
           issue_reports: Json | null
           item_type: string | null
           latest_acceptable_date: string | null
+          long_lead_item_count: number | null
+          material_readiness_ratio: number | null
+          moisture_substrate_concern: boolean | null
           name: string
           notes_data: Json
+          open_decision_count: number | null
+          outdoor_season_conflict: boolean | null
+          permit_required: boolean | null
           phase_ratings: Json | null
           phases: Json | null
           plan_end_date: string | null
           planning_completed_at: string | null
           planning_scope_baseline: Json | null
+          ppe_ventilation_ready: boolean | null
           progress: number | null
           progress_reporting_style: string | null
           project_challenges: string | null
@@ -3647,27 +3776,19 @@ export type Database = {
           start_date: string | null
           status: string | null
           time_tracking: Json | null
+          trade_lead_time_days: number | null
           typical_project_size: string | null
           updated_at: string
           user_id: string
-          concealed_conditions_likelihood: number | null
-          moisture_substrate_concern: boolean | null
-          access_constrained: boolean | null
-          permit_required: boolean | null
-          outdoor_season_conflict: boolean | null
-          inspection_lag_days: number | null
-          long_lead_item_count: number | null
-          material_readiness_ratio: number | null
-          open_decision_count: number | null
-          trade_lead_time_days: number | null
-          ppe_ventilation_ready: boolean | null
         }
         Insert: {
+          access_constrained?: boolean | null
           accountability_partner?: string | null
           actual_end_date?: string | null
           budget_data?: Json | null
           category?: string | null
           completed_steps?: Json | null
+          concealed_conditions_likelihood?: number | null
           created_at?: string
           current_operation_id?: string | null
           current_phase_id?: string | null
@@ -3686,18 +3807,26 @@ export type Database = {
           initial_quality_goal?: string | null
           initial_sizing?: Json | null
           initial_timeline?: string | null
+          inspection_lag_days?: number | null
           instruction_level_preference?: string | null
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
           item_type?: string | null
           latest_acceptable_date?: string | null
+          long_lead_item_count?: number | null
+          material_readiness_ratio?: number | null
+          moisture_substrate_concern?: boolean | null
           name: string
           notes_data?: Json
+          open_decision_count?: number | null
+          outdoor_season_conflict?: boolean | null
+          permit_required?: boolean | null
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
           planning_completed_at?: string | null
           planning_scope_baseline?: Json | null
+          ppe_ventilation_ready?: boolean | null
           progress?: number | null
           progress_reporting_style?: string | null
           project_challenges?: string | null
@@ -3713,27 +3842,19 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           time_tracking?: Json | null
+          trade_lead_time_days?: number | null
           typical_project_size?: string | null
           updated_at?: string
           user_id: string
-          concealed_conditions_likelihood?: number | null
-          moisture_substrate_concern?: boolean | null
-          access_constrained?: boolean | null
-          permit_required?: boolean | null
-          outdoor_season_conflict?: boolean | null
-          inspection_lag_days?: number | null
-          long_lead_item_count?: number | null
-          material_readiness_ratio?: number | null
-          open_decision_count?: number | null
-          trade_lead_time_days?: number | null
-          ppe_ventilation_ready?: boolean | null
         }
         Update: {
+          access_constrained?: boolean | null
           accountability_partner?: string | null
           actual_end_date?: string | null
           budget_data?: Json | null
           category?: string | null
           completed_steps?: Json | null
+          concealed_conditions_likelihood?: number | null
           created_at?: string
           current_operation_id?: string | null
           current_phase_id?: string | null
@@ -3752,18 +3873,26 @@ export type Database = {
           initial_quality_goal?: string | null
           initial_sizing?: Json | null
           initial_timeline?: string | null
+          inspection_lag_days?: number | null
           instruction_level_preference?: string | null
           is_manual_entry?: boolean | null
           issue_reports?: Json | null
           item_type?: string | null
           latest_acceptable_date?: string | null
+          long_lead_item_count?: number | null
+          material_readiness_ratio?: number | null
+          moisture_substrate_concern?: boolean | null
           name?: string
           notes_data?: Json
+          open_decision_count?: number | null
+          outdoor_season_conflict?: boolean | null
+          permit_required?: boolean | null
           phase_ratings?: Json | null
           phases?: Json | null
           plan_end_date?: string | null
           planning_completed_at?: string | null
           planning_scope_baseline?: Json | null
+          ppe_ventilation_ready?: boolean | null
           progress?: number | null
           progress_reporting_style?: string | null
           project_challenges?: string | null
@@ -3779,20 +3908,10 @@ export type Database = {
           start_date?: string | null
           status?: string | null
           time_tracking?: Json | null
+          trade_lead_time_days?: number | null
           typical_project_size?: string | null
           updated_at?: string
           user_id?: string
-          concealed_conditions_likelihood?: number | null
-          moisture_substrate_concern?: boolean | null
-          access_constrained?: boolean | null
-          permit_required?: boolean | null
-          outdoor_season_conflict?: boolean | null
-          inspection_lag_days?: number | null
-          long_lead_item_count?: number | null
-          material_readiness_ratio?: number | null
-          open_decision_count?: number | null
-          trade_lead_time_days?: number | null
-          ppe_ventilation_ready?: boolean | null
         }
         Relationships: [
           {
@@ -3807,41 +3926,6 @@ export type Database = {
             columns: ["project_id"]
             isOneToOne: false
             referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      project_run_schedule_revisions: {
-        Row: {
-          created_at: string
-          finish_at: string
-          id: string
-          project_run_id: string
-          schedule_events: Json
-          source: string
-        }
-        Insert: {
-          created_at?: string
-          finish_at: string
-          id?: string
-          project_run_id: string
-          schedule_events: Json
-          source: string
-        }
-        Update: {
-          created_at?: string
-          finish_at?: string
-          id?: string
-          project_run_id?: string
-          schedule_events?: Json
-          source?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_run_schedule_revisions_project_run_id_fkey"
-            columns: ["project_run_id"]
-            isOneToOne: false
-            referencedRelation: "project_runs"
             referencedColumns: ["id"]
           },
         ]
@@ -4224,6 +4308,45 @@ export type Database = {
           session_id?: string
           user_agent?: string | null
           user_id?: string
+        }
+        Relationships: []
+      }
+      skill_definitions: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          display_order: number
+          id: string
+          is_active: boolean
+          is_baseline: boolean
+          name: string
+          slug: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_baseline?: boolean
+          name: string
+          slug: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          display_order?: number
+          id?: string
+          is_active?: boolean
+          is_baseline?: boolean
+          name?: string
+          slug?: string
+          updated_at?: string
         }
         Relationships: []
       }
@@ -4811,211 +4934,6 @@ export type Database = {
           },
         ]
       }
-      skill_definitions: {
-        Row: {
-          id: string
-          slug: string
-          name: string
-          description: string | null
-          category: string
-          is_active: boolean
-          is_baseline: boolean
-          display_order: number
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          slug: string
-          name: string
-          description?: string | null
-          category: string
-          is_active?: boolean
-          is_baseline?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          slug?: string
-          name?: string
-          description?: string | null
-          category?: string
-          is_active?: boolean
-          is_baseline?: boolean
-          display_order?: number
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: []
-      }
-      project_key_skills: {
-        Row: {
-          id: string
-          project_id: string
-          skill_id: string
-          display_order: number
-          required_for_kickoff: boolean
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          project_id: string
-          skill_id: string
-          display_order?: number
-          required_for_kickoff?: boolean
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          project_id?: string
-          skill_id?: string
-          display_order?: number
-          required_for_kickoff?: boolean
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "project_key_skills_project_id_fkey"
-            columns: ["project_id"]
-            isOneToOne: false
-            referencedRelation: "projects"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "project_key_skills_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skill_definitions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      operation_step_skills: {
-        Row: {
-          id: string
-          operation_step_id: string
-          skill_id: string
-          importance: string
-          minimum_proficiency_hint: number | null
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          operation_step_id: string
-          skill_id: string
-          importance?: string
-          minimum_proficiency_hint?: number | null
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          operation_step_id?: string
-          skill_id?: string
-          importance?: string
-          minimum_proficiency_hint?: number | null
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "operation_step_skills_operation_step_id_fkey"
-            columns: ["operation_step_id"]
-            isOneToOne: false
-            referencedRelation: "operation_steps"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "operation_step_skills_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skill_definitions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_skill_ratings: {
-        Row: {
-          id: string
-          user_id: string
-          skill_id: string
-          proficiency: number
-          source: string
-          assumed_low: boolean
-          updated_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          skill_id: string
-          proficiency: number
-          source?: string
-          assumed_low?: boolean
-          updated_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          skill_id?: string
-          proficiency?: number
-          source?: string
-          assumed_low?: boolean
-          updated_at?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_skill_ratings_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skill_definitions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      user_skill_experience: {
-        Row: {
-          id: string
-          user_id: string
-          skill_id: string
-          experience_seconds: number
-          completion_count: number
-          last_practiced_at: string | null
-          updated_at: string
-          created_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          skill_id: string
-          experience_seconds?: number
-          completion_count?: number
-          last_practiced_at?: string | null
-          updated_at?: string
-          created_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          skill_id?: string
-          experience_seconds?: number
-          completion_count?: number
-          last_practiced_at?: string | null
-          updated_at?: string
-          created_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "user_skill_experience_skill_id_fkey"
-            columns: ["skill_id"]
-            isOneToOne: false
-            referencedRelation: "skill_definitions"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       user_profiles: {
         Row: {
           avoid_projects: string[] | null
@@ -5229,6 +5147,88 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      user_skill_experience: {
+        Row: {
+          completion_count: number
+          created_at: string
+          experience_seconds: number
+          id: string
+          last_practiced_at: string | null
+          skill_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          completion_count?: number
+          created_at?: string
+          experience_seconds?: number
+          id?: string
+          last_practiced_at?: string | null
+          skill_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          completion_count?: number
+          created_at?: string
+          experience_seconds?: number
+          id?: string
+          last_practiced_at?: string | null
+          skill_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_experience_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_skill_ratings: {
+        Row: {
+          assumed_low: boolean
+          created_at: string
+          id: string
+          proficiency: number
+          skill_id: string
+          source: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          assumed_low?: boolean
+          created_at?: string
+          id?: string
+          proficiency: number
+          skill_id: string
+          source?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          assumed_low?: boolean
+          created_at?: string
+          id?: string
+          proficiency?: number
+          skill_id?: string
+          source?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_skill_ratings_skill_id_fkey"
+            columns: ["skill_id"]
+            isOneToOne: false
+            referencedRelation: "skill_definitions"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_tools: {
         Row: {
@@ -5485,14 +5485,6 @@ export type Database = {
         Args: { p_signup_from: string; p_signup_to: string }
         Returns: Json
       }
-      get_planning_change_analytics_payload: {
-        Args: {
-          p_project_ids?: string[] | null
-          p_from?: string | null
-          p_to?: string | null
-        }
-        Returns: Json
-      }
       get_help_usage_status: {
         Args: { p_user_id?: string }
         Returns: {
@@ -5540,6 +5532,10 @@ export type Database = {
           public_count: number
           template_name: string
         }[]
+      }
+      get_planning_change_analytics_payload: {
+        Args: { p_from?: string; p_project_ids?: string[]; p_to?: string }
+        Returns: Json
       }
       get_project_owner_invitation_by_token: {
         Args: { p_token: string }
