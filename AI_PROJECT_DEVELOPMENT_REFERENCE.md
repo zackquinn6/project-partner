@@ -823,6 +823,7 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-22 | Tile Flooring owned Prepare subfloor: substrate assessment must be a shared prime operation before alternate underlayment paths; inspect/error-recovery gates Self-Leveler Application and Subfloor Replacement without teaching those methods; layout requires dye-lot shuffle + EJ171 planning; set keeps movement joints free of thinset; cut steps get anti-requirement PFMEA | Live audit vs TCNA/ANSI/EJ171 found Clean and inspect only on the membrane alternate, so the backer path skipped substrate assessment |
 | 2026-09-18 | Tile Flooring Step 11 summaries rewritten: Good forbids major failures but allows imperfect less-visible edges; Professional targets flawless grout lines/cuts with leveling clips, seal, and final QC | Kickoff quality ladder needed project-specific meaning tied to owned Prep/Install/Grout gating |
 | 2026-09-18 | Step 11: `kickoff_summary` on `project_quality_levels` / run snapshot; kickoff Goals shows short per-level blurbs and drops Instruction detail + long impact panel | Kickoff needs project-specific meaning without the full outcome/process panel |
 | 2026-09-18 | Step 4 risk title rules: concrete cause/failure mode only; ban vague categories (e.g. Low-quality materials) and multi-risk outcomes (e.g. Underestimating project time); examples for foundation, tile, paint; planning standard v1.4.1 | Risk Radar showed unactionable general risks; mitigations are product-specific |
