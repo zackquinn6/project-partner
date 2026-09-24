@@ -11,6 +11,7 @@ import {
   PLANNING_STANDARD_VERSION,
   PRODUCT_GUIDELINES,
   PUBLISHING_CHECKLIST,
+  QUALITY_CONTROL_STANDARD,
   QUALITY_GOAL_LEVEL_STANDARD,
   CONTENT_AXES_STANDARD,
   TOOLIO_PROJECT_STRUCTURE_STANDARD,
@@ -317,6 +318,24 @@ export function PlanningGuideWindow({ open, onOpenChange, initialTab }: Planning
                 <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">Waiting steps (drying, curing)</h2>
                   <p className="mb-2">{crossCuttingRule('waiting-steps')}</p>
+                </section>
+                <section>
+                  <h2 className="text-base font-semibold flex items-center gap-2 mb-2">
+                    <Target className="w-4 h-4" />
+                    Quality control placement
+                  </h2>
+                  <p className="mb-2">{crossCuttingRule('quality-control-placement')}</p>
+                  <p className="mb-2 text-muted-foreground">
+                    {QUALITY_CONTROL_STANDARD.defaultPlacement}
+                  </p>
+                  <ul className="list-disc pl-5 space-y-1 mb-2">
+                    {QUALITY_CONTROL_STANDARD.methods.map((method) => (
+                      <li key={method.id}>
+                        <strong>{method.label}</strong> ({method.placement}) - {method.description}
+                      </li>
+                    ))}
+                  </ul>
+                  <p className="text-muted-foreground">{QUALITY_CONTROL_STANDARD.distinctOpCriteria}</p>
                 </section>
                 <section>
                   <h2 className="text-base font-semibold flex items-center gap-2 mb-2">

@@ -94,7 +94,7 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.4.2` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.5.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -138,6 +138,31 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 
 - Every catalog template that ships quality goals authors three project_quality_levels rows (kickoff_summary + outcome + process). kickoff_summary is the one-line kickoff Goals blurb for that project and level. Relative vs_lower_summary is required on great and professional. Process differences are real operation_steps (and phase_operations when a whole op is gated) with min_quality_goal, not prose alone. Quality-impact content is authored on the owning project only; adopted or linked phases display their source project rows without copying onto the host. At run create, copy contributing rows into project_run_quality_levels so impact copy stays frozen with the run.
 
+### Quality control placement and methods
+
+- **Default:** Quality control belongs as steps inside value-add operations (Prep, Install, Finish), not as its own phase or operation. A normal process map does not include a Quality Control stage.
+- **Step type:** Mark those steps with step_type quality_control_non_scaled or quality_control_scaled. Keep the parent operation named for the value-add work.
+- **Methods link:** Every quality_control_* step must name the method(s) it applies from the Quality Control Methods catalog below. Put the method name and how to apply it in outputs[].qualityChecks (and in Instructions when the check is a user action). The Quality Control planning tool and PFMEA detection controls should stay consistent with those method names.
+- **Distinct op/phase:** Create a distinct QC operation (or, when the hold is overnight or a natural pause between stages, a distinct phase) only when the control is the primary activity for that block, requires dedicated setup plus a scheduled hold that breaks continuous production, and produces a standalone pass/fail gate before the next value-add work. Visual checks, straightedge measurements, and sample-frequency lifts stay nested in the value-add operation.
+- **Authoring:** Default nest in-process QC as quality_control_* steps inside value-add ops and link each to a Quality Control Methods catalog entry via outputs.qualityChecks. Promote to a distinct operation or phase only for hold/soak/flood/pressure (or equivalent scheduled gate) tests. Never invent a Quality Control phase for visual, dimensional, sample-frequency, or short functional checks.
+
+#### Quality Control Methods catalog
+
+| Id | Method | Placement | Description |
+| -- | ------ | --------- | ----------- |
+| `visual` | **Visual inspection** | in-process | Eyes and light: clean/sound substrate, seam continuity, coverage look, finish defects, raking-light plane. |
+| `dimensional` | **Dimensional / flatness measurement** | in-process | Straightedge, level, square, gap gauge, or similar against a stated tolerance (e.g. substrate flatness). |
+| `sample-frequency` | **Sample / frequency check** | in-process | Periodic lift, pull, or probe at a stated sample rate during production (e.g. lift tiles for mortar coverage). |
+| `short-functional` | **Short functional test** | in-process | Brief operate-and-observe check measured in minutes, interleaved with production (fit, alignment, open/close). |
+| `hold-soak-pressure` | **Hold / soak / flood / pressure test** | distinct-when-scheduled | Dedicated setup plus a timed hold that is the work itself (overnight flood, code pressure/DWV water test). Gates the next value-add stage. |
+
+#### Research examples (in-process vs distinct)
+
+- **Tile flooring / shower tile** (Prep → Install → Finish): In-process - Prep: visual substrate check + straightedge flatness. Install: periodic tile lifts for mortar coverage. Finish: lippage/joint checks as QC steps inside Finish. Distinct - After waterproofing: flood test (plug, fill, mark level, hold overnight, verify no drop/leak) as its own operation or phase before setting tile.
+- **Painting** (Prep → Prime → Paint → Finish): In-process - Prep: feel and light check for dust/defects. Paint: wet-edge and coverage checks under raking light during rolling. Distinct - None for routine DIY painting.
+- **Drywall** (Hang → Tape/mud → Sand → Finish): In-process - Hang: screw-depth checks while fastening. Mud/sand: coverage and raking-light checks inside those ops. Distinct - None for routine DIY drywall.
+- **Plumbing rough-in** (Rough-in → Connect → Finish): In-process - Joint makeup visual checks while assembling. Distinct - Code DWV/water pressure or vacuum test (fill/pressurize, timed hold, leak check) as its own operation before covering walls.
+
 ### Project structure
 
 TOOLIO PROJECT STRUCTURE - QUICK REFERENCE STANDARD. This standard defines what belongs at each level, how long each level should be, and the structural limits for every project.
@@ -158,7 +183,8 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - Have a clear "before/after" state.
 - Allow a natural pause (you can stop for hours or overnight).
 - Change tools, materials, or skill type.
-- **Examples:** Removal → Install; Prep → Prime → Paint → Finish → Cleanup
+- Do not add a Quality Control phase for routine checks. QC phases are rare and only for dedicated hold/soak/pressure tests that are the overnight or scheduled gate between value-add stages.
+- **Examples:** Removal → Install; Prep → Install → Finish; Prep → Prime → Paint → Finish → Cleanup
 
 #### Operation
 
@@ -172,7 +198,8 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - Be teachable as a standalone skill.
 - Use a consistent tool/material set.
 - Not require stopping mid operation.
-- **Examples:** Set toilet; Connect water; Patch walls; Cut in edges
+- Name value-add work (Prep, Install, Finish), not routine QC. Nest in-process checks as quality_control_* steps inside the value-add operation.
+- **Examples:** Set toilet; Connect water; Patch walls; Cut in edges; Flood-test shower pan (rare dedicated QC op)
 
 #### Step
 
@@ -231,7 +258,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 | `pfmea` | **PFMEA** - Process FMEA (failure modes and effects) completed where relevant for the project. | 9 |
 | `risks` | **Risks** - Timeline and budget risks with mitigation strategies documented in project risk management. | 4 |
 | `outputs-priorities` | **Outputs / priorities** - Key product or process outputs identified and documented (what "done" looks like). | 3 |
-| `quality-control` | **Quality Control** - Quality control steps and criteria defined where applicable (step types and checks). | 1, 3 |
+| `quality-control` | **Quality Control** - In-process QC nested as quality_control_* steps inside value-add operations, each linked to a Quality Control Methods catalog entry via outputs.qualityChecks; distinct QC ops/phases only for scheduled hold/soak/flood/pressure gates. | 1, 3 |
 | `error-correction` | **Error Correction** - Guidance for common errors and how to correct them (Error-Recovery instruction sections). | 2 |
 | `safety` | **Safety** - Safety guidance upfront and at relevant steps; reasons explained. | 2 |
 | `quality-goals` | **Quality goals** - Good / Great / Professional outcome and process content, plus min_quality_goal on steps that differ by level. | 11 |
@@ -239,6 +266,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 ### Cross-cutting product rules
 
 - **Waiting steps (drying, curing)** (`waiting-steps`): Engineer all waiting steps (e.g. paint dry, curing) as their own step with specific wait times, and set workers needed = 0.
+- **Quality control placement (in-process vs distinct)** (`quality-control-placement`): Default nest in-process QC as quality_control_* steps inside value-add ops and link each to a Quality Control Methods catalog entry via outputs.qualityChecks. Promote to a distinct operation or phase only for hold/soak/flood/pressure (or equivalent scheduled gate) tests. Never invent a Quality Control phase for visual, dimensional, sample-frequency, or short functional checks.
 - **Risks vs PFMEA** (`risks-vs-pfmea`): Project risks (Step 4) cover safety, schedule, and budget. Quality failure modes belong in PFMEA (Step 9), not the risk register. Risk titles name a concrete cause or failure mode a user can mitigate (e.g. "Expired thinset or mortar past use-by date", "Shelf-expired adhesives or finishes"), not a vague category ("Low-quality materials") or an outcome of many risks ("Underestimating project time").
 - **Tools and materials alternates** (`alternates`): Where a step requires tools or materials, define primary items and alternate options when users may substitute brand, type, or pack size.
 - **No em-dashes in catalog prose** (`no-em-dashes`): Do not use em-dashes in authored catalog / user-facing prose (descriptions, challenges, step instructions, risk copy). Use standard dashes or hyphens.
@@ -369,7 +397,7 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 
 ### Step 1 — Structure only (phases, operations, steps)
 
-**Shared checklist:** `quality-control` (step types) · structure limits in generated planning standard above.
+**Shared checklist:** `quality-control` (placement + step types + methods link) · structure limits in generated planning standard above.
 
 **Phases:** If **≥1** `project_phases` row for `project_id` → **do not** INSERT phases; use existing `id` as `phase_id`; **assume phases cover the full template**; if scope cannot map or structure is wrong → **notify the user**, do not add phases without direction. If **0** phases → INSERT phases first, then attach ops. Rename phases only if the prompt requires it.
 
@@ -378,6 +406,33 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 **Process map descriptions:** Single-line **what/scope/outcome** per phase / operation / step—not numbered procedures (how-to → Step 2).
 
 **SQL migrations:** When phases already exist, resolve `phase_id` by **ordered** `project_phases` rows, **not** by mandatory phase **names** (see §A “Step 1 in SQL migrations”).
+
+#### Quality control placement (required for Step 1)
+
+Default: **QC is not a process stage.** Build the map around value-add work (e.g. Tile: Prep → Install → Finish). Put quality controls as **steps inside those operations** with `step_type` `quality_control_non_scaled` or `quality_control_scaled`.
+
+| Place QC here | Do not invent |
+| ------------- | ------------- |
+| QC **steps** inside Prep / Install / Finish (or equivalent value-add ops) | A "Quality Control" / "Inspection" **phase** for routine checks |
+| Same | A standalone "Inspect…" **operation** for visual, straightedge, or sample lifts |
+
+**In-process (default)** - nest in the value-add op, mark `quality_control_*`:
+
+- Visual substrate / finish checks
+- Straightedge or level flatness measurement during prep
+- Periodic tile lift / coverage sample during set
+- Wet-edge / raking-light coverage during paint
+- Screw-depth or joint visual checks during drywall hang / plumbing makeup
+
+**Distinct QC operation or phase (rare)** - only when the control **is** the work block:
+
+- Dedicated setup + **scheduled hold** that breaks continuous production (overnight shower flood test after waterproofing; code DWV / water pressure or vacuum test before covering walls)
+- Standalone pass/fail **gate** before the next value-add stage can start
+- Often its own natural pause (hours to overnight)
+
+**Methods link:** every `quality_control_*` step must name the method from the generated **Quality Control Methods catalog** (visual, dimensional, sample-frequency, short-functional, hold-soak-pressure) in `outputs[].qualityChecks` when Step 3 is authored. Step 1 still chooses placement and `step_type` correctly so later enrichments can attach the method cleanly.
+
+See shared rule `quality-control-placement` and the methods table in the generated planning standard.
 
 #### `project_phases` fields
 
@@ -418,7 +473,7 @@ Author when creating/revising a template or in Step 10 (description/challenges).
 | `display_order` | number | Within operation |
 | `flow_type` | string \| null | `prime` / `alternate` / `if-necessary` |
 | `min_quality_goal` | string \| null | NULL = all goals; `great` = Great+Professional; `professional` = Professional only (Step 11). Do not overload `if-necessary` for quality gating |
-| `step_type` | string \| null | `prime` / `scaled` / `quality_control_non_scaled` / `quality_control_scaled` |
+| `step_type` | string \| null | `prime` / `scaled` / `quality_control_non_scaled` / `quality_control_scaled`. Use `quality_control_*` for in-process checks nested in value-add ops, and for steps inside a rare distinct hold/soak/flood/pressure QC op. Do not invent a QC-only phase for routine checks (see Quality control placement above). |
 | `number_of_workers` | number \| null | Workers needed |
 | `skill_level` | string \| null | Beginner / Intermediate / Advanced / Professional |
 | `allow_content_edit` | bool \| null | Allow edit even in standard phases when true |
@@ -473,7 +528,7 @@ Level detail still varies (beginner more scaffolding, advanced denser) but **sec
 
 **Shared checklist:** `outputs-priorities`, `quality-control`.
 
-Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `type`, etc. Names = **physical achieved state**, not inspection verbs, unless the step is explicitly inspection.
+Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `type`, etc. Names = **physical achieved state**, not inspection verbs, unless the step is explicitly inspection / quality control.
 
 | Key | Type / enums | Authoring rule |
 | --- | ------------ | -------------- |
@@ -482,7 +537,7 @@ Per step: outputs with `name` (≤50 chars, prefer under 30), `description`, `ty
 | `description` | string | What “done” looks like |
 | `type` | `none` \| `major-aesthetics` \| `performance-durability` \| `safety` | Required classification |
 | `requirement` | string \| optional | Spec / acceptance |
-| `qualityChecks` | string \| optional | How to verify |
+| `qualityChecks` | string \| optional | **Required on `quality_control_*` steps:** name the Quality Control Methods catalog entry (visual, dimensional / flatness, sample-frequency, short-functional, hold-soak-pressure) and how to apply it (tool, tolerance, sample rate, hold time). Optional enrichment on non-QC steps. |
 | `keyInputs` | string[] \| optional | Drivers of this output |
 | `potentialEffects`, `photosOfEffects`, `mustGetRight`, `allowances`, `referenceSpecification` | optional | Enrich when known |
 
@@ -823,6 +878,8 @@ Living changelog. When a field, constraint, or SQL lesson is **proven** during g
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-09-24 | Planning standard v1.5.0: quality-control-placement rule + Quality Control Methods catalog; Step 1/3 authoring: nest in-process QC in value-add ops; distinct QC ops/phases only for scheduled hold/soak/flood/pressure gates; `outputs.qualityChecks` must name the method on QC steps | Admin guidance: tile Prep/Install checks stay in-process; shower flood test is a rare distinct control |
+| 2026-09-24 | Tile companions: Self-Leveler removes New Step placeholders, adds primer/pour/cure/verify with LFT 1/8 in/10 ft flatness gate and handoff to Tile Assess; Subfloor Replacement gets joist/glue/bounce content + adopt on Tile before Self-Leveler; Caulking silicone step covers EJ171 backer rod + ASTM C920; Baseboard gets real removal and paint- vs stain-grade finish path without duplicating soft-joint caulk | TCNA companion gaps reported after Tile host-only alignment; flatness/structure/soft-joint how-to belongs on source templates |
 | 2026-09-22 | Tile Flooring owned Prepare subfloor: substrate assessment must be a shared prime operation before alternate underlayment paths; inspect/error-recovery gates Self-Leveler Application and Subfloor Replacement without teaching those methods; layout requires dye-lot shuffle + EJ171 planning; set keeps movement joints free of thinset; cut steps get anti-requirement PFMEA | Live audit vs TCNA/ANSI/EJ171 found Clean and inspect only on the membrane alternate, so the backer path skipped substrate assessment |
 | 2026-09-18 | Tile Flooring Step 11 summaries rewritten: Good forbids major failures but allows imperfect less-visible edges; Professional targets flawless grout lines/cuts with leveling clips, seal, and final QC | Kickoff quality ladder needed project-specific meaning tied to owned Prep/Install/Grout gating |
 | 2026-09-18 | Step 11: `kickoff_summary` on `project_quality_levels` / run snapshot; kickoff Goals shows short per-level blurbs and drops Instruction detail + long impact panel | Kickoff needs project-specific meaning without the full outcome/process panel |

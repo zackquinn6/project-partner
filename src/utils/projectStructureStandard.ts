@@ -44,9 +44,10 @@ export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard =
         'Represent a meaningful shift in the project.',
         'Have a clear "before/after" state.',
         'Allow a natural pause (you can stop for hours or overnight).',
-        'Change tools, materials, or skill type.'
+        'Change tools, materials, or skill type.',
+        'Do not add a Quality Control phase for routine checks. QC phases are rare and only for dedicated hold/soak/pressure tests that are the overnight or scheduled gate between value-add stages.'
       ],
-      examples: ['Removal → Install', 'Prep → Prime → Paint → Finish → Cleanup']
+      examples: ['Removal → Install', 'Prep → Install → Finish', 'Prep → Prime → Paint → Finish → Cleanup']
     },
     operation: {
       name: 'Operation',
@@ -60,9 +61,10 @@ export const TOOLIO_PROJECT_STRUCTURE_STANDARD: ToolioProjectStructureStandard =
         'Produce a clear, observable result.',
         'Be teachable as a standalone skill.',
         'Use a consistent tool/material set.',
-        'Not require stopping mid operation.'
+        'Not require stopping mid operation.',
+        'Name value-add work (Prep, Install, Finish), not routine QC. Nest in-process checks as quality_control_* steps inside the value-add operation.'
       ],
-      examples: ['Set toilet', 'Connect water', 'Patch walls', 'Cut in edges']
+      examples: ['Set toilet', 'Connect water', 'Patch walls', 'Cut in edges', 'Flood-test shower pan (rare dedicated QC op)']
     },
     step: {
       name: 'Step',

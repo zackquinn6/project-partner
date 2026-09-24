@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.4.2';
+export const PLANNING_STANDARD_VERSION = '1.5.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -24,6 +24,7 @@ export const PLANNING_TOPIC_IDS = [
   'instruction-levels',
   'publishing-checklist',
   'waiting-steps',
+  'quality-control-placement',
   'risks-vs-pfmea',
   'alternates',
   'no-em-dashes',
@@ -35,6 +36,91 @@ export const PLANNING_TOPIC_IDS = [
   'content-axes',
   'professional-naming',
 ] as const;
+
+/**
+ * Where QC lives in the process map, and how QC steps connect to workflow methods.
+ * Default: nest QC inside value-add operations. Distinct QC ops/phases are rare.
+ */
+export const QUALITY_CONTROL_STANDARD = {
+  defaultPlacement:
+    'Quality control belongs as steps inside value-add operations (Prep, Install, Finish), not as its own phase or operation. A normal process map does not include a Quality Control stage.',
+  stepTypeRule:
+    'Mark those steps with step_type quality_control_non_scaled or quality_control_scaled. Keep the parent operation named for the value-add work.',
+  methodsSectionRule:
+    'Every quality_control_* step must name the method(s) it applies from the Quality Control Methods catalog below. Put the method name and how to apply it in outputs[].qualityChecks (and in Instructions when the check is a user action). The Quality Control planning tool and PFMEA detection controls should stay consistent with those method names.',
+  methods: [
+    {
+      id: 'visual',
+      label: 'Visual inspection',
+      description:
+        'Eyes and light: clean/sound substrate, seam continuity, coverage look, finish defects, raking-light plane.',
+      placement: 'in-process',
+    },
+    {
+      id: 'dimensional',
+      label: 'Dimensional / flatness measurement',
+      description:
+        'Straightedge, level, square, gap gauge, or similar against a stated tolerance (e.g. substrate flatness).',
+      placement: 'in-process',
+    },
+    {
+      id: 'sample-frequency',
+      label: 'Sample / frequency check',
+      description:
+        'Periodic lift, pull, or probe at a stated sample rate during production (e.g. lift tiles for mortar coverage).',
+      placement: 'in-process',
+    },
+    {
+      id: 'short-functional',
+      label: 'Short functional test',
+      description:
+        'Brief operate-and-observe check measured in minutes, interleaved with production (fit, alignment, open/close).',
+      placement: 'in-process',
+    },
+    {
+      id: 'hold-soak-pressure',
+      label: 'Hold / soak / flood / pressure test',
+      description:
+        'Dedicated setup plus a timed hold that is the work itself (overnight flood, code pressure/DWV water test). Gates the next value-add stage.',
+      placement: 'distinct-when-scheduled',
+    },
+  ],
+  distinctOpCriteria:
+    'Create a distinct QC operation (or, when the hold is overnight or a natural pause between stages, a distinct phase) only when the control is the primary activity for that block, requires dedicated setup plus a scheduled hold that breaks continuous production, and produces a standalone pass/fail gate before the next value-add work. Visual checks, straightedge measurements, and sample-frequency lifts stay nested in the value-add operation.',
+  examples: [
+    {
+      project: 'Tile flooring / shower tile',
+      valueAdd: 'Prep → Install → Finish',
+      inProcess:
+        'Prep: visual substrate check + straightedge flatness. Install: periodic tile lifts for mortar coverage. Finish: lippage/joint checks as QC steps inside Finish.',
+      distinct:
+        'After waterproofing: flood test (plug, fill, mark level, hold overnight, verify no drop/leak) as its own operation or phase before setting tile.',
+    },
+    {
+      project: 'Painting',
+      valueAdd: 'Prep → Prime → Paint → Finish',
+      inProcess:
+        'Prep: feel and light check for dust/defects. Paint: wet-edge and coverage checks under raking light during rolling.',
+      distinct: 'None for routine DIY painting.',
+    },
+    {
+      project: 'Drywall',
+      valueAdd: 'Hang → Tape/mud → Sand → Finish',
+      inProcess:
+        'Hang: screw-depth checks while fastening. Mud/sand: coverage and raking-light checks inside those ops.',
+      distinct: 'None for routine DIY drywall.',
+    },
+    {
+      project: 'Plumbing rough-in',
+      valueAdd: 'Rough-in → Connect → Finish',
+      inProcess: 'Joint makeup visual checks while assembling.',
+      distinct:
+        'Code DWV/water pressure or vacuum test (fill/pressurize, timed hold, leak check) as its own operation before covering walls.',
+    },
+  ],
+  authoringRule:
+    'Default nest in-process QC as quality_control_* steps inside value-add ops and link each to a Quality Control Methods catalog entry via outputs.qualityChecks. Promote to a distinct operation or phase only for hold/soak/flood/pressure (or equivalent scheduled gate) tests. Never invent a Quality Control phase for visual, dimensional, sample-frequency, or short functional checks.',
+} as const;
 
 /**
  * Three orthogonal axes that change what a run shows.
@@ -176,7 +262,7 @@ export const PUBLISHING_CHECKLIST: PublishingChecklistItem[] = [
     id: 'quality-control',
     label: 'Quality Control',
     description:
-      'Quality control steps and criteria defined where applicable (step types and checks).',
+      'In-process QC nested as quality_control_* steps inside value-add operations, each linked to a Quality Control Methods catalog entry via outputs.qualityChecks; distinct QC ops/phases only for scheduled hold/soak/flood/pressure gates.',
     aiStepRefs: [1, 3],
   },
   {
@@ -214,6 +300,11 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     title: 'Waiting steps (drying, curing)',
     rule:
       'Engineer all waiting steps (e.g. paint dry, curing) as their own step with specific wait times, and set workers needed = 0.',
+  },
+  {
+    id: 'quality-control-placement',
+    title: 'Quality control placement (in-process vs distinct)',
+    rule: QUALITY_CONTROL_STANDARD.authoringRule,
   },
   {
     id: 'risks-vs-pfmea',
@@ -287,6 +378,7 @@ export function getPlanningStandardSnapshot() {
     instructionLevels: INSTRUCTION_LEVELS,
     qualityGoalLevels: QUALITY_GOAL_LEVEL_STANDARD,
     contentAxes: CONTENT_AXES_STANDARD,
+    qualityControl: QUALITY_CONTROL_STANDARD,
     publishingChecklist: PUBLISHING_CHECKLIST,
     crossCuttingRules: CROSS_CUTTING_RULES,
     hierarchySummary: HIERARCHY_SUMMARY,
@@ -347,6 +439,33 @@ export function renderPlanningStandardMarkdown(): string {
   }
   lines.push('');
   lines.push(`- ${QUALITY_GOAL_LEVEL_STANDARD.authoringRule}`);
+  lines.push('');
+
+  lines.push('### Quality control placement and methods');
+  lines.push('');
+  lines.push(`- **Default:** ${QUALITY_CONTROL_STANDARD.defaultPlacement}`);
+  lines.push(`- **Step type:** ${QUALITY_CONTROL_STANDARD.stepTypeRule}`);
+  lines.push(`- **Methods link:** ${QUALITY_CONTROL_STANDARD.methodsSectionRule}`);
+  lines.push(`- **Distinct op/phase:** ${QUALITY_CONTROL_STANDARD.distinctOpCriteria}`);
+  lines.push(`- **Authoring:** ${QUALITY_CONTROL_STANDARD.authoringRule}`);
+  lines.push('');
+  lines.push('#### Quality Control Methods catalog');
+  lines.push('');
+  lines.push('| Id | Method | Placement | Description |');
+  lines.push('| -- | ------ | --------- | ----------- |');
+  for (const method of QUALITY_CONTROL_STANDARD.methods) {
+    lines.push(
+      `| \`${method.id}\` | **${method.label}** | ${method.placement} | ${method.description} |`,
+    );
+  }
+  lines.push('');
+  lines.push('#### Research examples (in-process vs distinct)');
+  lines.push('');
+  for (const ex of QUALITY_CONTROL_STANDARD.examples) {
+    lines.push(
+      `- **${ex.project}** (${ex.valueAdd}): In-process - ${ex.inProcess} Distinct - ${ex.distinct}`,
+    );
+  }
   lines.push('');
 
   lines.push('### Project structure');
