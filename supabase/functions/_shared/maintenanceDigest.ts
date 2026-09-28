@@ -239,8 +239,22 @@ export async function processMaintenanceReminders(
     );
     if (matched.length === 0) continue;
 
-    const userName = emailTo.split("@")[0]?.trim();
-    if (!userName) continue;
+    const { data: profile, error: profileErr } = await supabase
+      .from("user_profiles")
+      .select("full_name")
+      .eq("user_id", userId)
+      .maybeSingle();
+    if (profileErr) {
+      console.error(`maintenance-reminders: profile fetch ${userId}`, profileErr);
+      continue;
+    }
+    const firstName = typeof profile?.full_name === "string"
+      ? profile.full_name.trim().split(/\s+/)[0]
+      : "";
+    if (!firstName) {
+      console.warn(`maintenance-reminders: skip ${userId} - no full_name`);
+      continue;
+    }
 
     const taskListHtml = matched
       .map((task) => {
@@ -261,7 +275,7 @@ export async function processMaintenanceReminders(
           </div>
           <div style="background-color:#111827;border-radius:12px;padding:24px 20px;border:1px solid #4B5563;">
             <h2 style="margin:0 0 16px;font-size:22px;line-height:1.3;color:#F97316;">Home Maintenance Reminder</h2>
-            <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#F9FAFB;">Hello ${escapeHtml(userName)},</p>
+            <p style="margin:0 0 12px;font-size:15px;line-height:1.6;color:#F9FAFB;">Hello ${escapeHtml(firstName)},</p>
             <p style="margin:0 0 16px;font-size:15px;line-height:1.6;color:#E5E7EB;">
               You have ${matched.length} maintenance task${matched.length === 1 ? "" : "s"} that need attention (as of ${escapeHtml(formatLongDate(todayLocal))}):
             </p>
