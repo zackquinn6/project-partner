@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Calendar } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Calendar, Sheet as SheetIcon } from 'lucide-react';
 import { PlanningToolOpenCardButton } from '@/components/PlanningWizardSteps/PlanningToolOpenCardButton';
 import {
   PLANNING_WIZARD_STEP_ACTION_SLOT_CLASSNAME,
@@ -30,6 +31,14 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
     );
   };
 
+  const handleOpenSheet = () => {
+    window.dispatchEvent(
+      new CustomEvent('open-project-scheduler', {
+        detail: { fromPlanningWizard: true, onComplete, view: 'sheet' },
+      })
+    );
+  };
+
   return (
     <div className="space-y-3">
       <Card className={PLANNING_WIZARD_STEP_CARD_CLASSNAME}>
@@ -46,7 +55,13 @@ export const ScheduleStep: React.FC<ScheduleStepProps> = ({
                 <p className={PLANNING_WIZARD_STEP_DESCRIPTION_CLASSNAME}>
                   Scheduling puts a realistic timeline to the work plan
                 </p>
-                <PlanningToolOpenCardButton toolId="schedule" onClick={handleOpenScheduler} />
+                <div className="flex flex-wrap items-center gap-2">
+                  <PlanningToolOpenCardButton toolId="schedule" onClick={handleOpenScheduler} />
+                  <Button type="button" variant="outline" size="sm" onClick={handleOpenSheet}>
+                    <SheetIcon className="mr-1.5 h-3.5 w-3.5" />
+                    Open sheet
+                  </Button>
+                </div>
               </div>
             </div>
           </div>

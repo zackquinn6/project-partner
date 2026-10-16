@@ -14,10 +14,10 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Calendar as CalendarComponent } from '@/components/ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, Mail, Printer, Info, Layers } from 'lucide-react';
+import { Calendar as CalendarIcon, Clock, CheckCircle, Plus, Users, Settings, Zap, Trash2, Save, X, Target, AlertTriangle, TrendingUp, Brain, Mail, Printer, Info, Layers, Sheet as SheetIcon, Download } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { format, addDays, parseISO, addHours, isSameDay } from 'date-fns';
-import { Project } from '@/interfaces/Project';
+import { Project, type Phase } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { useProject } from '@/contexts/ProjectContext';
 import { useToast } from '@/hooks/use-toast';
@@ -40,7 +40,7 @@ import { useAiFeatureSettings } from '@/hooks/useAiFeatureSettings';
 import { ScheduleCalendarView } from '@/components/ScheduleCalendarView';
 import { RiskManagementWindow } from '@/components/RiskManagementWindow';
 import { ScheduleSensitivity } from './Scheduler/ScheduleSensitivity';
-import { ScheduleViewDialog } from '@/components/ScheduleViewDialog';
+import { ScheduleViewDialog, type ScheduleViewTab } from '@/components/ScheduleViewDialog';
 import { autoRegenerateSchedule } from '@/utils/autoScheduleRegeneration';
 import { finishDateFromScheduleEventsBlob } from '@/utils/estimatedFinishDate';
 import { recordProjectScheduleRevision } from '@/utils/recordProjectScheduleRevision';
@@ -61,11 +61,22 @@ import {
 } from '@/utils/persistContractorAvailability';
 import type { ContractorAvailabilityShape } from '@/utils/applyAvailabilityPatches';
 import { cn } from '@/lib/utils';
+import { exportCsv, exportXlsx } from '@/components/spreadsheet/exportSpreadsheet';
+import { schedulingStateFromEvents } from '@/components/spreadsheet/scheduleFromEvents';
+import type { SpreadsheetColumn, SpreadsheetRow } from '@/components/spreadsheet/spreadsheetTypes';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 interface ProjectSchedulerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   project: Project;
   projectRun: ProjectRun;
+  /** When `sheet`, open the schedule view dialog on the Sheet tab after hydrate. */
+  initialView?: 'default' | 'sheet';
 }
 interface TeamMember {
   id: string;
@@ -159,6 +170,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   onOpenChange,
   project,
   projectRun,
+  initialView = 'default',
 }) => {
   const {
     updateProjectRun
@@ -243,6 +255,10 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
   const [planningMode, setPlanningMode] = useState<PlanningMode>('standard');
   const [scheduleTempo, setScheduleTempo] = useState<ScheduleTempo>('steady');
   const [schedulingResult, setSchedulingResult] = useState<SchedulingResult | null>(null);
+  /** Sheet edits override derived workflow tasks until the next generate. */
+  const [taskOverrides, setTaskOverrides] = useState<Task[] | null>(null);
+  const [editablePhases, setEditablePhases] = useState<Phase[]>(projectRun.phases ?? []);
+  const [scheduleViewTab, setScheduleViewTab] = useState<ScheduleViewTab>('list');
   const [schedulerAccordionCollapseSignal, setSchedulerAccordionCollapseSignal] = useState(0);
   const [isComputing, setIsComputing] = useState(false);
   const [showCalendarView, setShowCalendarView] = useState(false);
@@ -876,6 +892,86 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     effectiveSchedulingPrerequisites,
   ]);
 
+  const effectiveSchedulingTasks = taskOverrides ?? schedulingTasks;
+
+  useEffect(() => {
+    if (!open) return;
+    setEditablePhases(projectRun.phases ?? []);
+  }, [open, projectRun.phases]);
+
+  const ensureScheduleHydrated = useCallback((): boolean => {
+    if (schedulingResult) return true;
+    const events = projectRun.schedule_events?.events;
+    if (!Array.isArray(events) || events.length === 0) return false;
+    const hydrated = schedulingStateFromEvents(events, schedulingTasks);
+    if (hydrated.result.scheduledTasks.length === 0) return false;
+    setSchedulingResult(hydrated.result);
+    setTaskOverrides(hydrated.tasks);
+    return true;
+  }, [projectRun.schedule_events, schedulingResult, schedulingTasks]);
+
+  const openScheduleView = useCallback(
+    (tab: ScheduleViewTab) => {
+      if (tab !== 'sheet' && !schedulingResult && !ensureScheduleHydrated()) {
+        toast({
+          title: 'No schedule yet',
+          description: 'Generate a schedule before opening this view.',
+          variant: 'destructive',
+        });
+        return;
+      }
+      if (tab === 'sheet') {
+        ensureScheduleHydrated();
+      }
+      setScheduleViewTab(tab);
+      setShowScheduleView(true);
+    },
+    [ensureScheduleHydrated, schedulingResult, toast]
+  );
+
+  useEffect(() => {
+    if (!open || initialView !== 'sheet') return;
+    openScheduleView('sheet');
+    // Intentionally once per scheduler open with sheet entry; not on hydrate updates.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- open + initialView gate only
+  }, [open, initialView]);
+
+  const scheduleExportRows = useMemo((): {
+    columns: SpreadsheetColumn[];
+    rows: SpreadsheetRow[];
+  } | null => {
+    if (!schedulingResult) return null;
+    const columns: SpreadsheetColumn[] = [
+      { id: 'title', header: 'Title', type: 'text', editable: false },
+      { id: 'phase', header: 'Phase', type: 'text', editable: false },
+      { id: 'start', header: 'Start', type: 'date', editable: false },
+      { id: 'end', header: 'End', type: 'date', editable: false },
+      { id: 'hours', header: 'Hours', type: 'number', editable: false },
+      { id: 'assignee', header: 'Assignee', type: 'text', editable: false },
+      { id: 'status', header: 'Status', type: 'text', editable: false },
+    ];
+    const phaseName = (phaseId?: string) =>
+      editablePhases.find((p) => p.id === phaseId)?.name ?? '';
+    const rows: SpreadsheetRow[] = schedulingResult.scheduledTasks.map((st) => {
+      const task = effectiveSchedulingTasks.find((t) => t.id === st.taskId);
+      const hours = (st.endTime.getTime() - st.startTime.getTime()) / 3600000;
+      return {
+        id: st.taskId,
+        cells: {
+          title: task?.title ?? '',
+          phase: phaseName(task?.phaseId),
+          start: format(st.startTime, 'yyyy-MM-dd'),
+          end: format(st.endTime, 'yyyy-MM-dd'),
+          hours: String(Math.round(hours * 100) / 100),
+          assignee:
+            teamMembers.find((m) => m.id === st.workerId)?.name ?? st.workerId ?? '',
+          status: st.status,
+        },
+      };
+    });
+    return { columns, rows };
+  }, [editablePhases, effectiveSchedulingTasks, schedulingResult, teamMembers]);
+
   // Calculate available hours per week from team members
   const availableHoursPerWeek = useMemo(() => {
     if (teamMembers.length === 0) return 0;
@@ -1117,6 +1213,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
       // Compute schedule
       const result = schedulingEngine.computeSchedule(schedulingInputs);
+      setTaskOverrides(null);
       setSchedulingResult(result);
       setSchedulerAccordionCollapseSignal((n) => n + 1);
 
@@ -1274,17 +1371,20 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
     setTempAvailability({});
   };
 
-  const persistScheduleToProject = async (result: SchedulingResult): Promise<boolean> => {
+  const persistScheduleToProject = async (
+    result: SchedulingResult,
+    tasksForPersist: Task[] = effectiveSchedulingTasks
+  ): Promise<boolean> => {
     try {
       const scheduleEvents = {
         events: result.scheduledTasks.map(task => ({
           id: task.taskId,
           date: format(task.startTime, 'yyyy-MM-dd'),
-          phaseId: schedulingTasks.find(t => t.id === task.taskId)?.phaseId || '',
-          operationId: schedulingTasks.find(t => t.id === task.taskId)?.operationId || '',
+          phaseId: tasksForPersist.find(t => t.id === task.taskId)?.phaseId || '',
+          operationId: tasksForPersist.find(t => t.id === task.taskId)?.operationId || '',
           duration: Math.round((task.endTime.getTime() - task.startTime.getTime()) / 60000),
-          notes: schedulingTasks.find(t => t.id === task.taskId)?.title || '',
-          assignedTo: (task as any).assignedTo || ''
+          notes: tasksForPersist.find(t => t.id === task.taskId)?.title || '',
+          assignedTo: task.workerId || ''
         })),
         teamMembers: teamMembers,
         globalSettings: {
@@ -1319,8 +1419,8 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             acc[dateKey].timeSlots.push({
               startTime: format(task.startTime, 'HH:mm'),
               endTime: format(task.endTime, 'HH:mm'),
-              phaseId: schedulingTasks.find(t => t.id === task.taskId)?.phaseId,
-              operationId: schedulingTasks.find(t => t.id === task.taskId)?.operationId
+              phaseId: tasksForPersist.find(t => t.id === task.taskId)?.phaseId,
+              operationId: tasksForPersist.find(t => t.id === task.taskId)?.operationId
             });
             return acc;
           }, {} as Record<string, any>),
@@ -1497,7 +1597,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
             </thead>
             <tbody>
               ${schedulingResult.scheduledTasks.filter(st => st.status === 'confirmed').sort((a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()).map(scheduledTask => {
-        const task = schedulingTasks.find(t => t.id === scheduledTask.taskId);
+        const task = effectiveSchedulingTasks.find(t => t.id === scheduledTask.taskId);
         const worker = teamMembers.find(w => w.id === scheduledTask.workerId);
         return `
                     <tr style="border-bottom: 1px solid #e5e7eb;">
@@ -1557,7 +1657,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
 
         // Get tasks assigned to this member
         const assignedTasks = schedulingResult.scheduledTasks.filter(st => st.workerId === member.id && st.status === 'confirmed').map(st => {
-          const task = schedulingTasks.find(t => t.id === st.taskId);
+          const task = effectiveSchedulingTasks.find(t => t.id === st.taskId);
           return {
             title: task?.title || 'Unknown Task',
             startTime: format(st.startTime, 'PPp'),
@@ -1624,15 +1724,26 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
           </div>
           <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
             {schedulingResult && (
-              <Button
-                variant="outline"
-                size="sm"
-                className="min-h-9 md:min-h-8"
-                onClick={() => setShowCalendarView(true)}
-              >
-                <CalendarIcon className="mr-2 h-4 w-4" />
-                Calendar View
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-9 md:min-h-8"
+                  onClick={() => setShowCalendarView(true)}
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  Calendar View
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="min-h-9 md:min-h-8"
+                  onClick={() => openScheduleView('sheet')}
+                >
+                  <SheetIcon className="mr-2 h-4 w-4" />
+                  Sheet
+                </Button>
+              </>
             )}
             <PlanningToolWindowHeaderActions
               onCancel={() => onOpenChange(false)}
@@ -1725,14 +1836,60 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
                   <AlertDescription className="space-y-3">
                     <div className="flex items-center justify-between flex-wrap gap-2">
                       <span>Schedule generated with {schedulingResult.scheduledTasks.length} tasks</span>
-                      <Button 
-                        onClick={() => setShowScheduleView(true)} 
-                        className="h-8 text-xs"
-                        size="sm"
-                      >
-                        <CalendarIcon className="w-3.5 h-3.5 mr-1.5" />
-                        View Schedule
-                      </Button>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <Button
+                          onClick={() => openScheduleView('list')}
+                          className="h-8 text-xs"
+                          size="sm"
+                        >
+                          <CalendarIcon className="mr-1.5 h-3.5 w-3.5" />
+                          View Schedule
+                        </Button>
+                        <Button
+                          onClick={() => openScheduleView('sheet')}
+                          className="h-8 text-xs"
+                          size="sm"
+                          variant="outline"
+                        >
+                          <SheetIcon className="mr-1.5 h-3.5 w-3.5" />
+                          Sheet
+                        </Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button className="h-8 text-xs" size="sm" variant="outline">
+                              <Download className="mr-1.5 h-3.5 w-3.5" />
+                              Export
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (!scheduleExportRows) return;
+                                exportXlsx(
+                                  scheduleExportRows.rows,
+                                  scheduleExportRows.columns,
+                                  `${project.name || 'schedule'}-schedule`,
+                                  'Schedule'
+                                );
+                              }}
+                            >
+                              Excel (.xlsx)
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => {
+                                if (!scheduleExportRows) return;
+                                exportCsv(
+                                  scheduleExportRows.rows,
+                                  scheduleExportRows.columns,
+                                  `${project.name || 'schedule'}-schedule`
+                                );
+                              }}
+                            >
+                              CSV (.csv)
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
                     </div>
                     {scheduledCompletionDate && (
                       <div className="flex items-center gap-2 pt-2 border-t">
@@ -2236,7 +2393,7 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
         open={showCalendarView}
         onOpenChange={setShowCalendarView}
         scheduledTasks={schedulingResult.scheduledTasks}
-        tasks={schedulingTasks}
+        tasks={effectiveSchedulingTasks}
         workers={teamMembers.map(tm => ({
           id: tm.id,
           name: tm.name,
@@ -2262,8 +2419,31 @@ export const ProjectScheduler: React.FC<ProjectSchedulerProps> = ({
       onOpenChange={setShowScheduleView}
       schedulingResult={schedulingResult}
       planningMode={planningMode}
-      schedulingTasks={schedulingTasks}
+      schedulingTasks={effectiveSchedulingTasks}
       teamMembers={teamMembers}
+      phases={editablePhases}
+      initialTab={scheduleViewTab}
+      exportBasename={`${project.name || 'schedule'}-schedule`}
+      onScheduleChange={({ schedulingResult: nextResult, schedulingTasks: nextTasks }) => {
+        setSchedulingResult(nextResult);
+        setTaskOverrides(nextTasks);
+        if (nextResult.scheduledTasks.length > 0) {
+          const lastTask = nextResult.scheduledTasks.reduce((latest, task) =>
+            task.endTime > latest.endTime ? task : latest
+          );
+          setScheduledCompletionDate(lastTask.endTime);
+        } else {
+          setScheduledCompletionDate(null);
+        }
+      }}
+      onPhasesChange={(nextPhases) => {
+        setEditablePhases(nextPhases);
+        void updateProjectRun({
+          ...projectRun,
+          phases: nextPhases,
+        });
+      }}
+      allowStandardPlanEdits={project.isStandardTemplate === true}
     />
 
     {/* AI availability text entry */}

@@ -334,6 +334,7 @@ export default function UserView({
   const [projectCustomizerMode, setProjectCustomizerMode] = useState<'initial-plan' | 'final-plan' | 'unplanned-work' | 'replan'>('replan');
   const [projectCustomizerFromPlanningWizard, setProjectCustomizerFromPlanningWizard] = useState(false);
   const [projectSchedulerOpen, setProjectSchedulerOpen] = useState(false);
+  const [projectSchedulerInitialView, setProjectSchedulerInitialView] = useState<'default' | 'sheet'>('default');
   const [changeManagementOpen, setChangeManagementOpen] = useState(false);
   const [projectPlanningWizardOpen, setProjectPlanningWizardOpen] = useState(false);
   /** Re-open Kickoff from Planning Studio even after kickoff steps are already complete. */
@@ -597,10 +598,15 @@ export default function UserView({
   // Add event listeners for Course Correct window actions
   useEffect(() => {
     const handleOpenProjectScheduler = (event?: Event) => {
-      const detail = (event as CustomEvent<{ fromPlanningWizard?: boolean; onComplete?: () => void }> | undefined)?.detail;
+      const detail = (event as CustomEvent<{
+        fromPlanningWizard?: boolean;
+        onComplete?: () => void;
+        view?: 'default' | 'sheet';
+      }> | undefined)?.detail;
       if (detail?.fromPlanningWizard) {
         registerPlanningWizardToolCloseCallback('scheduler', detail.onComplete);
       }
+      setProjectSchedulerInitialView(detail?.view === 'sheet' ? 'sheet' : 'default');
       setProjectSchedulerOpen(true);
     };
     const handleOpenChangeManagement = () => {
@@ -4350,11 +4356,13 @@ export default function UserView({
           onOpenChange={(open) => {
             setProjectSchedulerOpen(open);
             if (!open) {
+              setProjectSchedulerInitialView('default');
               completePlanningWizardToolCloseCallback('scheduler');
             }
           }}
           project={activeProject as Project}
           projectRun={currentProjectRun}
+          initialView={projectSchedulerInitialView}
         />
       )}
 
