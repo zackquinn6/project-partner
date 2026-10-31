@@ -90,24 +90,29 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 
 | Variable | Used by |
 | --- | --- |
-| `TOOLIO_SUPABASE_URL`, `TOOLIO_SERVICE_ROLE_KEY` | export, extract, verify |
+| `TOOLIO_SUPABASE_URL`, `TOOLIO_PUBLISHABLE_KEY`, `TOOLIO_ACCESS_TOKEN` | export, extract, verify |
 | `PP_SUPABASE_URL`, `PP_SERVICE_ROLE_KEY` | export, extract |
-| `TOOLIO_DB_URL`, `PP_DB_URL` (and `pg_dump` on PATH) | export, unless `--json-only` |
+| `PP_DB_URL` (and `pg_dump` on PATH) | export, unless `--skip-dump pp` |
+| `TOOLIO_DB_URL` | export, unless `--skip-dump toolio` |
 | `VOCAB_MERGE_ARCHIVE_DIR` | all; an absolute path outside every git work tree (the archive holds production user data) |
 
-Never commit keys or the archive.
+- Toolio runs on Lovable Cloud, which exposes no service-role key or database URL. Scripts read Toolio with a signed-in admin's access token (`TOOLIO_ACCESS_TOKEN`, about one hour of validity), so row security applies. Export therefore also requires `--toolio-counts`: the true row counts from the `--print-toolio-count-sql` query, run in Toolio's SQL editor just before the export. A mismatch fails the export.
+- Toolio has no `pg_dump`; its restore record is the JSON archive. Toolio's link work is additive (new tables, new columns, backfill), so rolling it back never needs a database restore.
+
+Never commit keys, tokens, or the archive.
 
 ### Running
 
 ```
-node scripts/vocab-merge/export.mjs --dry-run          # live row counts only
-node scripts/vocab-merge/export.mjs                    # archive + pg_dump
+node scripts/vocab-merge/export.mjs --print-toolio-count-sql   # SQL to run in Toolio's SQL editor
+node scripts/vocab-merge/export.mjs --dry-run                  # live row counts only
+node scripts/vocab-merge/export.mjs --toolio-counts <file> --skip-dump toolio
 node scripts/vocab-merge/extract.mjs --archive <folder>
 node scripts/vocab-merge/match.mjs --archive <folder> [--carry <reviewed crosswalk.csv>]
 node scripts/vocab-merge/verify.mjs --archive <folder> [--check archive|toolio-content|toolio-orders]
 ```
 
-- Export fails if a table's row count changes while it is read; re-run it.
+- Export fails if a table's row count changes while it is read, or if a Toolio count differs from `--toolio-counts`; re-run the count query and the export.
 - Name keys come from Toolio's `inventory_item_name_comparison_key` RPC for both apps' names, so there is one normalization rule.
 - A family's current revision comes from Project Partner's `latest_published_in_family` RPC, else its newest draft. A family with neither is flagged `NO CURRENT REVISION` for review.
 - A Toolio project's line list follows the guided wiring: sections on the content foundation, standard section link stubs, composite members, and visibility overrides. Lines whose inventory item no longer exists are written to `extract/toolio_dangling_lines.json` and must be repaired in Toolio before the load.

@@ -8,8 +8,8 @@
  * Toolio's normalization. The current revision of each Project Partner family comes from
  * Project Partner's latest_published_in_family RPC.
  *
- * Env: TOOLIO_SUPABASE_URL, TOOLIO_SERVICE_ROLE_KEY, PP_SUPABASE_URL, PP_SERVICE_ROLE_KEY,
- *      VOCAB_MERGE_ARCHIVE_DIR.
+ * Env: TOOLIO_SUPABASE_URL, TOOLIO_PUBLISHABLE_KEY, TOOLIO_ACCESS_TOKEN, PP_SUPABASE_URL,
+ *      PP_SERVICE_ROLE_KEY, VOCAB_MERGE_ARCHIVE_DIR.
  */
 import { join } from 'node:path';
 import {

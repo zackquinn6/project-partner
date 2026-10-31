@@ -14,11 +14,21 @@ export function requireEnv(name) {
 }
 
 export function parseArgs(argv = process.argv.slice(2)) {
-  const args = { dryRun: false, jsonOnly: false, archive: null, carry: null, check: [] };
+  const args = {
+    dryRun: false,
+    printCountSql: false,
+    skipDump: [],
+    toolioCounts: null,
+    archive: null,
+    carry: null,
+    check: [],
+  };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--dry-run') args.dryRun = true;
-    else if (arg === '--json-only') args.jsonOnly = true;
+    else if (arg === '--print-toolio-count-sql') args.printCountSql = true;
+    else if (arg === '--skip-dump') args.skipDump.push(argv[++i]);
+    else if (arg === '--toolio-counts') args.toolioCounts = argv[++i];
     else if (arg === '--archive') args.archive = argv[++i];
     else if (arg === '--carry') args.carry = argv[++i];
     else if (arg === '--check') args.check.push(argv[++i]);
@@ -27,18 +37,38 @@ export function parseArgs(argv = process.argv.slice(2)) {
   return args;
 }
 
-function serviceClient(urlEnv, keyEnv) {
-  return createClient(requireEnv(urlEnv), requireEnv(keyEnv), {
+const TOKEN_MIN_REMAINING_MS = 10 * 60 * 1000;
+
+/**
+ * Toolio runs on Lovable Cloud, which exposes no service-role key, so scripts read Toolio as a
+ * signed-in catalog admin. Export proves completeness against true row counts (see export.mjs).
+ */
+export function toolioClient() {
+  const url = requireEnv('TOOLIO_SUPABASE_URL');
+  const token = requireEnv('TOOLIO_ACCESS_TOKEN');
+  const segments = token.split('.');
+  if (segments.length !== 3) throw new Error('TOOLIO_ACCESS_TOKEN is not a JWT');
+  const claims = JSON.parse(Buffer.from(segments[1], 'base64url').toString('utf8'));
+  if (claims.role !== 'authenticated') {
+    throw new Error(`TOOLIO_ACCESS_TOKEN has role "${claims.role}"; copy a signed-in admin's access token, not the publishable key`);
+  }
+  if (typeof claims.iss !== 'string' || !claims.iss.startsWith(url)) {
+    throw new Error(`TOOLIO_ACCESS_TOKEN was issued by ${claims.iss}, not ${url}`);
+  }
+  const remainingMs = claims.exp * 1000 - Date.now();
+  if (remainingMs < TOKEN_MIN_REMAINING_MS) {
+    throw new Error('TOOLIO_ACCESS_TOKEN expires in under 10 minutes; copy a fresh one');
+  }
+  return createClient(url, requireEnv('TOOLIO_PUBLISHABLE_KEY'), {
+    global: { headers: { Authorization: `Bearer ${token}` } },
     auth: { persistSession: false, autoRefreshToken: false },
   });
 }
 
-export function toolioClient() {
-  return serviceClient('TOOLIO_SUPABASE_URL', 'TOOLIO_SERVICE_ROLE_KEY');
-}
-
 export function ppClient() {
-  return serviceClient('PP_SUPABASE_URL', 'PP_SERVICE_ROLE_KEY');
+  return createClient(requireEnv('PP_SUPABASE_URL'), requireEnv('PP_SERVICE_ROLE_KEY'), {
+    auth: { persistSession: false, autoRefreshToken: false },
+  });
 }
 
 /** Archive holds production user data, so it must live outside every git work tree. */

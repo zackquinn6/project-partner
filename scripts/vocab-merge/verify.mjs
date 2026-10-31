@@ -11,8 +11,8 @@
  *
  * Exit code 1 when any check fails.
  *
- * Env: VOCAB_MERGE_ARCHIVE_DIR, plus TOOLIO_SUPABASE_URL and TOOLIO_SERVICE_ROLE_KEY for the
- *      toolio-* checks.
+ * Env: VOCAB_MERGE_ARCHIVE_DIR, plus TOOLIO_SUPABASE_URL, TOOLIO_PUBLISHABLE_KEY, and
+ *      TOOLIO_ACCESS_TOKEN for the toolio-* checks.
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
@@ -58,7 +58,7 @@ async function checkArchive() {
   }
   for (const [db, dump] of Object.entries(manifest.pg_dump)) {
     if (dump.status !== 'ok') {
-      problems.push(`${db}: no pg_dump (${dump.reason}); phase 3 and 4 rehearsals need it`);
+      console.log(`NOTE ${db}: no pg_dump in this archive (${dump.reason})`);
       continue;
     }
     if (sha256(readFileSync(join(dir, dump.file))) !== dump.file_sha256) problems.push(`${db}: pg_dump file hash differs from manifest`);
