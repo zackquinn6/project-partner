@@ -17,14 +17,15 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { archiveDir, hashMap, parseArgs, readJson, readPayload, sha256 } from './lib.mjs';
+import { archiveDir, exportDir, hashMap, parseArgs, readJson, readPayload, sha256 } from './lib.mjs';
 
 const CHECKS = { archive: checkArchive, 'toolio-content': checkToolioContent, 'toolio-orders': checkToolioOrders };
 const NEEDS_AGAINST = ['toolio-content', 'toolio-orders'];
 
 const args = parseArgs();
 const dir = archiveDir(args.archive);
-const laterDir = args.against ? archiveDir(args.against) : null;
+// The later export only needs the toolio-2-checks result (on its own or inside toolio-export).
+const laterDir = args.against ? exportDir(args.against) : null;
 const selected = args.check.length ? args.check : Object.keys(CHECKS).filter((c) => laterDir || !NEEDS_AGAINST.includes(c));
 for (const name of selected) {
   if (!CHECKS[name]) throw new Error(`Unknown check ${name}. Known: ${Object.keys(CHECKS).join(', ')}`);

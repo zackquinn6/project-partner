@@ -15,6 +15,7 @@ const PAYLOAD_VERSIONS = {
   'toolio-4-name-key-function': 1,
   'pp-export': 1,
   'toolio-export': 1,
+  'pp-snapshot': 1,
 };
 
 /** One query per app: each combined result carries the parts below under `parts`. */
