@@ -4,8 +4,9 @@ This is the canonical contract. Toolio's `docs/PROJECT_PARTNER_INTEGRATION.md` c
 
 ## Ownership
 
-- **Project Partner** owns the general vocabulary: projects (one entry per revision family), tools, and materials.
+- **Project Partner** owns the general vocabulary, the upper level for everything: project categories, projects (one entry per revision family), tools, and materials.
 - **Toolio** owns SKUs, pricing, guided sections, customer copy, orders, and accounts.
+- Every Toolio project, catalog grouping, and inventory core links to a Project Partner term; there is no Toolio-only vocabulary. Project Partner may hold terms Toolio does not use.
 - The databases are never shared. Toolio keeps a local mirror of the vocabulary, fed by the change feed below; Toolio's shop and checkout never call Project Partner.
 - Where both apps had a tool or material before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases. Project names are decided per project in review (see [Toolio project rebuild](#toolio-project-rebuild-final-step)).
 
@@ -13,7 +14,8 @@ This is the canonical contract. Toolio's `docs/PROJECT_PARTNER_INTEGRATION.md` c
 
 Toolio has more built-out guided projects; Project Partner has the stronger project structure (families, revisions, foundations). After switch-over, Toolio's guided projects are rebuilt for **identity only**:
 
-- Each Toolio guided project links to one Project Partner family, or is marked `toolio_only` (for example catalog groupings such as Tile or Flooring).
+- Each Toolio guided project links to one Project Partner family.
+- Each Toolio catalog grouping (a project other projects are filed under, such as Tile or Flooring) links to a Project Partner project category, and the grouped projects' families carry that category.
 - The project name is decided per project in crosswalk review (Project Partner's name, Toolio's name, or a new one); the other names become aliases.
 - Toolio's foundation and variant links (`content_foundation_project_id`) follow the family's foundation structure.
 - Toolio's ordering content is carried over unchanged: sections, section items, packages, default quantities, customization questions and rules.
@@ -31,8 +33,8 @@ Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing rea
 
 ## Keys
 
-- Every term has a `public_key`: kebab-case, immutable, unique across projects, tools, and materials (one `vocab_keys` table).
-- Terms that came from Toolio use Toolio's key: the core `sku` for tools and materials, `projects.slug` for projects.
+- Every term has a `public_key`: lowercase kebab-case, immutable, unique across categories, projects, tools, and materials (one `vocab_keys` table).
+- Terms that came from Toolio use Toolio's key when it is valid kebab-case: the core `sku` for tools and materials, `projects.slug` for projects and groupings. Otherwise review picks a key (flagged `BAD KEY`); Toolio's own SKU or slug is unchanged.
 - Terms that exist only in Project Partner get a key derived from their name. A clash with any existing key is a crosswalk conflict, resolved by a person.
 - Toolio stores the key, not its SKU, on a link, so renaming a Toolio SKU never breaks a link.
 - Retired terms keep their key and point to a replacement through `replaced_by_public_key` when there is one. Terms are never hard-deleted.
@@ -41,8 +43,10 @@ Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing rea
 
 | Object | Purpose |
 | --- | --- |
-| `vocab_keys (public_key PK, entity project/tool/material)` | Global key registry |
+| `vocab_keys (public_key PK, entity category/project/tool/material)` | Global key registry |
 | `public_key` on `tools`, `materials`, and family roots (`projects.parent_project_id IS NULL`) | FK to `vocab_keys`; immutable by trigger |
+| `project_categories (public_key, name, retired_at, replaced_by_public_key)` | Categories as vocabulary; replaces the free-text `projects.category` array |
+| `project_family_categories (family_key, category_key)` | Which categories a family belongs to |
 | `name_key` on `tools`, `materials` | Unique normalized name (Toolio's `inventory_item_name_comparison_key` rule) |
 | `retired_at`, `replaced_by_public_key` | Retirement instead of deletion |
 | `vocab_aliases (public_key, alias, alias_key, source)` | Sources: `pp_name`, `pp_revision_name`, `toolio_name`, `alternates` |
@@ -99,8 +103,8 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 
 ## Toolio side (summary)
 
-- Mirror tables `pp_vocab_terms`, `pp_vocab_projects`, `pp_vocab_project_terms`, `pp_vocab_aliases`, `pp_vocab_sync_state`.
-- Link columns `pp_link_status` (`linked`, `toolio_only`, `retired_needs_review`) and `pp_vocab_key` on `projects` and on `inventory_items` cores.
+- Mirror tables `pp_vocab_terms`, `pp_vocab_projects` (families and categories, by `kind`), `pp_vocab_project_terms`, `pp_vocab_aliases`, `pp_vocab_sync_state`.
+- Link columns `pp_link_status` (`linked`, `retired_needs_review`) and `pp_vocab_key` on `projects` (guided projects link to families, groupings to categories) and on `inventory_items` cores. Every core and project is linked.
 - Edge function `project-partner-link` with actions `sync`, `snapshot_reload`, `create_term`.
 - Details: Toolio `docs/PROJECT_PARTNER_INTEGRATION.md`.
 
@@ -125,6 +129,7 @@ Both apps work the same way: nothing in this integration connects to a database 
 | `validate-export.mjs` | 0: checks the saved results, writes `manifest.json` | Terminal |
 | `extract.mjs` | 1: matching views in `extract/*.json`; generates `toolio-3-name-keys.sql` | Terminal |
 | `match.mjs` | 2: `vocab-crosswalk.csv` and `match_summary.json` | Terminal |
+| `recommend.mjs` | 3: `vocab-review.csv`, every decision pre-filled with confidence and reason | Terminal |
 | `verify.mjs` | 6: PASS/FAIL per check; exit code 1 on any failure | Terminal |
 
 ### Running
@@ -152,21 +157,31 @@ node scripts/vocab-merge/verify.mjs --archive <baseline folder> [--against <late
 
 ## Crosswalk format
 
-Columns: `entity` (`project`, `tool`, `material`, `reference`), `toolio_id`, `toolio_key`, `toolio_name`, `pp_id`, `pp_name`, `match_tier` (`exact`, `alias`, `fuzzy_suggestion`, `none`), `proposed_action`, `canonical_key`, `canonical_name`, `notes`, `decision`.
+Entities: `category` (Toolio catalog groupings vs Project Partner project categories), `project` (Toolio guided projects vs Project Partner families), `tool` and `material` (Toolio inventory cores vs the Project Partner library), `reference` (Project Partner references that resolve to no library row).
+
+Columns: `entity`, `toolio_id`, `toolio_key`, `toolio_name`, `pp_id`, `pp_name`, `match_tier` (`reviewed`, `exact`, `alias`, `fuzzy_suggestion`, `none`), `proposed_action`, `canonical_key`, `canonical_name`, `pair_with`, `unpaired_from`, `notes`, `decision`.
 
 | Action | Meaning |
 | --- | --- |
-| `merge` | One Toolio entry and one Project Partner entry: Toolio key and wording, Project Partner name becomes an alias, Project Partner UUID kept |
+| `merge` | One Toolio entry and one Project Partner entry. Tools and materials take Toolio's wording; projects and categories take the name chosen in review. The other name becomes an alias; the Project Partner UUID is kept |
 | `create_in_pp` | Toolio only: becomes a new Project Partner term |
-| `keep_pp` | Project Partner only: stays, unlinked in Toolio, still mirrored |
+| `keep_pp` | Project Partner only: stays and is mirrored to Toolio |
 | `merge_many` | Several Project Partner synonyms for one Toolio entry: one canonical, the rest retired with `replaced_by` |
-| `one_to_many` | One Project Partner entry matches several Toolio entries: link them all to one key, or split the term |
-| `toolio_only` | Not general vocabulary (delivery, packaging, kits, bundles): never sent to Project Partner |
+| `one_to_many` | One Project Partner entry matches several Toolio entries: all link to one key, or `-` in `pair_with` splits a Toolio entry off into its own term |
 | `create_library_term` | A reference that resolves to no library row becomes a new library term |
 | `map_to` | A reference maps to an existing term; `canonical_key` holds the target key |
 
-- **Matching tiers:** exact normalized name; then aliases (Project Partner alternates and variation names, revision names, Toolio `discovery_tags`); fuzzy token overlap is only ever a suggestion in `notes`.
-- **Decision:** the final action name. `match.mjs` pre-fills it only for exact one-to-one merges with a Toolio key and matching entity, and for Project Partner-only library terms with no fuzzy suggestion. A key clash clears any pre-fill.
-- **Flags in `notes` that need a person:** `KEY CLASH`, `NO KEY`, `ENTITY DIFFERS`, `STRUCTURE DIFFERS`, `NO CURRENT REVISION`, `many-to-many component`.
+- **Matching tiers:** pairings made in review; exact normalized name; aliases (Project Partner alternates and variation names, revision names, Toolio `discovery_tags`; categories match by exact name only). Fuzzy token overlap is only ever a suggestion in `notes`.
+- **Decision:** the final action name. `match.mjs` pre-fills it for exact one-to-one tool and material merges with a valid Toolio key and matching type, for pairings made in review, and for Project Partner-only library terms with nothing similar in Toolio. A key clash or bad key clears any pre-fill.
+- **Flags in `notes` that need a person:** `KEY CLASH`, `BAD KEY`, `NO KEY`, `NO NAME`, `ENTITY DIFFERS`, `STRUCTURE DIFFERS`, `NO CURRENT REVISION`, `many-to-many component`.
+
+### Review
+
+1. `recommend.mjs` writes `vocab-review.csv`: every row with `decision` filled in, `confidence` (`confident` or `check`), and `reason`, with `check` rows first.
+2. Open it in Excel and review the `check` rows. Edit only where you disagree:
+   - `decision`, `canonical_name`, `canonical_key`;
+   - `pair_with`: on an unmatched row, the other app's item to pair with (its name, key, or id);
+   - `pair_with` = `-` on a matched row: these are different items; unpair them.
+3. Save as **CSV UTF-8** and run `match.mjs --archive <folder> --carry <saved review>`, then `recommend.mjs` again. Decisions carry over; pairings and breaks persist (`match_tier = reviewed`, `unpaired_from`); only rows that changed need a new look.
 - Loads fail on any row without a decision or with an unknown `canonical_key`.
 - The reviewed crosswalk is committed to this repo at `docs/integration/vocab-crosswalk.csv` in phase 2.

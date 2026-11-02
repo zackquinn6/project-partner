@@ -14,6 +14,23 @@ const PAYLOAD_VERSIONS = {
   [NAME_KEYS_QUERY]: 1,
 };
 
+export const CROSSWALK_COLUMNS = [
+  'entity',
+  'toolio_id',
+  'toolio_key',
+  'toolio_name',
+  'pp_id',
+  'pp_name',
+  'match_tier',
+  'proposed_action',
+  'canonical_key',
+  'canonical_name',
+  'pair_with',
+  'unpaired_from',
+  'notes',
+  'decision',
+];
+
 export function requireEnv(name) {
   const value = process.env[name];
   if (!value || !value.trim()) {

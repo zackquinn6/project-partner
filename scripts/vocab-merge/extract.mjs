@@ -50,7 +50,9 @@ const itemOverrides = indexBy(
   (r) => `${r.project_id}:${r.section_item_id ?? r.standard_section_item_id}`,
 );
 const compositeMembers = groupBy(t('project_composite_members'), 'composite_project_id');
-const catalogParents = groupBy(t('project_catalog_parent_links'), 'child_project_id');
+const catalogLinks = t('project_catalog_parent_links');
+const catalogParents = groupBy(catalogLinks, 'child_project_id');
+const catalogChildren = groupBy(catalogLinks, 'parent_project_id');
 
 const danglingLines = [];
 
@@ -128,7 +130,10 @@ const addName = (value) => {
   addName(row.name);
   (row.discovery_tags ?? []).forEach(addName);
 });
-ppProjects.forEach((row) => addName(row.name));
+ppProjects.forEach((row) => {
+  addName(row.name);
+  (row.category ?? []).forEach(addName);
+});
 [...tools, ...materials].forEach((row) => {
   addName(row.name);
   alternateNames(row.alternates).forEach(addName);
@@ -182,6 +187,9 @@ const toolioProjectsOut = toolioProjects.map((row) => ({
   content_foundation_project_id: row.content_foundation_project_id,
   parent_id: row.parent_id,
   catalog_parent_ids: (catalogParents.get(row.id) ?? []).map((link) => link.parent_project_id),
+  catalog_child_ids: (catalogChildren.get(row.id) ?? []).map((link) => link.child_project_id),
+  /** Groupings are catalog parents of other projects; Project Partner holds them as categories. */
+  is_grouping: catalogChildren.has(row.id),
   discovery_tags: row.discovery_tags,
   discovery_tag_keys: tagKeys(row.discovery_tags),
   lines: projectLines(row.id),
@@ -234,6 +242,22 @@ const ppFamiliesOut = [...families.keys()].map((rootId) => {
     revision_name_keys: revisionNames.map(keyOf),
   };
 });
+
+// ---------- Output: Project Partner categories ----------
+
+const categoryFamilies = new Map();
+for (const family of ppFamiliesOut) {
+  for (const category of family.category ?? []) {
+    if (!categoryFamilies.has(category)) categoryFamilies.set(category, []);
+    categoryFamilies.get(category).push(family.root_id);
+  }
+}
+const ppCategoriesOut = [...categoryFamilies].map(([name, familyIds]) => ({
+  id: name,
+  name,
+  name_key: keyOf(name),
+  family_ids: familyIds,
+}));
 
 // ---------- Output: Project Partner library ----------
 
@@ -310,6 +334,7 @@ const outDir = join(dir, 'extract');
 writeJson(join(outDir, 'toolio_cores.json'), toolioCoresOut);
 writeJson(join(outDir, 'toolio_projects.json'), toolioProjectsOut);
 writeJson(join(outDir, 'pp_families.json'), ppFamiliesOut);
+writeJson(join(outDir, 'pp_categories.json'), ppCategoriesOut);
 writeJson(join(outDir, 'pp_library.json'), libraryOut);
 writeJson(join(outDir, 'pp_references.json'), referencesOut);
 writeJson(join(outDir, 'toolio_dangling_lines.json'), danglingLines);
@@ -317,6 +342,8 @@ writeJson(join(outDir, 'toolio_dangling_lines.json'), danglingLines);
 const summary = {
   toolio_cores: toolioCoresOut.length,
   toolio_projects: toolioProjectsOut.length,
+  toolio_groupings: toolioProjectsOut.filter((p) => p.is_grouping).length,
+  pp_categories: ppCategoriesOut.length,
   toolio_dangling_lines: danglingLines.length,
   pp_families: ppFamiliesOut.length,
   pp_families_without_current_revision: ppFamiliesOut.filter((f) => f.current_source === 'none').length,
