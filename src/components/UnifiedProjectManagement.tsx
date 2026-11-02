@@ -29,15 +29,13 @@ import { PFMEAManagement } from '@/components/PFMEAManagement';
 import { ProjectVisualizerDialog } from '@/components/ProjectVisualizerDialog';
 import { StructureManager } from '@/components/StructureManager';
 import type { Project as AppContextProject } from '@/interfaces/Project';
-import { DeleteProjectDialog } from '@/components/DeleteProjectDialog';
+import { RequestRemovalDialog } from '@/components/RequestRemovalDialog';
 import { PlanningGuideWindow, type PlanningGuideTab } from '@/components/PlanningGuideWindow';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { calculateProjectTimeEstimate, formatScalingUnit } from '@/utils/projectTimeEstimation';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { cn } from '@/lib/utils';
 
-// Alphabetically sorted project categories
-const PROJECT_CATEGORIES = ['Appliances', 'Bathroom', 'Ceilings', 'Decks & Patios', 'Doors & Windows', 'Electrical', 'Exterior Carpentry', 'Flooring', 'General Repairs & Maintenance', 'HVAC & Ventilation', 'Insulation & Weatherproofing', 'Interior Carpentry', 'Kitchen', 'Landscaping & Outdoor Projects', 'Lighting & Electrical', 'Masonry & Concrete', 'Painting & Finishing', 'Plumbing', 'Roofing', 'Safety & Security', 'Smart Home & Technology', 'Storage & Organization', 'Tile', 'Walls & Drywall'];
 interface Project {
   id: string;
   name: string;
@@ -225,9 +223,22 @@ export function UnifiedProjectManagement({
     setPfmeaTargetProjectId(projectId);
     setPfmeaOpen(true);
   }, []);
-  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
-  const [projectToDelete, setProjectToDelete] = useState<{ id: string; name: string } | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
+  const [removalTarget, setRemovalTarget] = useState<{ publicKey: string; name: string } | null>(null);
+  /** Category vocabulary shared with Toolio; projects may only use these names. */
+  const [projectCategories, setProjectCategories] = useState<string[]>([]);
+  useEffect(() => {
+    void (async () => {
+      const { data, error } = await (supabase.from('project_categories' as any) as any)
+        .select('name')
+        .order('name', { ascending: true });
+      if (error) {
+        console.error('Error loading project categories:', error);
+        toast.error('Failed to load project categories');
+        return;
+      }
+      setProjectCategories(((data ?? []) as { name: string }[]).map((row) => row.name));
+    })();
+  }, []);
 
   const ProjectTypeTooltip = () => (
     <TooltipProvider delayDuration={100}>
@@ -1099,76 +1110,26 @@ export function UnifiedProjectManagement({
       }
     }
   };
-  const handleDeleteProjectClick = (projectId: string, projectName: string) => {
-    setProjectToDelete({ id: projectId, name: projectName });
-    setDeleteDialogOpen(true);
-  };
-
-  const handleDeleteProject = async () => {
-    if (!projectToDelete) return;
-
-    setIsDeleting(true);
-    try {
-      // Get all project IDs (parent and all revisions) to delete
-      const {
-        data: allProjects
-      } = await supabase.from('projects').select('id').or(`id.eq.${projectToDelete.id},parent_project_id.eq.${projectToDelete.id}`);
-      if (!allProjects || allProjects.length === 0) {
-        toast.error("Project not found");
-        return;
-      }
-      const projectIds = allProjects.map(p => p.id);
-
-      // Delete all related data for each project
-      for (const pid of projectIds) {
-        // Delete operation_steps via phase_operations
-        const { data: phaseIds } = await supabase
-          .from('project_phases')
-          .select('id')
-          .eq('project_id', pid);
-        
-        if (phaseIds && phaseIds.length > 0) {
-          const { data: operations } = await supabase
-            .from('phase_operations')
-            .select('id')
-            .in('phase_id', phaseIds.map(p => p.id));
-          
-          if (operations && operations.length > 0) {
-            const operationIds = operations.map(op => op.id);
-            await supabase.from('operation_steps').delete().in('operation_id', operationIds);
-          }
-        }
-
-        // Delete phase_operations
-        if (phaseIds && phaseIds.length > 0) {
-          await supabase
-            .from('phase_operations')
-            .delete()
-            .in('phase_id', phaseIds.map(p => p.id));
-        }
-
-        // Delete project_phases (new architecture)
-        await supabase.from('project_phases').delete().eq('project_id', pid);
-
-        // Delete project_runs that reference this template
-        await supabase.from('project_runs').delete().eq('project_id', pid);
-      }
-
-      // Finally delete all projects (parent and revisions)
-      const {
-        error: deleteError
-      } = await supabase.from('projects').delete().in('id', projectIds);
-      if (deleteError) throw deleteError;
-            setSelectedProject(null);
-      setDeleteDialogOpen(false);
-      setProjectToDelete(null);
-      fetchProjects();
-    } catch (error) {
-      console.error('Error deleting project:', error);
-      toast.error("Failed to delete project");
-    } finally {
-      setIsDeleting(false);
+  /** Project families are shared with Toolio: removal is requested here and completes when Toolio approves. */
+  const handleDeleteProjectClick = async (projectId: string, projectName: string) => {
+    const { data, error } = await (supabase.from('projects' as any) as any)
+      .select('id, parent_project_id, public_key')
+      .eq('id', projectId)
+      .single();
+    if (error) {
+      toast.error(`Could not load the project: ${error.message}`);
+      return;
     }
+    const rootId: string = data.parent_project_id ?? data.id;
+    const root =
+      rootId === data.id
+        ? data
+        : (await (supabase.from('projects' as any) as any).select('public_key').eq('id', rootId).single()).data;
+    if (!root?.public_key) {
+      toast.error('This project family has no shared key yet');
+      return;
+    }
+    setRemovalTarget({ publicKey: root.public_key, name: projectName });
   };
   const deleteDraftRevision = async (revisionId: string, revisionNumber: number) => {
     if (revisionNumber === 0) {
@@ -1864,7 +1825,7 @@ export function UnifiedProjectManagement({
                                   className="max-h-[min(20rem,50dvh)] min-h-0 space-y-1.5 overflow-y-scroll overscroll-y-contain p-3 [-webkit-overflow-scrolling:touch]"
                                   onWheel={(e) => e.stopPropagation()}
                                 >
-                                  {PROJECT_CATEGORIES.map(cat => (
+                                  {projectCategories.map(cat => (
                                     <div key={cat} className="flex min-w-0 items-start gap-2">
                                       <Checkbox
                                         id={`edit-cat-${cat}`}
@@ -3008,7 +2969,7 @@ export function UnifiedProjectManagement({
                       className="max-h-[min(20rem,50dvh)] min-h-0 space-y-1.5 overflow-y-scroll overscroll-y-contain p-3 [-webkit-overflow-scrolling:touch]"
                       onWheel={(e) => e.stopPropagation()}
                     >
-                      {PROJECT_CATEGORIES.map(cat => (
+                      {projectCategories.map(cat => (
                         <div key={cat} className="flex min-w-0 items-start gap-2">
                           <Checkbox
                             id={`new-cat-${cat}`}
@@ -3258,14 +3219,16 @@ export function UnifiedProjectManagement({
         </DialogContent>
       </Dialog>
 
-      {/* Delete Project Dialog */}
-      <DeleteProjectDialog
-        open={deleteDialogOpen}
-        onOpenChange={setDeleteDialogOpen}
-        projectName={projectToDelete?.name || ''}
-        onConfirm={handleDeleteProject}
-        isDeleting={isDeleting}
-        includeRevisions={true}
-      />
+      {removalTarget && (
+        <RequestRemovalDialog
+          open
+          onOpenChange={(open) => {
+            if (!open) setRemovalTarget(null);
+          }}
+          entity="project"
+          publicKey={removalTarget.publicKey}
+          name={removalTarget.name}
+        />
+      )}
     </>;
 }

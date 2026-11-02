@@ -214,9 +214,28 @@ Columns: `entity`, `toolio_id`, `toolio_key`, `toolio_name`, `pp_id`, `pp_name`,
 - Loads fail on any row without a decision or with an unknown `canonical_key`.
 - The reviewed crosswalk is committed to this repo at `docs/integration/vocab-crosswalk.csv` in phase 2.
 
+### Phase 3: Project Partner load
+
+- **Types for merged terms:** Project Partner's tool or material classification wins (Toolio's `product_type` means rentable versus sales-only, not tool versus material), so no row moves between the `tools` and `materials` tables. Toolio's name and description still win.
+- **New terms** take their Project Partner type, category, and specialty scale (Common, Typical, Specialized) from `docs/integration/new-term-attributes.csv`; the build fails on a new term without a row, or a row without a term.
+- **Categories** become `public.project_categories`. Besides the categories on projects, the app's former picker list (`scripts/vocab-merge/pp-code-categories.json`) is imported so unused categories are kept. `projects.category` keeps holding names, now checked against the list; renames carry into it.
+- **Step entries** become one shape: `{ id, name, library_id, legacy_name, category, alternates, quantity, parentId?, ... }`. Library selections lose `item`, `coreItemId`, `isPrime`, and `attributes`. The workflow editor writes `library_id` on new entries, and ownership matching uses it.
+- **Project family delete** in Project Management, and Delete in the tool and material library, become Request removal. Admin → Removal Requests lists requests, with Remove and Keep on Toolio's.
+- **Vocab API:** edge function `project-partner-vocab` (`verify_jwt = false`), secret `TOOLIO_SYNC_TOKEN`.
+
+**Build and rehearse**
+
+```
+node scripts/vocab-merge/build-pp-load.mjs --archive <folder> --dry-run      # accounting only
+node scripts/vocab-merge/test/test-pp-phase3.mjs --archive <folder>          # local rehearsal (PostgreSQL on PATH)
+node scripts/vocab-merge/build-pp-load.mjs --archive <folder>                # writes the migration
+```
+
+The build needs the export folder fully decided plus `toolio-4-name-key-function` (Toolio's normalization function, copied into Project Partner as `vocab_name_key` and checked against every name Toolio keyed). The local rehearsal runs the generated migration on a stand-in schema seeded from the export and checks the load, keys, guards, categories, two-sided removal, snapshot, and term creation.
+
 ### Phase 2 decisions (export 2026-11-02)
 
-- **Crosswalk:** 577 rows, all decided. Tools and materials take Toolio's wording and type; projects and categories take Project Partner's names. Projects new to Project Partner are named Item + Action, the convention of Project Partner's create-project screen.
+- **Crosswalk:** 577 rows, all decided. Tools and materials take Toolio's wording (their type follows Project Partner, see phase 3); projects and categories take Project Partner's names. Projects new to Project Partner are named Item + Action, the convention of Project Partner's create-project screen.
 - **Flooring:** Project Partner's "Laminate or Engineered Flooring Installation" splits in two. Toolio Hardwood Flooring keeps the existing family, renamed "Engineered Flooring Installation"; Toolio LVP Flooring becomes "Laminate Flooring Installation", a new family built on it (matching Toolio's foundation and variant link).
 - **Categories:** Toolio Electrical joins Project Partner's "Electrical" and "Lighting & Electrical" into one category, "Lighting & Electrical" (key `electrical`). Project Partner's Interior Carpentry and Exterior Carpentry categories take keys `interior-carpentry-category` and `exterior-carpentry-category`, since the plain keys belong to Toolio projects.
 - **Project Partner commerce fields** (`tool_variations.sku`, `pricing`, `estimated_rental_lifespan_days`, `materials.is_rental_available`, `scrape-tool-pricing`): reference-only after phase 3, dropped in phase 6.

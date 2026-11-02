@@ -7,8 +7,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Search, Plus, Edit, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { filterToolVariationsForDisplay } from "@/utils/variationAttributeDefinitions";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
+import { RequestRemovalDialog } from "./RequestRemovalDialog";
 import { VariationViewer } from "./VariationViewer";
 import { ToolsImportManager } from "./ToolsImportManager";
 import { ExportToolsData } from "./ExportToolsData";
@@ -31,6 +31,7 @@ const ADMIN_TOOL_DIALOG_CONTENT_CLASS = cn(
 
 interface Tool {
   id: string;
+  public_key: string;
   item: string; // Mapped from database 'name' column
   description: string | null;
   category: string;
@@ -48,6 +49,7 @@ interface Tool {
 // Database row type (matches actual schema)
 type ToolRow = {
   id: string;
+  public_key: string;
   name: string;
   description: string | null;
   category: string;
@@ -73,6 +75,7 @@ export function ToolsLibrary() {
   const [sortField, setSortField] = useState<SortField>('item');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
   const [editToolFormSubmitting, setEditToolFormSubmitting] = useState(false);
+  const [removalOpen, setRemovalOpen] = useState(false);
 
   const fetchTools = async () => {
     try {
@@ -80,7 +83,7 @@ export function ToolsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('tools' as any)
-        .select('id, name, description, category, photo_url, specialty_scale, created_at, updated_at, instructions') as any;
+        .select('id, public_key, name, description, category, photo_url, specialty_scale, created_at, updated_at, instructions') as any;
 
       const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
@@ -89,6 +92,7 @@ export function ToolsLibrary() {
       // Map database rows to UI interface (name -> item)
       const toolsData = ((data as unknown as ToolRow[]) || []).map((row): Tool => ({
         id: row.id,
+        public_key: row.public_key,
         item: row.name,
         description: row.description,
         category: row.category,
@@ -164,22 +168,6 @@ export function ToolsLibrary() {
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
     return <ArrowUpDown className={`w-4 h-4 ml-1 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />;
-  };
-
-  const handleDelete = async (toolId: string) => {
-    try {
-      const { error } = await supabase
-        .from('tools' as any)
-        .delete()
-        .eq('id', toolId);
-      
-      if (error) throw error;
-      
-      setTools(tools.filter(tool => tool.id !== toolId));
-    } catch (error) {
-      console.error('Error deleting tool:', error);
-      toast.error('Failed to delete tool');
-    }
   };
 
   const handleSave = () => {
@@ -432,33 +420,20 @@ export function ToolsLibrary() {
                   />
                 </div>
                 <div className="flex shrink-0 justify-end border-t border-border pt-3">
-                  <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          Delete Tool
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="z-[220]">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Tool</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{editingTool.item}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={async () => {
-                              await handleDelete(editingTool.id);
-                              setShowEditDialog(false);
-                              setEditingTool(null);
-                            }}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                  </AlertDialog>
+                  <Button variant="destructive" size="sm" onClick={() => setRemovalOpen(true)}>
+                    Request removal
+                  </Button>
+                  <RequestRemovalDialog
+                    open={removalOpen}
+                    onOpenChange={setRemovalOpen}
+                    entity="tool"
+                    publicKey={editingTool.public_key}
+                    name={editingTool.item}
+                    onRequested={() => {
+                      setShowEditDialog(false);
+                      setEditingTool(null);
+                    }}
+                  />
                 </div>
               </div>
             )}

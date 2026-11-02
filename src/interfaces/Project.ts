@@ -26,6 +26,10 @@ export interface Material {
   /** Units per package for rounding. */
   packSize?: number;
   linkedContentSectionIds?: string[];
+  /** Shared library row (materials or tools) this entry uses. */
+  library_id?: string;
+  /** Name the entry had before the vocabulary link renamed it. */
+  legacy_name?: string;
 }
 
 export interface Tool {
@@ -37,6 +41,10 @@ export interface Tool {
   item?: string;
   /** When set and non-empty, tool is shown only if at least one linked instruction section is visible. When omitted or empty, applies to all sections on the step. */
   linkedContentSectionIds?: string[];
+  /** Shared library row (tools or materials) this entry uses. */
+  library_id?: string;
+  /** Name the entry had before the vocabulary link renamed it. */
+  legacy_name?: string;
 }
 
 // New library interfaces matching database schema

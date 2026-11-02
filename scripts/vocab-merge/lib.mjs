@@ -12,6 +12,7 @@ const PAYLOAD_VERSIONS = {
   'pp-2-projects': 1,
   'pp-3-references': 2,
   [NAME_KEYS_QUERY]: 1,
+  'toolio-4-name-key-function': 1,
 };
 
 export const CROSSWALK_COLUMNS = [
@@ -40,10 +41,11 @@ export function requireEnv(name) {
 }
 
 export function parseArgs(argv = process.argv.slice(2)) {
-  const args = { dryRun: false, archive: null, against: null, carry: null, check: [] };
+  const args = { dryRun: false, archive: null, against: null, carry: null, out: null, check: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--out') args.out = argv[++i];
     else if (arg === '--archive') args.archive = argv[++i];
     else if (arg === '--against') args.against = argv[++i];
     else if (arg === '--carry') args.carry = argv[++i];

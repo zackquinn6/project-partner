@@ -14,6 +14,8 @@ export type ToolRequirementLike = {
   item?: string;
   tool_id?: string;
   library_tool_id?: string;
+  /** Shared library row id (tools or materials) carried by every step entry since the vocabulary link. */
+  library_id?: string;
   alternates?: unknown;
 };
 
@@ -79,6 +81,7 @@ function requirementMatchKeys(tool: ToolRequirementLike): string[] {
   if (tool.id) keys.push(`id:${tool.id}`);
   if (tool.tool_id) keys.push(`id:${tool.tool_id}`);
   if (tool.library_tool_id) keys.push(`id:${tool.library_tool_id}`);
+  if (tool.library_id) keys.push(`id:${tool.library_id}`);
   keys.push(...expandToolAlternateKeys(tool.alternates));
   return keys;
 }

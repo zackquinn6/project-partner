@@ -106,7 +106,7 @@ function recommend(row) {
       return { decision: 'keep_pp', confidence: 'check', reason: `Only in Project Partner. Similar Toolio items: ${suggest}. If one is the same item, type its name in pair_with.` };
     case 'merge':
       return /ENTITY DIFFERS/.test(notes)
-        ? { decision: 'merge', confidence: 'check', reason: 'Same item; Toolio and Project Partner file it under different types. The merged term takes Toolio\'s type.' }
+        ? { decision: 'merge', confidence: 'check', reason: 'Same item; Toolio and Project Partner file it under different types. The merged term keeps Project Partner\'s type and takes Toolio\'s name.' }
         : { decision: 'merge', confidence: 'check', reason: `Matched through an alternate name: Toolio "${row.toolio_name}" = Project Partner "${row.pp_name}".` };
     case 'merge_many':
       return { decision: 'merge_many', confidence: 'check', reason: `Project Partner has several entries for this Toolio item (${/synonyms=([^;]+)/.exec(notes)?.[1]}). They fold into one term with Toolio's name; the rest become alternate names. Put "-" in pair_with on any that is a different item.` };

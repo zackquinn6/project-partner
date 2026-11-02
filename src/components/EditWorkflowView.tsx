@@ -3212,6 +3212,7 @@ export default function EditWorkflowView({
           const newTools: StepTool[] = selectedItems.map((item) => ({
             id: `tool-${Date.now()}-${Math.random()}`,
             name: item.item,
+            library_id: item.coreItemId,
             description: parentId ? '' : item.description || '',
             category: item.category as StepTool['category'],
             alternates: [],
@@ -3238,6 +3239,7 @@ export default function EditWorkflowView({
           const newMaterials: StepMaterial[] = selectedItems.map((item) => ({
             id: `material-${Date.now()}-${Math.random()}`,
             name: item.item,
+            library_id: item.coreItemId,
             description: parentId ? '' : item.description || '',
             category: item.category as StepMaterial['category'],
             alternates: [],
@@ -3278,6 +3280,7 @@ export default function EditWorkflowView({
           const newPpeTools: StepTool[] = selectedTools.map((item) => ({
             id: `ppe-tool-${Date.now()}-${Math.random()}`,
             name: item.item,
+            library_id: item.coreItemId,
             description: substitutingPpe ? '' : item.description || '',
             category: item.category as StepTool['category'],
             alternates: [],
@@ -3288,6 +3291,7 @@ export default function EditWorkflowView({
           const newPpeMaterials: StepMaterial[] = selectedMaterials.map((item) => ({
             id: `ppe-material-${Date.now()}-${Math.random()}`,
             name: item.item,
+            library_id: item.coreItemId,
             description: substitutingPpe ? '' : item.description || '',
             category: item.category as StepMaterial['category'],
             alternates: [],

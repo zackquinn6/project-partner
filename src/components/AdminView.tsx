@@ -6,6 +6,7 @@ import { UnifiedProjectManagement } from '@/components/UnifiedProjectManagement'
 import { ProjectAnalyticsWindow } from '@/components/ProjectAnalyticsWindow';
 import { UsersSecurityWindow } from '@/components/UsersSecurityWindow';
 import { ToolsMaterialsWindow } from '@/components/ToolsMaterialsWindow';
+import { RemovalRequestsWindow } from '@/components/RemovalRequestsWindow';
 import { HomeRiskManager } from '@/components/HomeRiskManager';
 import { AdminActionCenter } from '@/components/AdminActionCenter';
 import EditWorkflowView from '@/components/EditWorkflowView';
@@ -25,6 +26,7 @@ import {
   Grid3x3,
   GraduationCap,
   Loader2,
+  Trash2,
   type LucideIcon,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -199,6 +201,7 @@ export const AdminView: React.FC = () => {
   const [analyticsOpen, setAnalyticsOpen] = useState(false);
   const [usersSecurityOpen, setUsersSecurityOpen] = useState(false);
   const [toolsMaterialsOpen, setToolsMaterialsOpen] = useState(false);
+  const [removalRequestsOpen, setRemovalRequestsOpen] = useState(false);
   const [homeRiskManagerOpen, setHomeRiskManagerOpen] = useState(false);
   const [editWorkflowOpen, setEditWorkflowOpen] = useState(false);
   const [processMapOpen, setProcessMapOpen] = useState(false);
@@ -285,6 +288,15 @@ export const AdminView: React.FC = () => {
       actionLabel: 'Open Library',
       icon: Wrench,
       onOpen: () => setToolsMaterialsOpen(true),
+    },
+    {
+      id: 'removal-requests',
+      requireFullAdmin: true,
+      title: 'Removal Requests',
+      description: 'Approve or reject removing categories, projects, tools, and materials shared with Toolio',
+      actionLabel: 'Open Requests',
+      icon: Trash2,
+      onOpen: () => setRemovalRequestsOpen(true),
     },
     {
       id: 'home-risks',
@@ -460,6 +472,7 @@ export const AdminView: React.FC = () => {
         <UsersSecurityWindow open={usersSecurityOpen} onOpenChange={setUsersSecurityOpen} />
         
         <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
+        <RemovalRequestsWindow open={removalRequestsOpen} onOpenChange={setRemovalRequestsOpen} />
 
         <Dialog open={homeRiskManagerOpen} onOpenChange={setHomeRiskManagerOpen}>
           <DialogContent className="w-full h-screen max-w-full max-h-full md:max-w-[90vw] md:h-[90vh] md:rounded-lg p-0 overflow-hidden flex flex-col [&>button]:hidden">

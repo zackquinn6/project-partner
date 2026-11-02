@@ -1,0 +1,29 @@
+{
+  "source": "PROJECT_CATEGORIES in src/components/UnifiedProjectManagement.tsx before phase 3 (the category picker list). Phase 3 moves categories into public.project_categories.",
+  "names": [
+    "Appliances",
+    "Bathroom",
+    "Ceilings",
+    "Decks & Patios",
+    "Doors & Windows",
+    "Electrical",
+    "Exterior Carpentry",
+    "Flooring",
+    "General Repairs & Maintenance",
+    "HVAC & Ventilation",
+    "Insulation & Weatherproofing",
+    "Interior Carpentry",
+    "Kitchen",
+    "Landscaping & Outdoor Projects",
+    "Lighting & Electrical",
+    "Masonry & Concrete",
+    "Painting & Finishing",
+    "Plumbing",
+    "Roofing",
+    "Safety & Security",
+    "Smart Home & Technology",
+    "Storage & Organization",
+    "Tile",
+    "Walls & Drywall"
+  ]
+}

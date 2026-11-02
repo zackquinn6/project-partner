@@ -551,6 +551,7 @@ function parseStepTools(raw: unknown): ToolRequirementLike[] {
         item: typeof obj.item === 'string' ? obj.item : undefined,
         tool_id: typeof obj.tool_id === 'string' ? obj.tool_id : undefined,
         library_tool_id: typeof obj.library_tool_id === 'string' ? obj.library_tool_id : undefined,
+        library_id: typeof obj.library_id === 'string' ? obj.library_id : undefined,
         alternates: obj.alternates,
       });
     }

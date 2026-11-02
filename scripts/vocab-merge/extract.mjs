@@ -13,7 +13,8 @@
  */
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import { NAME_KEYS_QUERY, archiveDir, parseArgs, payloadPath, readPayload, tableRows, writeJson } from './lib.mjs';
+import { fileURLToPath } from 'node:url';
+import { NAME_KEYS_QUERY, archiveDir, parseArgs, payloadPath, readJson, readPayload, tableRows, writeJson } from './lib.mjs';
 
 const args = parseArgs();
 const dir = archiveDir(args.archive);
@@ -134,6 +135,8 @@ ppProjects.forEach((row) => {
   addName(row.name);
   (row.category ?? []).forEach(addName);
 });
+const codeCategories = readJson(fileURLToPath(new URL('./pp-code-categories.json', import.meta.url))).names;
+codeCategories.forEach(addName);
 [...tools, ...materials].forEach((row) => {
   addName(row.name);
   alternateNames(row.alternates).forEach(addName);
@@ -245,7 +248,8 @@ const ppFamiliesOut = [...families.keys()].map((rootId) => {
 
 // ---------- Output: Project Partner categories ----------
 
-const categoryFamilies = new Map();
+/** Categories on current revisions, plus the app's category picker list (in use or not). */
+const categoryFamilies = new Map(codeCategories.map((name) => [name, []]));
 for (const family of ppFamiliesOut) {
   for (const category of family.category ?? []) {
     if (!categoryFamilies.has(category)) categoryFamilies.set(category, []);

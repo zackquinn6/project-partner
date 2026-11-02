@@ -6,8 +6,8 @@ import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Search, Plus, Edit, Image, ArrowUpDown } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogPortal, DialogOverlay } from "@/components/ui/dialog";
-import { AlertDialog, AlertDialogTrigger, AlertDialogContent, AlertDialogHeader, AlertDialogTitle, AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction } from "@/components/ui/alert-dialog";
 import { LibraryItemForm } from "./LibraryItemForm";
+import { RequestRemovalDialog } from "./RequestRemovalDialog";
 import { BulkUpload } from "./BulkUpload";
 import { ExportMaterialsData } from "./ExportMaterialsData";
 import { PlanningToolWindowHeaderActions } from '@/components/PlanningWizardSteps/PlanningToolWindowHeaderActions';
@@ -21,6 +21,7 @@ import { toast } from "sonner";
 
 interface Material {
   id: string;
+  public_key: string;
   item: string; // Mapped from database 'name' column
   description: string | null;
   category: string;
@@ -33,6 +34,7 @@ interface Material {
 // Database row type (matches actual schema)
 type MaterialRow = {
   id: string;
+  public_key: string;
   name: string; // Database column name
   description: string | null;
   category: string;
@@ -55,6 +57,7 @@ export function MaterialsLibrary() {
   const [showBulkUpload, setShowBulkUpload] = useState(false);
   const [sortField, setSortField] = useState<SortField>('item');
   const [sortDirection, setSortDirection] = useState<SortDirection>('asc');
+  const [removalOpen, setRemovalOpen] = useState(false);
 
   const fetchMaterials = async () => {
     try {
@@ -62,7 +65,7 @@ export function MaterialsLibrary() {
       // Cast entire query to bypass TypeScript type checking for column names
       const query = supabase
         .from('materials' as any)
-        .select('id, name, description, category, unit, photo_url, created_at, updated_at') as any;
+        .select('id, public_key, name, description, category, unit, photo_url, created_at, updated_at') as any;
       
       const { data, error } = await query.order('name', { ascending: true }); // Database column is 'name', not 'item'
       
@@ -71,6 +74,7 @@ export function MaterialsLibrary() {
       // Map database rows to UI interface (name -> item, unit -> unit_size)
       const materialsData = ((data as unknown as MaterialRow[]) || []).map((row): Material => ({
         id: row.id,
+        public_key: row.public_key,
         item: row.name, // Map 'name' to 'item' for UI
         description: row.description,
         category: row.category,
@@ -122,22 +126,6 @@ export function MaterialsLibrary() {
   const getSortIcon = (field: SortField) => {
     if (sortField !== field) return <ArrowUpDown className="w-4 h-4 ml-1 opacity-50" />;
     return <ArrowUpDown className={`w-4 h-4 ml-1 ${sortDirection === 'desc' ? 'rotate-180' : ''}`} />;
-  };
-
-  const handleDelete = async (materialId: string) => {
-    try {
-      const { error } = await supabase
-        .from('materials' as any)
-        .delete()
-        .eq('id', materialId);
-      
-      if (error) throw error;
-      
-      setMaterials(materials.filter(material => material.id !== materialId));
-    } catch (error) {
-      console.error('Error deleting material:', error);
-      toast.error('Failed to delete material');
-    }
   };
 
   const handleSave = () => {
@@ -332,33 +320,20 @@ export function MaterialsLibrary() {
               {editingMaterial && (
                 <div className="flex h-full min-h-0 flex-col">
                   <div className="flex justify-end px-6 pt-4">
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="destructive" size="sm">
-                          Delete Material
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="z-[220]">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Material</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete "{editingMaterial.item}"? This action cannot be undone.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={async () => {
-                              await handleDelete(editingMaterial.id);
-                              setShowEditDialog(false);
-                              setEditingMaterial(null);
-                            }}
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <Button variant="destructive" size="sm" onClick={() => setRemovalOpen(true)}>
+                      Request removal
+                    </Button>
+                    <RequestRemovalDialog
+                      open={removalOpen}
+                      onOpenChange={setRemovalOpen}
+                      entity="material"
+                      publicKey={editingMaterial.public_key}
+                      name={editingMaterial.item}
+                      onRequested={() => {
+                        setShowEditDialog(false);
+                        setEditingMaterial(null);
+                      }}
+                    />
                   </div>
                   <LibraryItemForm
                     type="materials"
