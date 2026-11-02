@@ -10,7 +10,7 @@ export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.5"
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -1873,8 +1873,10 @@ export type Database = {
           id: string
           is_rental_available: boolean | null
           name: string
+          name_key: string
           notes: string | null
           photo_url: string | null
+          public_key: string
           supplier_link: string | null
           unit: string | null
           unit_size: string | null
@@ -1890,8 +1892,10 @@ export type Database = {
           id?: string
           is_rental_available?: boolean | null
           name: string
+          name_key: string
           notes?: string | null
           photo_url?: string | null
+          public_key: string
           supplier_link?: string | null
           unit?: string | null
           unit_size?: string | null
@@ -1907,14 +1911,24 @@ export type Database = {
           id?: string
           is_rental_available?: boolean | null
           name?: string
+          name_key?: string
           notes?: string | null
           photo_url?: string | null
+          public_key?: string
           supplier_link?: string | null
           unit?: string | null
           unit_size?: string | null
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "materials_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
       }
       materials_variants: {
         Row: {
@@ -2666,6 +2680,35 @@ export type Database = {
         }
         Relationships: []
       }
+      project_categories: {
+        Row: {
+          created_at: string
+          name: string
+          public_key: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          name: string
+          public_key: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          name?: string
+          public_key?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_categories_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: true
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
+      }
       project_communication_plans: {
         Row: {
           created_at: string
@@ -2698,6 +2741,42 @@ export type Database = {
             isOneToOne: true
             referencedRelation: "project_runs"
             referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_family_tools: {
+        Row: {
+          family_key: string
+          role: string
+          source: string
+          term_key: string
+        }
+        Insert: {
+          family_key: string
+          role: string
+          source: string
+          term_key: string
+        }
+        Update: {
+          family_key?: string
+          role?: string
+          source?: string
+          term_key?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_family_tools_family_key_fkey"
+            columns: ["family_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+          {
+            foreignKeyName: "project_family_tools_term_key_fkey"
+            columns: ["term_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
           },
         ]
       }
@@ -3957,6 +4036,7 @@ export type Database = {
           phases: Json | null
           project_challenges: string | null
           project_type: string | null
+          public_key: string | null
           publish_status: string | null
           release_date: string | null
           revision_notes: string | null
@@ -3996,6 +4076,7 @@ export type Database = {
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
+          public_key?: string | null
           publish_status?: string | null
           release_date?: string | null
           revision_notes?: string | null
@@ -4035,6 +4116,7 @@ export type Database = {
           phases?: Json | null
           project_challenges?: string | null
           project_type?: string | null
+          public_key?: string | null
           publish_status?: string | null
           release_date?: string | null
           revision_notes?: string | null
@@ -4062,6 +4144,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "projects"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "projects_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
           },
         ]
       }
@@ -4603,7 +4692,9 @@ export type Database = {
           id: string
           instructions: Json | null
           name: string
+          name_key: string
           photo_url: string | null
+          public_key: string
           specialty_scale: number
           updated_at: string
         }
@@ -4617,7 +4708,9 @@ export type Database = {
           id?: string
           instructions?: Json | null
           name: string
+          name_key: string
           photo_url?: string | null
+          public_key: string
           specialty_scale?: number
           updated_at?: string
         }
@@ -4631,11 +4724,21 @@ export type Database = {
           id?: string
           instructions?: Json | null
           name?: string
+          name_key?: string
           photo_url?: string | null
+          public_key?: string
           specialty_scale?: number
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "tools_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
       }
       usage_agreements: {
         Row: {
@@ -5277,6 +5380,225 @@ export type Database = {
           },
         ]
       }
+      vocab_aliases: {
+        Row: {
+          alias: string
+          created_at: string
+          id: string
+          public_key: string
+          source: string
+        }
+        Insert: {
+          alias: string
+          created_at?: string
+          id?: string
+          public_key: string
+          source: string
+        }
+        Update: {
+          alias?: string
+          created_at?: string
+          id?: string
+          public_key?: string
+          source?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_aliases_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
+      }
+      vocab_change_events: {
+        Row: {
+          change_kind: string
+          created_at: string
+          entity: string
+          payload: Json
+          public_key: string
+          seq: number
+        }
+        Insert: {
+          change_kind: string
+          created_at?: string
+          entity: string
+          payload: Json
+          public_key: string
+          seq?: number
+        }
+        Update: {
+          change_kind?: string
+          created_at?: string
+          entity?: string
+          payload?: Json
+          public_key?: string
+          seq?: number
+        }
+        Relationships: []
+      }
+      vocab_keys: {
+        Row: {
+          created_at: string
+          entity: string
+          public_key: string
+          removed_at: string | null
+          replaced_by_public_key: string | null
+        }
+        Insert: {
+          created_at?: string
+          entity: string
+          public_key: string
+          removed_at?: string | null
+          replaced_by_public_key?: string | null
+        }
+        Update: {
+          created_at?: string
+          entity?: string
+          public_key?: string
+          removed_at?: string | null
+          replaced_by_public_key?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_keys_replaced_by_public_key_fkey"
+            columns: ["replaced_by_public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
+      }
+      vocab_removal_requests: {
+        Row: {
+          created_at: string
+          id: string
+          pp_decided_at: string | null
+          pp_decided_by: string | null
+          pp_decision: string | null
+          public_key: string
+          reason: string | null
+          replacement_key: string | null
+          requested_by_app: string
+          requested_by_email: string
+          status: string
+          toolio_decided_at: string | null
+          toolio_decided_by: string | null
+          toolio_decision: string | null
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          pp_decided_at?: string | null
+          pp_decided_by?: string | null
+          pp_decision?: string | null
+          public_key: string
+          reason?: string | null
+          replacement_key?: string | null
+          requested_by_app: string
+          requested_by_email: string
+          status?: string
+          toolio_decided_at?: string | null
+          toolio_decided_by?: string | null
+          toolio_decision?: string | null
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          pp_decided_at?: string | null
+          pp_decided_by?: string | null
+          pp_decision?: string | null
+          public_key?: string
+          reason?: string | null
+          replacement_key?: string | null
+          requested_by_app?: string
+          requested_by_email?: string
+          status?: string
+          toolio_decided_at?: string | null
+          toolio_decided_by?: string | null
+          toolio_decision?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_removal_requests_public_key_fkey"
+            columns: ["public_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+          {
+            foreignKeyName: "vocab_removal_requests_replacement_key_fkey"
+            columns: ["replacement_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
+      }
+      vocab_term_proposals: {
+        Row: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          entity: string
+          id: string
+          proposed_key: string
+          proposed_name: string
+          requested_by: string
+          result_key: string | null
+          status: string
+          toolio_item_id: string
+          toolio_item_kind: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string | null
+          entity: string
+          id?: string
+          proposed_key: string
+          proposed_name: string
+          requested_by: string
+          result_key?: string | null
+          status?: string
+          toolio_item_id: string
+          toolio_item_kind: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          decided_at?: string | null
+          decided_by?: string | null
+          description?: string | null
+          entity?: string
+          id?: string
+          proposed_key?: string
+          proposed_name?: string
+          requested_by?: string
+          result_key?: string | null
+          status?: string
+          toolio_item_id?: string
+          toolio_item_kind?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "vocab_term_proposals_result_key_fkey"
+            columns: ["result_key"]
+            isOneToOne: false
+            referencedRelation: "vocab_keys"
+            referencedColumns: ["public_key"]
+          },
+        ]
+      }
     }
     Views: {
       feature_requests_public: {
@@ -5689,6 +6011,241 @@ export type Database = {
       set_user_role_for_management: {
         Args: { p_new_role: string; p_user_id: string }
         Returns: undefined
+      }
+      vocab_assert_caller: { Args: { p_app: string }; Returns: undefined }
+      vocab_cancel_proposal: {
+        Args: { p_proposal_id: string; p_requested_by: string }
+        Returns: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          entity: string
+          id: string
+          proposed_key: string
+          proposed_name: string
+          requested_by: string
+          result_key: string | null
+          status: string
+          toolio_item_id: string
+          toolio_item_kind: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_term_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_cancel_removal: {
+        Args: { p_app: string; p_email: string; p_request_id: string }
+        Returns: {
+          created_at: string
+          id: string
+          pp_decided_at: string | null
+          pp_decided_by: string | null
+          pp_decision: string | null
+          public_key: string
+          reason: string | null
+          replacement_key: string | null
+          requested_by_app: string
+          requested_by_email: string
+          status: string
+          toolio_decided_at: string | null
+          toolio_decided_by: string | null
+          toolio_decision: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_removal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_complete_removal: {
+        Args: { p_request_id: string }
+        Returns: undefined
+      }
+      vocab_decide_proposal: {
+        Args: {
+          p_category: string
+          p_decision: string
+          p_email: string
+          p_entity: string
+          p_existing_key: string
+          p_proposal_id: string
+          p_specialty_scale: number
+        }
+        Returns: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          entity: string
+          id: string
+          proposed_key: string
+          proposed_name: string
+          requested_by: string
+          result_key: string | null
+          status: string
+          toolio_item_id: string
+          toolio_item_kind: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_term_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_decide_removal: {
+        Args: {
+          p_app: string
+          p_decision: string
+          p_email: string
+          p_request_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          pp_decided_at: string | null
+          pp_decided_by: string | null
+          pp_decision: string | null
+          public_key: string
+          reason: string | null
+          replacement_key: string | null
+          requested_by_app: string
+          requested_by_email: string
+          status: string
+          toolio_decided_at: string | null
+          toolio_decided_by: string | null
+          toolio_decision: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_removal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_emit: {
+        Args: { p_key: string; p_kind: string }
+        Returns: undefined
+      }
+      vocab_emit_proposal: {
+        Args: {
+          p_proposal: Database["public"]["Tables"]["vocab_term_proposals"]["Row"]
+        }
+        Returns: undefined
+      }
+      vocab_emit_request: {
+        Args: {
+          p_request: Database["public"]["Tables"]["vocab_removal_requests"]["Row"]
+        }
+        Returns: undefined
+      }
+      vocab_family_current: { Args: { p_root: string }; Returns: string }
+      vocab_kebab: { Args: { p_text: string }; Returns: string }
+      vocab_map_entries: {
+        Args: {
+          p_entries: Json
+          p_kind: string
+          p_map: Json
+          p_require_all: boolean
+        }
+        Returns: Json
+      }
+      vocab_map_owned_tools: {
+        Args: { p_map: Json; p_owned: Json; p_require_all: boolean }
+        Returns: Json
+      }
+      vocab_name_key: { Args: { p_name: string }; Returns: string }
+      vocab_new_key: {
+        Args: { p_entity: string; p_name: string }
+        Returns: string
+      }
+      vocab_propose_term: {
+        Args: {
+          p_description: string
+          p_entity: string
+          p_item_id: string
+          p_item_kind: string
+          p_key: string
+          p_name: string
+          p_requested_by: string
+        }
+        Returns: {
+          created_at: string
+          decided_at: string | null
+          decided_by: string | null
+          description: string | null
+          entity: string
+          id: string
+          proposed_key: string
+          proposed_name: string
+          requested_by: string
+          result_key: string | null
+          status: string
+          toolio_item_id: string
+          toolio_item_kind: string
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_term_proposals"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_rebuild_family_tools: {
+        Args: { p_root: string }
+        Returns: undefined
+      }
+      vocab_request_removal: {
+        Args: {
+          p_app: string
+          p_email: string
+          p_key: string
+          p_reason: string
+          p_replacement_key: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          pp_decided_at: string | null
+          pp_decided_by: string | null
+          pp_decision: string | null
+          public_key: string
+          reason: string | null
+          replacement_key: string | null
+          requested_by_app: string
+          requested_by_email: string
+          status: string
+          toolio_decided_at: string | null
+          toolio_decided_by: string | null
+          toolio_decision: string | null
+          updated_at: string
+        }
+        SetofOptions: {
+          from: "*"
+          to: "vocab_removal_requests"
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
+      vocab_snapshot: { Args: never; Returns: Json }
+      vocab_term_payload: { Args: { p_key: string }; Returns: Json }
+      vocab_walk_phases: {
+        Args: { p_map: Json; p_phases: Json; p_require_all: boolean }
+        Returns: Json
+      }
+      vocab_walk_run_phases: {
+        Args: { p_map: Json; p_phases: Json; p_require_all: boolean }
+        Returns: Json
       }
     }
     Enums: {
