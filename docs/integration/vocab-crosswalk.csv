@@ -1,0 +1,578 @@
+entity,toolio_id,toolio_key,toolio_name,pp_id,pp_name,match_tier,proposed_action,canonical_key,canonical_name,pair_with,unpaired_from,notes,decision
+category,,,,Appliances,Appliances,none,keep_pp,appliances,Appliances,,,families=Dishwasher Replacement,keep_pp
+category,,,,Bathroom,Bathroom,none,keep_pp,bathroom,Bathroom,,,families=Shower Fixture Replacement | Tile Flooring Installation | Tile Shower/Bath Installation | Electric Radiant Floor Heat Installation | Toilet Flange Repair | Toilet Replacement | Vanity Replacement | Caulking Application,keep_pp
+category,192f584e-e620-4826-a8c1-a04d0d335a63,carpentry,Carpentry,,,fuzzy_suggestion,create_in_pp,carpentry,Carpentry,,,groups=interior-carpentry | drywall-finishing | furniture-building | exterior-carpentry; suggest=Interior Carpentry (0.5) | Exterior Carpentry (0.5),create_in_pp
+category,,,,Decor,Decor,none,keep_pp,decor,Decor,,,families=Wallpaper Installation or Removal,keep_pp
+category,6ecaf302-abcd-4c3b-8847-7256f5ff9eea,demolition,Demolition,Demolition,Demolition,exact,merge,demolition,Demolition,,,groups=general-demo,merge
+category,,,,Doors & Windows,Doors & Windows,none,keep_pp,doors-windows,Doors & Windows,,,families=Storm Door Installation | Window Installation | Door & Trim Trimming | Interior Door Replacement,keep_pp
+category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Lighting & Electrical,Lighting & Electrical,reviewed,merge_many,electrical,Lighting & Electrical,,,synonyms=Lighting & Electrical | Electrical; groups=outlet-and-switch-replacement,merge_many
+category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Electrical,Electrical,exact,merge_many,electrical,Lighting & Electrical,,,synonyms=Lighting & Electrical | Electrical; groups=outlet-and-switch-replacement,merge_many
+category,,,,Exterior Carpentry,Exterior Carpentry,fuzzy_suggestion,keep_pp,exterior-carpentry-category,Exterior Carpentry,,,families=Storm Door Installation; suggest=Carpentry [carpentry] (0.5),keep_pp
+category,5e593f10-0b03-459d-bdb2-d1c49897d10d,exterior-projects,Exterior Projects,,,none,create_in_pp,exterior-projects,Exterior Projects,,,groups=exterior-doors-windows | siding | deck-building | shingle-roofing | fencing,create_in_pp
+category,7247f541-8547-4701-bcdd-72ac456bdab2,flooring,Flooring,Flooring,Flooring,exact,merge,flooring,Flooring,,,groups=lvp-flooring-install | hardwood-flooring-install | hardwood-flooring-refinishing | tile-flooring | carpet-install,merge
+category,,,,Foundation,Foundation,none,keep_pp,foundation,Foundation,,,families=Standard Foundation,keep_pp
+category,,,,General Repairs & Maintenance,General Repairs & Maintenance,none,keep_pp,general-repairs-maintenance,General Repairs & Maintenance,,,families=Manage Dust Control | Caulking Application,keep_pp
+category,,,,Interior,Interior,none,keep_pp,interior,Interior,,,families=Interior Painting,keep_pp
+category,,,,Interior Carpentry,Interior Carpentry,fuzzy_suggestion,keep_pp,interior-carpentry-category,Interior Carpentry,,,families=Framing a Non‑Load‑Bearing Wall | Window Installation | Baseboard & Trim Installation | Interior Stair Refacing | Kitchen Cabinet Installation | Interior Door Replacement | Shiplap or Accent Wall Installation; suggest=Carpentry [carpentry] (0.5),keep_pp
+category,,,,Kitchen,Kitchen,none,keep_pp,kitchen,Kitchen,,,families=Dishwasher Replacement | Tile Flooring Installation | Tile Backsplash Installation | Kitchen Sink Replacement | Garbage Disposal Installation | Kitchen Cabinet Installation,keep_pp
+category,0b8ebfce-14b7-43b8-8748-0915ba4e318d,landscaping,Landscaping,,,none,create_in_pp,landscaping,Landscaping,,,groups=log-splitting-firewood | home-power-washing | leaf-cleanup | lawn-care | french-drain | tree-shrub-trimming,create_in_pp
+category,52d326f2-37b5-4c82-84bd-dc8bf8cc718a,painting,Painting,Painting & Finishing,Painting & Finishing,reviewed,merge,painting,Painting & Finishing,,,groups=exterior-painting | interior-painting,merge
+category,,,,Plumbing,Plumbing,none,keep_pp,plumbing,Plumbing,,,families=Dishwasher Replacement | Shower Fixture Replacement | Kitchen Sink Replacement | Toilet Replacement | Vanity Replacement | Garbage Disposal Installation,keep_pp
+category,a6d5db08-3411-4982-8b18-dc5dc77776aa,Renovation,Renovation,,,none,create_in_pp,renovation,Renovation,,,groups=Bathroom-Renovation | kitchen-renovation,create_in_pp
+category,,,,System,System,none,keep_pp,system,System,,,families=Standard Foundation,keep_pp
+category,572eea1a-6b0f-4ad2-8ce1-ad4183e2702b,tile,Tile,Tile,Tile,exact,merge,tile,Tile,,,groups=tile-backsplash | tile-shower | tile-flooring,merge
+category,,,,Walls & Drywall,Walls & Drywall,none,keep_pp,walls-drywall,Walls & Drywall,,,families=Framing a Non‑Load‑Bearing Wall | Drywall Repair + Finishing | Interior Wood Staining | Shiplap or Accent Wall Installation,keep_pp
+project,,,,7ab24fb0-3483-4617-8e40-7aa14cb997a6,Baseboard & Trim Installation,none,keep_pp,baseboard-trim-installation,Baseboard & Trim Installation,,,pp_status=draft; pp_categories=Interior Carpentry,keep_pp
+project,f1e35a8c-c8f5-4f3a-8a0a-572d1917cb08,Bathroom-Renovation,Bathroom Renovation,,,none,create_in_pp,bathroom-renovation,Bathroom Renovation,,,status=coming_soon; visible_lines=0,create_in_pp
+project,57aba0b3-e8db-4cf1-bdee-ac30c4928212,carpet-install,Carpet Install,,,none,create_in_pp,carpet-install,Carpet Installation,,,status=coming_soon; visible_lines=16,create_in_pp
+project,,,,dbd4d8b4-da79-4fc0-b53a-c8caa1768db1,Caulking Application,none,keep_pp,caulking-application,Caulking Application,,,pp_status=draft; pp_categories=General Repairs & Maintenance | Bathroom,keep_pp
+project,,,,0679986c-bb12-4015-b0bd-79810b1671f9,Ceiling Fan Replacement,none,keep_pp,ceiling-fan-replacement,Ceiling Fan Replacement,,,pp_status=draft; pp_categories=Lighting & Electrical,keep_pp
+project,adb3b6e4-1d8b-4a97-93df-c124a1fda505,deck-building,Deck Building,,,none,create_in_pp,deck-building,Deck Installation,,,status=coming_soon; visible_lines=31,create_in_pp
+project,,,,15f6ac75-c299-4382-b164-8f52569579e6,Dishwasher Replacement,none,keep_pp,dishwasher-replacement,Dishwasher Replacement,,,pp_status=draft; pp_categories=Kitchen | Plumbing | Appliances | Lighting & Electrical,keep_pp
+project,,,,b7be4870-8845-4ffe-b135-6204954498fc,Door & Trim Trimming,none,keep_pp,door-trim-trimming,Door & Trim Trimming,,,pp_status=draft; pp_categories=Doors & Windows | Flooring,keep_pp
+project,13dff812-d05d-4727-9a42-2d68449bc2b9,drywall-finishing,Drywall Finishing,3b2a9a3c-4c32-4ac9-8000-fa96755843df,Drywall Repair + Finishing,reviewed,merge,drywall-finishing,Drywall Repair + Finishing,,,status=coming_soon; visible_lines=21; pp_status=draft; pp_categories=Walls & Drywall,merge
+project,,,,6b370b45-4711-4fda-b6e4-d82a80ded3f1,Electric Radiant Floor Heat Installation,none,keep_pp,electric-radiant-floor-heat-installation,Electric Radiant Floor Heat Installation,,,pp_status=draft; pp_categories=Flooring | Bathroom,keep_pp
+project,fb064560-6038-4cb0-9495-d7a66fa97037,exterior-carpentry,Exterior Carpentry,,,none,create_in_pp,exterior-carpentry,Exterior Carpentry,,,status=hidden; visible_lines=0,create_in_pp
+project,c02e7b0c-300e-4736-9e8f-9e70c5f2e0ab,exterior-doors-windows,Exterior Doors & Windows,,,none,create_in_pp,exterior-doors-windows,Exterior Door and Window Replacement,,,status=coming_soon; visible_lines=29,create_in_pp
+project,5ad07613-f313-487b-8eb8-c586fe7cd4ab,exterior-painting,Exterior Painting,,,none,create_in_pp,exterior-painting,Exterior Painting,,,status=released; visible_lines=87; variant_of=interior-painting,create_in_pp
+project,7f790262-01b4-47e0-ae04-450659841d9b,fencing,Fencing,,,none,create_in_pp,fencing,Fence Installation,,,status=coming_soon; visible_lines=48,create_in_pp
+project,,,,21457545-f56e-4c9e-86f1-cffbbdd88163,Framing a Non‑Load‑Bearing Wall,none,keep_pp,framing-a-non-load-bearing-wall,Framing a Non‑Load‑Bearing Wall,,,pp_status=draft; pp_categories=Interior Carpentry | Walls & Drywall,keep_pp
+project,d9c7aca1-5d9f-4b1e-92b0-fc4704c9163e,french-drain,French Drain,,,none,create_in_pp,french-drain,French Drain Installation,,,status=coming_soon; visible_lines=0,create_in_pp
+project,c2e922d7-023a-4368-aefc-43729b569321,furniture-building,Furniture Building,,,none,create_in_pp,furniture-building,Furniture Building,,,status=released; visible_lines=38,create_in_pp
+project,,,,92d720c9-9aed-4d26-bf42-fff4227cbefc,Garbage Disposal Installation,none,keep_pp,garbage-disposal-installation,Garbage Disposal Installation,,,pp_status=draft; pp_categories=Kitchen | Plumbing,keep_pp
+project,cf05159b-7fc0-42f9-a965-f8d3d7ec85a7,general-demo,General Demo,,,none,create_in_pp,general-demo,General Demolition,,,status=coming_soon; visible_lines=15,create_in_pp
+project,36b417ae-8fdc-4caf-b860-10a6c81b052d,hardwood-flooring-install,Hardwood Flooring,2a1d5e16-8ccc-4663-9bb4-ddf353205e77,Laminate or Engineered Flooring Installation,reviewed,merge,hardwood-flooring-install,Engineered Flooring Installation,,,status=released; visible_lines=46; pp_status=draft; pp_categories=Flooring,merge
+project,776792de-df59-421b-9684-723f9efd67b2,hardwood-flooring-refinishing,Hardwood Flooring Refinishing,,,none,create_in_pp,hardwood-flooring-refinishing,Hardwood Flooring Refinishing,,,status=hidden; visible_lines=13,create_in_pp
+project,ca9acae6-831e-44d7-81d6-349f716276dc,home-power-washing,Home Power Washing,,,none,create_in_pp,home-power-washing,Home Power Washing,,,status=released; visible_lines=46,create_in_pp
+project,ff731b8a-ca89-43ae-98c7-aab656c4d79d,interior-carpentry,Interior Carpentry,,,none,create_in_pp,interior-carpentry,Interior Carpentry,,,status=released; visible_lines=63,create_in_pp
+project,,,,ecfe698a-34dc-420f-95b9-27cb9149627b,Interior Door Replacement,none,keep_pp,interior-door-replacement,Interior Door Replacement,,,pp_status=draft; pp_categories=Doors & Windows | Interior Carpentry,keep_pp
+project,6648d9cd-0663-45c5-8ce0-21ae146a7596,interior-painting,Interior Painting,7fdb42ca-4dcb-4a4e-b571-dc9e69be012a,Interior Painting,exact,merge,interior-painting,Interior Painting,,,status=released; visible_lines=98; pp_status=draft; pp_categories=Painting & Finishing | Interior,merge
+project,,,,bde91c51-62b7-4e5a-8028-ba607211a484,Interior Stair Refacing,none,keep_pp,interior-stair-refacing,Interior Stair Refacing,,,pp_status=draft; pp_categories=Interior Carpentry,keep_pp
+project,,,,d2638fac-2cfb-4892-a3f3-6ce59ca5cccc,Interior Wood Staining,none,keep_pp,interior-wood-staining,Interior Wood Staining,,,pp_status=published; pp_categories=Walls & Drywall,keep_pp
+project,,,,c83fc6ba-44cc-43f0-af25-a7e8841ff4e5,Kitchen Cabinet Installation,none,keep_pp,kitchen-cabinet-installation,Kitchen Cabinet Installation,,,pp_status=draft; pp_categories=Kitchen | Interior Carpentry,keep_pp
+project,6251a99d-8295-41b5-a317-d878f4811a33,kitchen-renovation,Kitchen Renovation,,,none,create_in_pp,kitchen-renovation,Kitchen Renovation,,,status=coming_soon; visible_lines=0,create_in_pp
+project,,,,628250bf-9c67-4d7f-8da7-422770fa029b,Kitchen Sink Replacement,none,keep_pp,kitchen-sink-replacement,Kitchen Sink Replacement,,,pp_status=draft; pp_categories=Kitchen | Plumbing,keep_pp
+project,93234f33-dec7-40e6-ab04-bb4a51998f56,lawn-care,Lawn Care,,,none,create_in_pp,lawn-care,Lawn Care,,,status=coming_soon; visible_lines=14,create_in_pp
+project,d59f75ed-d3c5-4b69-88dd-9d57078937fc,leaf-cleanup,Leaf Cleanup,,,none,create_in_pp,leaf-cleanup,Leaf Cleanup,,,status=coming_soon; visible_lines=15,create_in_pp
+project,,,,ec045268-77a5-4f8b-b32a-93b2c1e7f140,Light Fixture Replacement,none,keep_pp,light-fixture-replacement,Light Fixture Replacement,,,pp_status=draft; pp_categories=Lighting & Electrical,keep_pp
+project,88043a13-29bf-483b-8891-7d5a984666ec,log-splitting-firewood,Log Splitting / Firewood,,,none,create_in_pp,log-splitting-firewood,Firewood Splitting,,,status=released; visible_lines=11,create_in_pp
+project,ae7e93ec-aa55-49a4-8a04-0f1d99cef110,lvp-flooring-install,LVP Flooring,,,none,create_in_pp,lvp-flooring-install,Laminate Flooring Installation,,2a1d5e16-8ccc-4663-9bb4-ddf353205e77,status=released; visible_lines=49; variant_of=hardwood-flooring-install,create_in_pp
+project,,,,c3143e48-2e0d-4dea-aad8-f65e2e4263c3,Manage Dust Control,none,keep_pp,manage-dust-control,Manage Dust Control,,,pp_status=published; pp_categories=General Repairs & Maintenance,keep_pp
+project,cc9bd535-caff-4701-b13c-747c791d7dfd,outlet-and-switch-replacement,Outlet and Switch Replacement,f3e9c304-96ab-45a3-90e4-b9f50ea7a7b1,Outlet/Switch Replacement,reviewed,merge,outlet-and-switch-replacement,Outlet/Switch Replacement,,,status=released; visible_lines=18; pp_status=draft; pp_categories=Electrical,merge
+project,,,,97da9cd1-6c86-4043-8ee0-4fee4cf07557,Self-Leveler Application,none,keep_pp,self-leveler-application,Self-Leveler Application,,,pp_status=published; pp_categories=Flooring,keep_pp
+project,d8c6eb37-47c6-4d1b-a882-f1924094e5d7,shingle-roofing,Shingle Roofing,,,none,create_in_pp,shingle-roofing,Shingle Roof Replacement,,,status=coming_soon; visible_lines=20,create_in_pp
+project,,,,f877b674-12a1-4cd7-9f99-5a25a5a3dbe8,Shiplap or Accent Wall Installation,none,keep_pp,shiplap-or-accent-wall-installation,Shiplap or Accent Wall Installation,,,pp_status=draft; pp_categories=Interior Carpentry | Walls & Drywall,keep_pp
+project,,,,1cbb89df-5c43-4d0b-9d77-51d5853c1f11,Shower Fixture Replacement,none,keep_pp,shower-fixture-replacement,Shower Fixture Replacement,,,pp_status=draft; pp_categories=Bathroom | Plumbing,keep_pp
+project,9556fd47-c89c-4e2a-a5b5-726d65db1331,siding,Siding,,,none,create_in_pp,siding,Siding Replacement,,,status=coming_soon; visible_lines=23,create_in_pp
+project,,,,d82dff80-e8ac-4511-be46-3d0e64bb5fc5,Standard Foundation,none,keep_pp,standard-foundation,Standard Foundation,,,pp_status=published; is_standard; pp_categories=System | Foundation,keep_pp
+project,,,,533b114c-5c2a-4940-a5e6-551164de596b,Storm Door Installation,none,keep_pp,storm-door-installation,Storm Door Installation,,,pp_status=draft; pp_categories=Doors & Windows | Exterior Carpentry,keep_pp
+project,,,,3890cad6-df18-4b7a-a6a0-04eac23877ac,Subfloor Replacement,none,keep_pp,subfloor-replacement,Subfloor Replacement,,,pp_status=draft; pp_categories=Flooring,keep_pp
+project,8e044c93-d51f-4924-a853-68d62b2fc5ba,tile-backsplash,Tile Backsplash,3c45b9e3-1a18-4a7b-bba8-7553b66841f7,Tile Backsplash Installation,reviewed,merge,tile-backsplash,Tile Backsplash Installation,,,status=released; visible_lines=86; variant_of=tile-flooring; structure agrees; pp_status=beta-testing; pp_categories=Tile | Kitchen,merge
+project,7045a3fb-419d-4168-97b4-836e09277ffb,tile-flooring,Tile Flooring,373adcbf-0a8c-42e9-9bcb-b135c8ddbfd0,Tile Flooring Installation,reviewed,merge,tile-flooring,Tile Flooring Installation,,,status=released; visible_lines=117; pp_status=published; is_foundational; pp_categories=Tile | Flooring | Bathroom | Kitchen,merge
+project,,,,a118dafe-b290-4c76-932a-7cf580ff9d81,Tile Flooring Demolition,fuzzy_suggestion,keep_pp,tile-flooring-demolition,Tile Flooring Demolition,,,pp_status=draft; pp_categories=Flooring | Demolition; suggest=Tile Flooring [tile-flooring] (0.67),keep_pp
+project,e26c720c-504b-4146-aa8b-53301c0f7c76,tile-shower,Tile Shower,377ab686-3230-41c4-80b4-edf26dcf8681,Tile Shower/Bath Installation,reviewed,merge,tile-shower,Tile Shower/Bath Installation,,,"status=released; visible_lines=124; variant_of=tile-flooring; STRUCTURE DIFFERS: Toolio foundation tile-flooring, Project Partner foundation none; pp_status=draft; pp_categories=Tile | Bathroom",merge
+project,,,,7e90db4f-7fb6-4997-880b-e582e235e08f,Toilet Flange Repair,none,keep_pp,toilet-flange-repair,Toilet Flange Repair,,,pp_status=draft; pp_categories=Bathroom,keep_pp
+project,,,,8267c526-036d-4f5c-9f17-2ee1b3d87886,Toilet Replacement,none,keep_pp,toilet-replacement,Toilet Replacement,,,pp_status=draft; pp_categories=Bathroom | Plumbing,keep_pp
+project,3ce70a71-ff2b-4393-aac1-c38ffceac8eb,tree-shrub-trimming,Tree & Shrub Trimming,,,none,create_in_pp,tree-shrub-trimming,Tree and Shrub Trimming,,,status=coming_soon; visible_lines=14,create_in_pp
+project,,,,8b710391-8f07-42c8-9036-58e1bc233f50,Vanity Replacement,none,keep_pp,vanity-replacement,Vanity Replacement,,,pp_status=draft; pp_categories=Bathroom | Plumbing,keep_pp
+project,,,,09eb653f-207b-4491-8ad0-4cd71d221d3f,Wallpaper Installation or Removal,none,keep_pp,wallpaper-installation-or-removal,Wallpaper Installation or Removal,,,pp_status=draft; pp_categories=Painting & Finishing | Decor,keep_pp
+project,,,,570ceb64-858f-4796-8119-d3cbbe20863d,Window Installation,none,keep_pp,window-installation,Window Installation,,,pp_status=draft; pp_categories=Doors & Windows | Interior Carpentry,keep_pp
+tool,41e5d666-0a02-40c4-823e-1e1804984e97,adjustable-wrench,Adjustable Wrench,9a0873af-8afb-4f78-9f23-15d7ad878989,Adjustable Wrench,exact,merge,adjustable-wrench,Adjustable Wrench,,,,merge
+tool,9a0b40bd-7ff7-4f35-b6b6-246b4a227e14,air-compressor,Air Compressor,d0594b9f-c266-4f6c-83e3-b0f088ec36ed,Air Compressor,exact,merge,air-compressor,Air Compressor,,,,merge
+tool,,,,b2549538-1b64-402c-8a72-cfb51739680a,Allen Key Set,none,keep_pp,allen-key-set,Allen Key Set,,,,keep_pp
+tool,98736cb7-9d8c-4cc9-84e3-874693c02451,angle-grinder,Angle Grinder,843f19eb-d33e-412c-ae4e-481ce93e66bd,Angle Grinder,exact,merge,angle-grinder,Angle Grinder,,,,merge
+tool,a1a0784f-d58b-4d28-8ed9-6cabec26d3ae,angle-grinder-wheel,Angle Grinder Wheel,,,fuzzy_suggestion,create_in_pp,angle-grinder-wheel,Angle Grinder Wheel,,,suggest=Angle Grinder (0.67),create_in_pp
+tool,d2a09934-4f00-43fe-a66d-bc7d90a426dd,appliance-dolly,Appliance Dolly,,,none,create_in_pp,appliance-dolly,Appliance Dolly,,,,create_in_pp
+tool,bda94034-4a76-430f-89bc-1250f993cf50,automated-paint-roller,Automated Paint Roller,,,fuzzy_suggestion,create_in_pp,automated-paint-roller,Automated Paint Roller,,,suggest=Paint Roller (0.67),create_in_pp
+tool,,,,5763c163-defe-48fa-b0d7-f0a2469ffb0b,Awl,none,keep_pp,awl,Awl,,,,keep_pp
+tool,,,,a0eb415b-c4b1-4263-b076-f45a60eec747,Backer Board Scoring Knife,none,keep_pp,backer-board-scoring-knife,Backer Board Scoring Knife,,,,keep_pp
+tool,,,,c3b7fd44-3f9e-445d-b184-fa8a3e2c7a97,Band Saw,none,keep_pp,band-saw,Band Saw,,,,keep_pp
+tool,66ee2b9d-2425-4102-b69d-e7fd8d0770d3,bar-clamp,Bar Clamp,e05ca10e-0833-4149-a94e-ab98eccf59e2,C-Clamp,alias,merge,bar-clamp,Bar Clamp,,,,merge
+tool,,,,3a4c2ffd-e97a-4ee9-ab7d-0d1264167060,Beating Block,none,keep_pp,beating-block,Beating Block,,,,keep_pp
+tool,f24ec03f-0af6-4296-b5c9-5c501807d74a,belt-sander,Belt Sander,96c73cdd-2c6c-4d1e-8398-bd2a51fab1eb,Belt Sander,exact,merge,belt-sander,Belt Sander,,,,merge
+tool,f538965f-5548-4136-9b64-9c695595c5e9,bolt-cutter,Bolt Cutter,,,none,create_in_pp,bolt-cutter,Bolt Cutter,,,,create_in_pp
+tool,,,,35a4552b-c2b1-4edb-a1b9-7eb48b9cbf6d,Brad Nailer,none,keep_pp,brad-nailer,Brad Nailer,,,,keep_pp
+tool,e5bdc2a7-dc34-4188-88d7-f00d023f1e39,broom-dustpan,Broom and Dustpan,,,none,create_in_pp,broom-dustpan,Broom and Dustpan,,,,create_in_pp
+tool,37164f50-3fce-4f91-9b2b-477ff032b7d6,bucket,Bucket,25022457-68a8-4421-89a7-5ff07e3035e7,Bucket,exact,merge,bucket,Bucket,,,,merge
+tool,db144d26-a6d8-47ff-b7f3-78a0c1082e71,bucket-liner,Bucket Liner,,,fuzzy_suggestion,create_in_pp,bucket-liner,Bucket Liner,,,suggest=Bucket (0.5),create_in_pp
+tool,cf773ced-82d4-4d05-bd8f-1e8083aca2c0,bucket-scoop,Bucket Scoop,,,fuzzy_suggestion,create_in_pp,bucket-scoop,Bucket Scoop,,,suggest=Bucket (0.5),create_in_pp
+tool,71b81ffc-e029-4e12-96f6-1fa37fd41a1c,cabinet-door-drying-rack,Cabinet Door Drying Rack,,,none,create_in_pp,cabinet-door-drying-rack,Cabinet Door Drying Rack,,,,create_in_pp
+tool,968677d2-f595-4bdf-84aa-0219ca0d57af,cabinet-hardware-jig,Cabinet Hardware Jig,,,none,create_in_pp,cabinet-hardware-jig,Cabinet Hardware Jig,,,,create_in_pp
+tool,3d776b7f-7a41-4df2-93fc-16ba704e22c2,canvas-drop-cloth,Canvas Drop Cloth,,,fuzzy_suggestion,create_in_pp,canvas-drop-cloth,Canvas Drop Cloth,,,suggest=Drop Cloth (0.67),create_in_pp
+tool,,,,8edd8e3f-7be9-41cb-a4f0-4d40df03a78d,Carbide Tile Cutter,fuzzy_suggestion,keep_pp,carbide-tile-cutter,Carbide Tile Cutter,,,suggest=Manual Tile Cutter [manual-tile-cutter] (0.5),keep_pp
+tool,61337f45-06b0-48a5-a1ab-a5ed24da3df7,carpet-fan,Carpet Fan,,,fuzzy_suggestion,create_in_pp,carpet-fan,Carpet Fan,,,suggest=Fan (0.5),create_in_pp
+tool,0fc4ef12-e7e9-4d43-acaf-07fa263f9972,carpet-power-stretcher,Carpet Power Stretcher,,,none,create_in_pp,carpet-power-stretcher,Carpet Power Stretcher,,,,create_in_pp
+tool,45e899bd-603a-43ba-a5d7-1613355d2457,carpet-seaming-iron,Carpet Seaming Iron,,,none,create_in_pp,carpet-seaming-iron,Carpet Seaming Iron,,,,create_in_pp
+tool,8f31cc8c-f3b4-4f8b-953a-ff68f394cfbc,caulk-gun,Caulk Gun,dae5ad26-fe8c-49eb-b900-e4b7c5b7daa2,Caulk Gun,exact,merge,caulk-gun,Caulk Gun,,,,merge
+tool,1ee7c563-86b5-41d2-b0fb-2e603d95bd73,caulk-removal-tool,Caulk Removal Tool,,,none,create_in_pp,caulk-removal-tool,Caulk Removal Tool,,,,create_in_pp
+tool,,,,92b2ecee-628f-4705-80ac-705e34463026,Caulking Finishing Tool,none,keep_pp,caulking-finishing-tool,Caulking Finishing Tool,,,,keep_pp
+tool,e9cdba47-1eb6-4d7d-9f3a-6529503d1924,caution-tape,Caution Tape,,,none,create_in_pp,caution-tape,Caution Tape,,,,create_in_pp
+tool,42c75d1c-8465-4f7b-a347-d5158a4744d9,TOOL-CHAINSAW,Chainsaw,0eea4485-6b9f-46e0-8132-0ab7f79890ac,Chainsaw,exact,merge,chainsaw,Chainsaw,,,,merge
+tool,8b023b2b-d89d-459f-89bc-ff25531a5708,chalk-line,Chalk Line,5bf924dd-2af5-4066-96f1-ae25277acacc,Chalk Line,exact,merge,chalk-line,Chalk Line,,,,merge
+tool,,,,ba1c042e-f12b-442e-a473-5553306bfaac,Chemical-Resistant Gloves,none,keep_pp,chemical-resistant-gloves,Chemical-Resistant Gloves,,,,keep_pp
+tool,4cd683a9-81e0-4838-bfe2-6bcf66d79f73,circular-saw,Circular Saw,a736b9f4-5c8f-43ca-b645-722ae41a9de3,Circular Saw,exact,merge,circular-saw,Circular Saw,,,,merge
+tool,,,,8302a8d5-f719-48d8-a1cb-165b3f1cec1c,Clamp Set,none,keep_pp,clamp-set,Clamp Set,,,,keep_pp
+tool,,,,3ee8f0c8-82be-47a2-888d-837a48ea4a02,Claw Hammer,fuzzy_suggestion,keep_pp,claw-hammer,Claw Hammer,,,suggest=Hammer [hammer] (0.5),keep_pp
+tool,21e07506-cc0c-4470-beba-c603e5ac59d6,cleaning-toothbrush,Cleaning Toothbrush,,,none,create_in_pp,cleaning-toothbrush,Cleaning Toothbrush,,,,create_in_pp
+tool,db33b008-8bda-4794-8a80-bb556f0b92a1,combination-square,Combination Square,,,none,create_in_pp,combination-square,Combination Square,,,,create_in_pp
+tool,479a9370-b0fd-4373-b920-d7f87607b7da,come-along,Come Along,,,none,create_in_pp,come-along,Come Along,,,,create_in_pp
+tool,,,,07ea2a65-f84f-4c28-bf79-1d377441470b,Compass,fuzzy_suggestion,keep_pp,compass,Compass,,,suggest=Compass Scribe [compass-scribe] (0.5),keep_pp
+tool,4d815697-1f19-4c08-bd39-dd8f0cb45748,compass-scribe,Compass Scribe,,,fuzzy_suggestion,create_in_pp,compass-scribe,Compass Scribe,,,suggest=Compass (0.5),create_in_pp
+tool,4ac151f7-e791-4feb-b361-9076e4a1584f,concealed-hinge-jig,Concealed Hinge Jig,,,none,create_in_pp,concealed-hinge-jig,Concealed Hinge Jig,,,,create_in_pp
+tool,,,,c81ef0f3-367d-4a40-a03a-6401ddb0987a,Concrete Vibrator,none,keep_pp,concrete-vibrator,Concrete Vibrator,,,,keep_pp
+tool,1b205195-ff4c-40fc-88e3-6e7d122f9243,construction-adhesive,Construction Adhesive,d8f8edad-584f-443e-92de-8a705bb83429,Construction Adhesive,exact,merge,construction-adhesive,Construction Adhesive,,,,merge
+tool,ed98d698-b1c1-4474-a048-9793e43ceb90,contour-gauge,Contour Gauge,,,none,create_in_pp,contour-gauge,Contour Gauge,,,,create_in_pp
+tool,,,,64d1c525-e88d-475f-a0da-22643482598e,Cordless Screwdriver,fuzzy_suggestion,keep_pp,cordless-screwdriver,Cordless Screwdriver,,,suggest=Screwdriver [screwdriver] (0.5),keep_pp
+tool,,,,e5bdb82e-cfda-46dd-9016-49cb9d2a04ca,Crown Stapler,none,keep_pp,crown-stapler,Crown Stapler,,,,keep_pp
+tool,,,,96a36951-625d-41d3-8856-2738cfe9f354,Cut-Resistant Work Gloves,fuzzy_suggestion,keep_pp,cut-resistant-work-gloves,Cut-Resistant Work Gloves,,,suggest=Work Gloves [ppe-gloves] (0.5),keep_pp
+tool,ff5a0a6c-53d0-4e1d-9ee3-40dddd59b68b,deburring-tool,Deburring Tool,,,none,create_in_pp,deburring-tool,Deburring Tool,,,,create_in_pp
+tool,,,,5b743219-7cd4-410e-8bd6-2cf07cb63cfe,Dehumidifier,none,keep_pp,dehumidifier,Dehumidifier,,,,keep_pp
+tool,,,,08141d7d-1fe9-4cc6-b109-9e6c4814ded9,Demolition Hammer,fuzzy_suggestion,keep_pp,demolition-hammer,Demolition Hammer,,,suggest=Hammer [hammer] (0.5),keep_pp
+tool,,,,41ce2812-c769-46af-813f-ed32f9ab3206,Detail Sander,none,keep_pp,detail-sander,Detail Sander,,,,keep_pp
+tool,ace2bc6d-7f92-4400-a7d7-476d02af1397,dewalt-60v-20v-charger,Battery Charger,,,none,create_in_pp,dewalt-60v-20v-charger,Battery Charger,,,,create_in_pp
+tool,71e9bcc8-fea3-489f-aac1-6e6dfb66f4f7,dewalt-battery,Tool Battery,,,none,create_in_pp,dewalt-battery,Tool Battery,,,,create_in_pp
+tool,a563ebc6-4e61-44e6-b79a-80addcb7c6b1,diamond-drilling-kit,Diamond Core Bit Set,,,none,create_in_pp,diamond-drilling-kit,Diamond Core Bit Set,,,,create_in_pp
+tool,,,,3de2ae27-a175-4e4e-b2c6-a89c3cd609bc,Diamond Hole Saw,fuzzy_suggestion,keep_pp,diamond-hole-saw,Diamond Hole Saw,,,suggest=Diamond Hole Saw Kit [diamond-hole-saw-kit] (0.75),keep_pp
+tool,3a1841bd-8465-4e54-a508-6d1a9039f82f,diamond-hole-saw-kit,Diamond Hole Saw Kit,,,fuzzy_suggestion,create_in_pp,diamond-hole-saw-kit,Diamond Hole Saw Kit,,,suggest=Diamond Hole Saw (0.75),create_in_pp
+tool,70d853c9-88b9-4f40-bfe8-344e04a7bd2e,diamond-polishing-blocks,Diamond Polishing Blocks,,,none,create_in_pp,diamond-polishing-blocks,Diamond Polishing Blocks,,,,create_in_pp
+tool,57fde19b-42ed-414e-aa79-500d00990c45,digging-bar,Digging Bar,,,none,create_in_pp,digging-bar,Digging Bar,,,,create_in_pp
+tool,2625940c-3061-40c4-bf9a-a1efba59bc5c,digital-angle-finder,Angle Finder,,,none,create_in_pp,digital-angle-finder,Angle Finder,,,,create_in_pp
+tool,42a2f61c-1799-47e9-b84b-67a881cbdc4c,do-not-walk-sign,Do Not Walk Sign,,,none,create_in_pp,do-not-walk-sign,Do Not Walk Sign,,,,create_in_pp
+tool,,,,6d9ee987-8026-46e0-b533-90cb4b74b40d,Drain Auger,none,keep_pp,drain-auger,Drain Auger,,,,keep_pp
+tool,,,,94eb5bd3-66f9-4be7-85ae-287edea4d616,Drain Snake,none,keep_pp,drain-snake,Drain Snake,,,,keep_pp
+tool,,,,9773a5fa-4819-4c3b-a266-36472e6d2588,Drill Bit Set,fuzzy_suggestion,keep_pp,drill-bit-set,Drill Bit Set,,,suggest=Screwdriver Bit Set [screwdriver-bit-set] (0.5),keep_pp
+tool,,,,99b83cd4-c456-4507-82bc-02af882447bb,Drill / Driver,none,keep_pp,drill-driver,Drill / Driver,,,,keep_pp
+tool,,,,3a8a4637-e03a-425a-b2f3-579cdbab5435,Drop Cloth,fuzzy_suggestion,keep_pp,drop-cloth,Drop Cloth,,,suggest=Canvas Drop Cloth [canvas-drop-cloth] (0.67),keep_pp
+tool,37d98ad0-9c31-4bd5-a927-2ddeab15829c,drum-floor-sander,Drum Floor Sander,,,none,create_in_pp,drum-floor-sander,Drum Floor Sander,,,,create_in_pp
+tool,a90be8f6-4637-4801-9062-f4cf1b956f4c,drywall-mud-pan,Drywall Mud Pan,,,none,create_in_pp,drywall-mud-pan,Drywall Mud Pan,,,,create_in_pp
+tool,a9a069fd-e6af-4b26-bbbb-46765d2bc668,drywall-pole-sander,Drywall Pole Sander,,,fuzzy_suggestion,create_in_pp,drywall-pole-sander,Drywall Pole Sander,,,suggest=Drywall Sander (0.67),create_in_pp
+tool,,,,daac6015-ccbf-4156-93e0-d8be42f4c48f,Drywall Sander,fuzzy_suggestion,keep_pp,drywall-sander,Drywall Sander,,,suggest=Drywall Pole Sander [drywall-pole-sander] (0.67),keep_pp
+tool,,,,63ce9026-1a88-4348-a7d6-decef6096029,Drywall Saw,none,keep_pp,drywall-saw,Drywall Saw,,,,keep_pp
+tool,,,,6627447a-b49e-426d-9ff9-6eb86a46dde5,Drywall Screw Gun,none,keep_pp,drywall-screw-gun,Drywall Screw Gun,,,,keep_pp
+tool,,,,0b75a7f6-9a17-418b-9fa4-f367aeb70b20,Drywall Screwdriver,fuzzy_suggestion,keep_pp,drywall-screwdriver,Drywall Screwdriver,,,suggest=Screwdriver [screwdriver] (0.5),keep_pp
+tool,d5d2dd02-d882-4edb-b5e8-c7c859e4ab87,drywall-stilts,Drywall Stilts,,,none,create_in_pp,drywall-stilts,Drywall Stilts,,,,create_in_pp
+tool,9e8b585e-af67-45d6-a263-d0bf63f3fa33,drywall-taping-knife,Drywall Taping Knife,,,none,create_in_pp,drywall-taping-knife,Drywall Taping Knife,,,,create_in_pp
+tool,,,,70f9186a-5bab-4bbf-9aad-e36fb07f90d6,Dust Mask,none,keep_pp,dust-mask,Dust Mask,,,,fold_into
+tool,,,,f63066b2-14a1-4130-a380-a4429c05ed11,Dust Mask / Respirator,none,keep_pp,dust-mask-respirator,Dust Mask / Respirator,,,,keep_pp
+tool,,,,5b058f00-1c89-4a45-81b8-6131b5246de4,Dustpan,none,keep_pp,dustpan,Dustpan,,,,keep_pp
+tool,e4d611dc-ff3b-4c9e-8694-8338af4dc03a,electric-space-heater,Electric Space Heater,,,fuzzy_suggestion,create_in_pp,electric-space-heater,Electric Space Heater,,,suggest=Space Heater (0.67),create_in_pp
+tool,,,,9f9da473-6534-4d34-8a7a-9b18f0e9c89c,Electric Staple Gun,none,keep_pp,electric-staple-gun,Electric Staple Gun,,,,keep_pp
+tool,e5da0047-f9d0-4b3b-8860-31cb225b4ede,electrical-tape,Electrical Tape,d811e4c1-f99d-48af-a9df-9611bfc589a1,Electrical Tape,exact,merge,electrical-tape,Electrical Tape,,,,merge
+tool,,,,8ce6624b-2d51-4ed4-9330-30e9c22b6595,Epoxy,none,keep_pp,epoxy,Epoxy,,,,keep_pp
+tool,e0d5b13e-8e79-4290-87ba-5efb678e189d,extension-cord,Extension Cord,a7a7ce49-73ed-4e78-a089-e6def91e8aa2,Extension Cord,exact,merge,extension-cord,Extension Cord,,,,merge
+tool,,,,2f401e13-1dba-4d75-b102-5372342b3767,Face Shield,none,keep_pp,face-shield,Face Shield,,,,keep_pp
+tool,3b3e81e0-d756-430a-9d13-beda14314d58,fall-protection-harness,Fall Protection Harness,6d4e0d95-cbc3-45b8-80ec-3f61f5cfdb79,Fall Protection Harness,exact,merge,fall-protection-harness,Fall Protection Harness,,,,merge
+tool,,,,107874e7-a1eb-432f-8aec-407b0041f01e,Fan,fuzzy_suggestion,keep_pp,fan,Fan,,,suggest=Carpet Fan [carpet-fan] (0.5),keep_pp
+tool,03a4dd50-f5bb-4db6-bcfc-2fcfe68e3cea,fence-stretcher,Fence Stretcher,,,none,create_in_pp,fence-stretcher,Fence Stretcher,,,,create_in_pp
+tool,d9ffd2bd-c8f5-4ebb-808c-a85ed9eaf29f,fiber-cement-shear,Fiber Cement Shear,,,none,create_in_pp,fiber-cement-shear,Fiber Cement Shear,,,,create_in_pp
+tool,,,,2d5024f6-4356-42d5-92bb-7e5dcf4e68c8,File,none,keep_pp,file,File,,,,keep_pp
+tool,55c9d92b-b06c-4923-a54d-60f6d010f680,finish-nailer,Finish Nailer,513b72fa-33cf-4ef4-b18d-aceae3dfbab6,Finish Nailer,exact,merge,finish-nailer,Finish Nailer,,,,merge
+tool,5cc0ce68-9fe5-4601-b786-8b07d6160f9e,finishing-trowel,Finishing Trowel,,,fuzzy_suggestion,create_in_pp,finishing-trowel,Finishing Trowel,,,suggest=Trowel (0.5),create_in_pp
+tool,,,,8f3fdd4c-2354-467e-9361-4a6aab6d16de,Fire Extinguisher,none,keep_pp,fire-extinguisher,Fire Extinguisher,,,,keep_pp
+tool,,,,9d53746e-f269-4bbc-920c-a4471b5bb6fc,First Aid Kit,none,keep_pp,first-aid-kit,First Aid Kit,,,,keep_pp
+tool,,,,eb741307-210b-4777-90b2-1bc50124bca9,Flashlight,none,keep_pp,flashlight,Flashlight,,,,keep_pp
+tool,39327dbb-4217-4299-ba64-b6ceadc52711,floor-buffer,Floor Buffer,,,none,create_in_pp,floor-buffer,Floor Buffer,,,,create_in_pp
+tool,0328b634-0b7c-4bf5-b1eb-955fcbc2e3a5,floor-edger,Floor Edger,,,none,create_in_pp,floor-edger,Floor Edger,,,,create_in_pp
+tool,190a77bc-68fe-4da5-aa92-f5d12f6c91b8,floor-roller,Floor Roller,,,none,create_in_pp,floor-roller,Floor Roller,,,,create_in_pp
+tool,82f2e9d1-21fe-4cc3-89d0-3515cd830672,flooring-nailer,Flooring Nailer,,,fuzzy_suggestion,create_in_pp,flooring-nailer,Flooring Nailer,,,suggest=Flooring Nailer/Stapler (0.67),create_in_pp
+tool,,,,a622617a-8db2-4724-853e-e8cda494af18,Flooring Nailer/Stapler,fuzzy_suggestion,keep_pp,flooring-nailer-stapler,Flooring Nailer/Stapler,,,suggest=Flooring Nailer [flooring-nailer] (0.67),keep_pp
+tool,4f11af32-9ce9-46e1-8df0-02fa7c1f282d,flooring-pull-bar,Flooring Pull Bar,,,none,create_in_pp,flooring-pull-bar,Flooring Pull Bar,,,,create_in_pp
+tool,128bf0d0-e03c-4f6f-9b52-2b49c34544ad,flooring-spacers,Flooring Spacer,,,none,create_in_pp,flooring-spacers,Flooring Spacer,,,,create_in_pp
+tool,151343b6-7d0a-4c34-a642-fb073bfabb4c,flooring-tapping-block,Flooring Tapping Block,,,none,create_in_pp,flooring-tapping-block,Flooring Tapping Block,,,,create_in_pp
+tool,a4433587-ed98-4c32-88f5-dfd1b61ea058,foam-board-backer,Foam Board Backer,,,fuzzy_suggestion,create_in_pp,foam-board-backer,Foam Board Backer,,,suggest=Cement Backer Board (0.5) | Backer Board Screws (0.5),create_in_pp
+tool,b30b7918-6c46-4f11-aaf6-e3d4861e2d63,foam-brush,Foam Brush,2010b806-2500-4b06-9fa2-4ca7a8f2ccc3,Paint Brush Set,alias,merge,foam-brush,Foam Brush,,,,merge
+tool,beb22f50-30a3-4864-926a-519d85ec6b0e,foam-cutting-board,Foam Board,,,none,create_in_pp,foam-cutting-board,Foam Board,,,,create_in_pp
+tool,8fbf735e-0744-4248-b6f9-28cdfa1a2ba4,framing-nailer,Framing Nailer,369c5a61-9a21-4cca-bb21-471521eaeb60,Framing Nailer,exact,merge_many,framing-nailer,Framing Nailer,,,synonyms=Framing Nailer | Nail Gun,merge_many
+tool,8fbf735e-0744-4248-b6f9-28cdfa1a2ba4,framing-nailer,Framing Nailer,e32147af-e081-4884-8ddf-c6d4dde724ac,Nail Gun,alias,merge_many,framing-nailer,Framing Nailer,,,synonyms=Framing Nailer | Nail Gun,merge_many
+tool,,,,66ca10e8-4480-45fb-9ed7-fa71e6615d3c,Framing Square,none,keep_pp,framing-square,Framing Square,,,,keep_pp
+tool,,,,eebfec0f-d3ec-4555-ba53-ef7aead2eeb0,Full-Face Respirator,none,keep_pp,full-face-respirator,Full-Face Respirator,,,,keep_pp
+tool,bbaf5180-a7bd-4f9a-a319-3753c19d0d68,garden-hose-splitter,Garden Hose Splitter,,,fuzzy_suggestion,create_in_pp,garden-hose-splitter,Garden Hose Splitter,,,suggest=Garden Hose (0.67),create_in_pp
+tool,,,,ffa5d9f9-9705-45fd-915a-e45219bc5127,Grease Gun,none,keep_pp,grease-gun,Grease Gun,,,,keep_pp
+tool,a3e19df8-d611-437b-943f-257238b32a73,grout-brush,Grout Brush,,,none,create_in_pp,grout-brush,Grout Brush,,,,create_in_pp
+tool,140969b1-9ca5-431b-bd52-5264402b06d7,grout-float,Grout Float,268b63a5-c35d-4350-9a5b-4cffab60a02e,Grout Float,exact,merge,grout-float,Grout Float,,,,merge
+tool,,,,d46e2da9-f075-4d8f-9c4d-33c1552c7b17,Grout Saw,fuzzy_suggestion,keep_pp,grout-saw,Grout Saw,,,suggest=Grout [grout] (0.5),keep_pp
+tool,0bab382d-54c3-4e7e-89c3-ddbc05742eaa,grouting-sponge,Grouting Sponge,,,fuzzy_suggestion,create_in_pp,grouting-sponge,Grouting Sponge,,,suggest=Sponge (0.5),create_in_pp
+tool,,,,ef6cf613-7f03-4383-be23-ecebaeeafa99,Grouting Sponges,none,keep_pp,grouting-sponges,Grouting Sponges,,,,keep_pp
+tool,63401c10-8c8a-483f-a3d0-d6bfad8bf575,gutter-scoop,Gutter Scoop,,,none,create_in_pp,gutter-scoop,Gutter Scoop,,,,create_in_pp
+tool,,,,732c3650-4f7f-48d1-805a-8c1b0a304b60,Hacksaw,none,keep_pp,hacksaw,Hacksaw,,,,keep_pp
+tool,,,,308600af-c3d7-41e3-9ea7-dc9fcee78927,Half-Face Respirator,none,keep_pp,half-face-respirator,Half-Face Respirator,,,,keep_pp
+tool,2c22538d-6fa3-4534-9734-a92148e753cc,hammer,Hammer,,,fuzzy_suggestion,create_in_pp,hammer,Hammer,,,suggest=Demolition Hammer (0.5) | Rotary Hammer (0.5) | Claw Hammer (0.5),create_in_pp
+tool,,,,6eeec603-a6bd-4977-8304-20cbdc3437ee,Hammer Drill,fuzzy_suggestion,keep_pp,hammer-drill,Hammer Drill,,,suggest=Hammer [hammer] (0.5),keep_pp
+tool,6bfdcbee-d906-4afe-ac49-a10fcb860102,hand-float,Hand Float,,,none,create_in_pp,hand-float,Hand Float,,,,create_in_pp
+tool,,,,f1cb55eb-6122-4511-9941-20bc394f7188,Hand Saw,none,keep_pp,hand-saw,Hand Saw,,,,keep_pp
+tool,e3a78e17-2a5a-4ad6-a6a4-d34e011eb814,hand-tamper,Hand Tamper,,,none,create_in_pp,hand-tamper,Hand Tamper,,,,create_in_pp
+tool,,,,53831c40-0523-4b96-972b-eb128d384716,Hard Hat,none,keep_pp,hard-hat,Hard Hat,,,,keep_pp
+tool,,,,55b3eb5c-bcf3-434a-9a16-ca590ae5e7c1,Hearing Protection,none,keep_pp,hearing-protection,Hearing Protection,,,,keep_pp
+tool,,,,b74bde8a-a7c6-4435-bf30-93ea2451add0,Hearing Protection Earmuffs,none,keep_pp,hearing-protection-earmuffs,Hearing Protection Earmuffs,,,,keep_pp
+tool,933aba35-7a1c-497e-a431-e7b9d8904a21,heat-gun,Heat Gun,94fb7cbe-329e-479b-80db-1bfc487add3f,Heat Gun,exact,merge,heat-gun,Heat Gun,,,,merge
+tool,daa91543-dd51-464e-b88f-a4e5fdcbbf73,hedge-trimmer,Hedge Trimmer,,,none,create_in_pp,hedge-trimmer,Hedge Trimmer,,,,create_in_pp
+tool,1e98f8df-c12c-4fd2-9f23-94df9b5758e7,hepa-dust-control-system,HEPA Dust Control System,,,none,create_in_pp,hepa-dust-control-system,HEPA Dust Control System,,,,create_in_pp
+tool,,,,182224da-4949-47ef-9ccd-496c668f00d2,High-Visibility Safety Vest,none,keep_pp,high-visibility-safety-vest,High-Visibility Safety Vest,,,,keep_pp
+tool,613d27f1-720e-4a6e-84c8-f40eef41c97c,hot-glue-gun,Hot Glue Gun,c8fc6bfa-67e0-4544-87f4-b5945eca31d2,Glue Gun,alias,merge,hot-glue-gun,Hot Glue Gun,,,,merge
+tool,,,,fb427474-9c67-472f-8c06-8a3be72b96c2,Ice Scraper,none,keep_pp,ice-scraper,Ice Scraper,,,,keep_pp
+tool,ed9fb535-a112-4f91-992c-ce74c66251ab,impact-driver,Impact Driver,a846b22d-a34c-4f2e-8fe4-f130800df0d0,Impact Driver,exact,merge,impact-driver,Impact Driver,,,,merge
+tool,,,,cfc7035e-f068-4ec7-ad50-60154acea990,Impact Wrench,none,keep_pp,impact-wrench,Impact Wrench,,,,keep_pp
+tool,67877eb3-cd87-4419-926d-da3762063abb,insulated-screwdriver-set,Insulated Screwdriver Set,,,fuzzy_suggestion,create_in_pp,insulated-screwdriver-set,Insulated Screwdriver Set,,,suggest=Screwdriver Set (0.67),create_in_pp
+tool,d5c0ae70-844a-4b25-b7a7-3f2beff129ae,internal-pipe-cutter,Internal Pipe Cutter,,,none,create_in_pp,internal-pipe-cutter,Internal Pipe Cutter,,,,create_in_pp
+tool,8aa27256-77ba-4aa1-9148-afea68b5cadb,jigsaw,Jigsaw,af3567ce-0422-4360-a3f4-2c4245108b99,Jigsaw,exact,merge,jigsaw,Jigsaw,,,,merge
+tool,,,,af1b01b4-5392-4b2c-a2eb-7b77a8f832a4,Knee Board,none,keep_pp,knee-board,Knee Board,,,,keep_pp
+tool,2ae8fbab-1ceb-4179-a787-00a11d05e334,knee-kicker,Knee Kicker,,,none,create_in_pp,knee-kicker,Knee Kicker,,,,create_in_pp
+tool,70720982-87a3-48fa-aadc-b590054a5c98,knee-pads,Knee Pads,3a9c27a8-8691-4786-af2e-55ef2310ae9e,Knee Pads,exact,merge,knee-pads,Knee Pads,,,,merge
+tool,,,,0cc6cde8-b3cc-4ed3-a93d-27013e77d1a1,Label Maker,none,keep_pp,label-maker,Label Maker,,,,keep_pp
+tool,466089b3-bef9-4e86-bff5-2f0a87a01f79,ladder,Ladder,45f556e5-ebd1-4125-94d3-c06b175120af,Ladder,exact,merge,ladder,Ladder,,,,merge
+tool,,,,8f314c6f-a96a-4618-9f8f-3a4fe743366c,Ladder Hook,fuzzy_suggestion,keep_pp,ladder-hook,Ladder Hook,,,suggest=Ladder [ladder] (0.5),keep_pp
+tool,,,,cc90e370-f2fc-4cb6-b60c-e4966fcc0819,Ladder Stabilizer,fuzzy_suggestion,keep_pp,ladder-stabilizer,Ladder Stabilizer,,,suggest=Ladder [ladder] (0.5),keep_pp
+tool,,,,f63e7087-abd7-464b-a9d2-ae1ea8d3d83d,Laminate Trimmer,none,keep_pp,laminate-trimmer,Laminate Trimmer,,,,keep_pp
+tool,915b94db-8f37-47a5-abec-08aa6a443c3d,landscape-rake,Landscape Rake,,,none,create_in_pp,landscape-rake,Landscape Rake,,,,create_in_pp
+tool,,,,2dfa4017-59f0-4711-9e86-f66f5523419d,Laser Level,fuzzy_suggestion,keep_pp,laser-level,Laser Level,,,suggest=Level [level] (0.5),keep_pp
+tool,047c7662-e8cb-4747-9ccf-be019f5dd0fe,lawn-aerator,Lawn Aerator,,,none,create_in_pp,lawn-aerator,Lawn Aerator,,,,create_in_pp
+tool,989b4b0c-af17-494b-a553-941200e80d75,lawn-dethatcher,Lawn Dethatcher,,,none,create_in_pp,lawn-dethatcher,Lawn Dethatcher,,,,create_in_pp
+tool,,,,49aab844-7c69-4155-a52e-43576ecc2a66,Lawn Mower,none,keep_pp,lawn-mower,Lawn Mower,,,,keep_pp
+tool,02550b74-0b69-40bd-a6ed-2b1be421dd35,leaf-blower,Leaf Blower,18bcc3eb-7b12-4a5f-afe0-d9247e8a4738,Leaf Blower,exact,merge,leaf-blower,Leaf Blower,,,,merge
+tool,2ed984c4-12ff-44db-abd5-c5e37e3165c2,leaf-vacuum,Leaf Vacuum,,,none,create_in_pp,leaf-vacuum,Leaf Vacuum,,,,create_in_pp
+tool,,,,2f98ae5c-dd6f-4ce7-ace7-34fb54f4e033,Leather Work Gloves,fuzzy_suggestion,keep_pp,leather-work-gloves,Leather Work Gloves,,,suggest=Work Gloves [ppe-gloves] (0.67),keep_pp
+tool,48d73b30-c349-4a9d-a5c0-a98a693caca0,level,Level,11abddd4-0fba-455e-ae6e-42efec824deb,Level,exact,merge_many,level,Level,,,synonyms=Level | Level,merge_many
+tool,48d73b30-c349-4a9d-a5c0-a98a693caca0,level,Level,d19076c5-9870-4ee1-8daf-f32f46ddc103,Level,exact,merge_many,level,Level,,,synonyms=Level | Level,merge_many
+tool,8fc4403b-6aab-4a44-bb32-837c3bfe1724,leveling-laser,Leveling Laser,,,none,create_in_pp,leveling-laser,Leveling Laser,,,,create_in_pp
+tool,a730f0c6-23aa-4d6a-b870-bd3e0d2b1c52,log_splitter,Log Splitter,,,none,create_in_pp,log-splitter,Log Splitter,,,,create_in_pp
+tool,701b0319-f74a-4795-bda7-0fce25f9a830,loppers,Loppers,7b3a66fa-99ed-4f3d-923b-58d87b3c7920,Loppers,exact,merge,loppers,Loppers,,,,merge
+tool,af57de3f-482e-45e9-9b33-c35da478d529,manual-tile-cutter,Manual Tile Cutter,,,fuzzy_suggestion,create_in_pp,manual-tile-cutter,Manual Tile Cutter,,,suggest=Carbide Tile Cutter (0.5),create_in_pp
+tool,42bca5e4-3b50-4273-8fe6-5e2243e458e5,margin-trowel,Margin Trowel,6600a4c6-cf1e-40af-a552-1ad2232a8563,Margin Trowel,exact,merge,margin-trowel,Margin Trowel,,,,merge
+tool,,,,f202c597-d764-4f5e-8f48-0476f76055ab,Masking Tape,none,keep_pp,masking-tape,Masking Tape,,,,fold_into
+tool,51c815f8-25b0-46e8-877c-c6ff93f314f1,measuring-pitcher,Measuring Pitcher,,,none,create_in_pp,measuring-pitcher,Measuring Pitcher,,,,create_in_pp
+tool,,,,94b40a0c-5cba-441a-a0d1-159b52717807,Metal Cut-Off Saw,none,keep_pp,metal-cut-off-saw,Metal Cut-Off Saw,,,,keep_pp
+tool,,,,677a9c29-e8a4-4c9a-925a-49447bc04f4c,Microfiber Cloths,none,keep_pp,microfiber-cloths,Microfiber Cloths,,,,fold_into
+tool,87587fdd-41dc-40bd-bd54-e0e42c2e48d0,mini-paint-roller,Mini Paint Roller,,,fuzzy_suggestion,create_in_pp,mini-paint-roller,Mini Paint Roller,,,suggest=Paint Roller (0.67),create_in_pp
+tool,a2bbe989-e685-441c-9da5-6a09c4191418,mini-scaffold,Mini Scaffold,,,none,create_in_pp,mini-scaffold,Mini Scaffold,,,,create_in_pp
+tool,9f9d8fbb-a225-4af9-97ec-6412c1b73698,miter-clamp-kit,Miter Clamp Kit,,,none,create_in_pp,miter-clamp-kit,Miter Clamp Kit,,,,create_in_pp
+tool,eb806064-d2e2-4f1c-b36d-b385f9ebfad9,miter-saw,Miter Saw,91b01b72-4b9f-4415-b5b7-a912d4ba6d26,Miter Saw,exact,merge,miter-saw,Miter Saw,,,,merge
+tool,0cce3235-41d3-4d28-a9db-d26e0a0a190f,miter-shears,Miter Shears,,,none,create_in_pp,miter-shears,Miter Shears,,,,create_in_pp
+tool,,,,d23ecaf3-6b82-46cc-a8e9-82fdf1c16f0a,Mixing Paddle,none,keep_pp,mixing-paddle,Mixing Paddle,,,,keep_pp
+tool,6181248e-cc66-4656-9d39-de6eb46f40c9,moisture-meter,Moisture Meter,0a07c121-38c8-4a3e-bb82-633187115d33,Moisture Meter,exact,merge,moisture-meter,Moisture Meter,,,,merge
+tool,e73308a9-8982-4c92-9b0e-a95d0b305925,mortar-mixer,Mortar and Grout Mixer,,,none,create_in_pp,mortar-mixer,Mortar and Grout Mixer,,,,create_in_pp
+tool,9b75bf2b-f467-4f30-be88-3e03644dbd16,multimeter,Multimeter,f9518458-6831-4d9f-b0e3-84741f041b64,Multimeter,exact,merge,multimeter,Multimeter,,,,merge
+tool,,,,a4ad2a79-cc60-403f-93dd-bc291d3ce24c,Nail Set,none,keep_pp,nail-set,Nail Set,,,,keep_pp
+tool,,,,850514bf-d26b-4e71-a64d-5b297cd8cd14,Nibbler,none,keep_pp,nibbler,Nibbler,,,,keep_pp
+tool,1766ae47-702a-45c8-b8d8-142c02530f3f,nitrile-gloves,Nitrile Gloves,c31bff60-f0a7-4bad-8a00-ead94d112ca2,Nitrile Gloves,exact,merge_many,nitrile-gloves,Nitrile Gloves,,,"ENTITY DIFFERS: Toolio tool, Project Partner material; synonyms=Nitrile Gloves | Nitrile gloves",merge_many
+tool,1766ae47-702a-45c8-b8d8-142c02530f3f,nitrile-gloves,Nitrile Gloves,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef007,Nitrile gloves,exact,merge_many,nitrile-gloves,Nitrile Gloves,,,"ENTITY DIFFERS: Toolio tool, Project Partner material; synonyms=Nitrile Gloves | Nitrile gloves",merge_many
+tool,4793ea17-b226-4330-92f1-7427c26868dc,non-contact-voltage-tester,Non-Contact Voltage Tester,,,fuzzy_suggestion,create_in_pp,non-contact-voltage-tester,Non-Contact Voltage Tester,,,suggest=Voltage Tester (0.5),create_in_pp
+tool,792481d8-9020-4bf9-9703-6e765a38e4d7,notched-trowel,Notched Trowel,53809ee6-a851-427a-84c2-cda072126a61,Trowel,alias,merge_many,notched-trowel,Notched Trowel,,,synonyms=Trowel | Notched Trowel,merge_many
+tool,792481d8-9020-4bf9-9703-6e765a38e4d7,notched-trowel,Notched Trowel,82c7ff52-df8c-43c7-9ac6-eac0d37c0502,Notched Trowel,exact,merge_many,notched-trowel,Notched Trowel,,,synonyms=Trowel | Notched Trowel,merge_many
+tool,,,,e244a7f1-ec26-4243-83f6-2a3c2091db5c,Orbital Sander,fuzzy_suggestion,keep_pp,orbital-sander,Orbital Sander,,,suggest=Random Orbital Sander [random-orbital-sander] (0.67),keep_pp
+tool,0d8a2953-2c7b-4b40-80a2-183ac95ee4ab,oscillating-blade,Oscillating Blade,,,none,create_in_pp,oscillating-blade,Oscillating Blade,,,,create_in_pp
+tool,ae149a48-8d4d-44c9-8df8-e9e56b592bcc,oscillating-multi-tool,Oscillating Multi-Tool,38990faa-9442-471e-9c76-1ebb94a484cb,Oscillating Tool,alias,merge_many,oscillating-multi-tool,Oscillating Multi-Tool,,,synonyms=Oscillating Tool | Oscillating Multi-Tool,merge_many
+tool,ae149a48-8d4d-44c9-8df8-e9e56b592bcc,oscillating-multi-tool,Oscillating Multi-Tool,e01ea34e-9229-44fd-83e8-62ece12e6d6e,Oscillating Multi-Tool,exact,merge_many,oscillating-multi-tool,Oscillating Multi-Tool,,,synonyms=Oscillating Tool | Oscillating Multi-Tool,merge_many
+tool,e0937784-d113-4b63-bc64-f94da55dae13,oscillating-sander-set,Oscillating Sander Set,,,none,create_in_pp,oscillating-sander-set,Oscillating Sander Set,,,,create_in_pp
+tool,9d7a287d-7fac-410b-a261-3121563afc3e,paint-brush,Paint Brush,,,fuzzy_suggestion,create_in_pp,paint-brush,Paint Brush,,,suggest=Paint Brush Set (0.67),create_in_pp
+tool,36d3c4cf-85cb-49f9-96ca-3189191c76de,paint-bucket-opener,Paint Bucket Opener,,,none,create_in_pp,paint-bucket-opener,Paint Bucket Opener,,,,create_in_pp
+tool,15c60e94-47b8-4f77-9c70-b6ca9dd4a197,paint-edge-guard,Paint Edge Guard,,,none,create_in_pp,paint-edge-guard,Paint Edge Guard,,,,create_in_pp
+tool,3f65abe3-5eae-493a-805c-2eef0210e58b,paint-edger-tool,Paint Edger Tool,,,none,create_in_pp,paint-edger-tool,Paint Edger Tool,,,,create_in_pp
+tool,e592fff0-bd21-45ac-a06e-285ce8fa4900,paint-mix-sticks,Paint Mix Sticks,,,none,create_in_pp,paint-mix-sticks,Paint Mix Sticks,,,,create_in_pp
+tool,884e55c8-2403-48c9-adf0-e44fa1f1d965,paint-mixer-paddle,Paint Mixer Paddle,,,none,create_in_pp,paint-mixer-paddle,Paint Mixer Paddle,,,,create_in_pp
+tool,a6eded51-38b3-410d-b4e3-c4dbbc3948b1,paint-pail,Paint Pail,,,none,create_in_pp,paint-pail,Paint Pail,,,,create_in_pp
+tool,9dec7cd5-4041-4bf2-b0b3-9def1f1e1161,paint-pail-liner,Paint Pail Liner,,,none,create_in_pp,paint-pail-liner,Paint Pail Liner,,,,create_in_pp
+tool,,,,0c1682e1-367d-45cc-a4ee-d9f686d3a7c0,Paint Roller,fuzzy_suggestion,keep_pp,paint-roller,Paint Roller,,,suggest=Paint Roller Cover [paint-roller-cover] (0.67) | Mini Paint Roller [mini-paint-roller] (0.67) | Paint Roller Tray [paint-roller-tray] (0.67),keep_pp
+tool,8157cc34-4063-4d42-9c52-df23aa7df876,paint-roller-cover,Paint Roller Cover,,,fuzzy_suggestion,create_in_pp,paint-roller-cover,Paint Roller Cover,,,suggest=Paint Roller (0.67),create_in_pp
+tool,ccf5f25f-1f2f-41bc-815f-6c3f8c019728,paint-roller-frame,Paint Roller Frame,,,fuzzy_suggestion,create_in_pp,paint-roller-frame,Paint Roller Frame,,,suggest=Paint Roller (0.67),create_in_pp
+tool,c008e79d-533b-4d3d-9f6d-ab3b2bef03ab,paint-roller-stick,Paint Roller Stick,,,fuzzy_suggestion,create_in_pp,paint-roller-stick,Paint Roller Stick,,,suggest=Paint Roller (0.67),create_in_pp
+tool,b811e6c0-03ea-4857-82ab-9bb2059816a3,paint-roller-tray,Paint Roller Tray,,,fuzzy_suggestion,create_in_pp,paint-roller-tray,Paint Roller Tray,,,suggest=Paint Roller (0.67) | Paint Tray (0.67),create_in_pp
+tool,e84cd99c-4c4e-47d9-8ecc-0366a5071375,paint-roller-tray-liner,Paint Roller Tray Liner,,,fuzzy_suggestion,create_in_pp,paint-roller-tray-liner,Paint Roller Tray Liner,,,suggest=Paint Roller (0.5) | Paint Tray (0.5),create_in_pp
+tool,04481e44-6bce-45a1-9259-a335cb40a091,paint-scraper,Paint Scraper,,,none,create_in_pp,paint-scraper,Paint Scraper,,,,create_in_pp
+tool,fbab34ab-af4e-4e07-956f-22d4e5edc016,paint-sprayer,Paint Sprayer,02e141a8-eb50-407b-93f7-02787a392bc0,Paint Sprayer,exact,merge,paint-sprayer,Paint Sprayer,,,,merge
+tool,77d9f9af-ebd2-4856-b22d-5b85851c04f5,paint-strainer,Paint Strainer,,,none,create_in_pp,paint-strainer,Paint Strainer,,,,create_in_pp
+tool,1793af63-6fdc-49ee-bc2d-7659d8c6c01b,paint-thinner-eco,Paint Thinner,,,none,create_in_pp,paint-thinner-eco,Paint Thinner,,,,create_in_pp
+tool,,,,841f1ec4-6fa6-40ae-aca4-e46e14bd505b,Paint Tray,fuzzy_suggestion,keep_pp,paint-tray,Paint Tray,,,suggest=Paint Roller Tray [paint-roller-tray] (0.67) | Paint [paint] (0.5) | Paint Roller Tray Liner [paint-roller-tray-liner] (0.5),keep_pp
+tool,,,,39dd2020-aaa4-40c9-817d-34b1a7cc022e,Painter's Multi-Tool,none,keep_pp,painter-s-multi-tool,Painter's Multi-Tool,,,,keep_pp
+tool,ade4db99-2cf4-46c1-bc12-c68b5edd2683,painters-multi-tool,Painters Multi-Tool,,,fuzzy_suggestion,create_in_pp,painters-multi-tool,Painters Multi-Tool,,,suggest=Oscillating Multi-Tool (0.5),create_in_pp
+tool,3331a937-619d-4efa-b202-d09248670f98,painters-tape,Painters Tape,0c34f492-e23c-4f49-a07e-2dc0a061463c,Painters Tape,exact,merge_many,painters-tape,Painters Tape,,,synonyms=Painters Tape | Painters Tape,merge_many
+tool,3331a937-619d-4efa-b202-d09248670f98,painters-tape,Painters Tape,29a219d3-1ba4-4329-b3c7-514dd5462a7a,Painters Tape,exact,merge_many,painters-tape,Painters Tape,,,"ENTITY DIFFERS: Toolio tool, Project Partner material; synonyms=Painters Tape | Painters Tape",merge_many
+tool,cc49f9be-1488-498b-b819-d44d0341382a,painting-extension-pole,Painting Extension Pole,,,none,create_in_pp,painting-extension-pole,Painting Extension Pole,,,,create_in_pp
+tool,,,,2be22a80-a76f-4079-b522-eb5207108b9a,Paper Towels,none,keep_pp,paper-towels,Paper Towels,,,,keep_pp
+tool,fc93a0eb-0283-44e3-8889-3425de18297b,permanent-marker,Permanent Marker,51bce7f8-9ac4-41cf-aca0-e80441c877c6,Permanent Marker,exact,merge,permanent-marker,Permanent Marker,,,,merge
+tool,,,,e977313b-d873-479a-a19b-81ca19269200,PEX Expansion Tool,none,keep_pp,pex-expansion-tool,PEX Expansion Tool,,,,keep_pp
+tool,,,,0cdcbe6b-bde1-401e-a579-ad1b65d2a4d1,Pipe Threader,none,keep_pp,pipe-threader,Pipe Threader,,,,keep_pp
+tool,,,,d070b4bc-e269-4b01-ba81-36f1d4965618,Pipe Wrench,none,keep_pp,pipe-wrench,Pipe Wrench,,,,keep_pp
+tool,,,,a1b74fa1-1e62-495d-94bd-395e36d4a8d9,Planer,none,keep_pp,planer,Planer,,,,keep_pp
+tool,7e315697-d16f-4df2-a8d1-0c3d17a24f9f,plastic-bags-gallon,Plastic Bags,,,none,create_in_pp,plastic-bags-gallon,Plastic Bags,,,,create_in_pp
+tool,d8af9c45-6e39-4321-8fe1-734b9b1351bc,plate-joiner,Plate Joiner,,,none,create_in_pp,plate-joiner,Plate Joiner,,,,create_in_pp
+tool,21bff7bf-a254-43ab-9e24-6efcc1636996,pliers,Pliers,3b8b1cba-507b-4b56-9c97-1105747337dc,Pliers,exact,merge,pliers,Pliers,,,,merge
+tool,,,,3c4cbb4d-8e8b-4633-9be4-b40f10f00396,Plumber's Tape,none,keep_pp,plumber-s-tape,Plumber's Tape,,,,keep_pp
+tool,,,,726c0210-64ae-44c4-b31c-3d18e4bf3ffb,Plunger,none,keep_pp,plunger,Plunger,,,,keep_pp
+tool,3e435961-4eea-45ef-885d-54f2ef02fc1e,pocket-hole-jig,Pocket Hole Jig,,,none,create_in_pp,pocket-hole-jig,Pocket Hole Jig,,,,create_in_pp
+tool,4ffd152c-80ec-482a-b9e3-8bc03c307b80,pocket-screw,Pocket Screw,,,none,create_in_pp,pocket-screw,Pocket Screw,,,,create_in_pp
+tool,a714d2d6-082d-419a-bac9-ccae43ddc8f9,pole-saw,Pole Saw,,,none,create_in_pp,pole-saw,Pole Saw,,,,create_in_pp
+tool,e72a62e3-66f1-4174-a457-3e09e14a5a33,portable-work-bench,Portable Work Bench,,,none,create_in_pp,portable-work-bench,Portable Work Bench,,,,create_in_pp
+tool,24cf04ee-bebc-4fdf-82a0-d4e2872d01db,portable-work-light,Portable Work Light,,,none,create_in_pp,portable-work-light,Portable Work Light,,,,create_in_pp
+tool,d57bc8ef-aabe-4197-81de-af040f96b246,post-hole-auger,Post Hole Auger,,,none,create_in_pp,post-hole-auger,Post Hole Auger,,,,create_in_pp
+tool,df0fafd2-cb3e-4483-ad32-1c0de723f7a9,post-hole-digger,Post Hole Digger,,,none,create_in_pp,post-hole-digger,Post Hole Digger,,,,create_in_pp
+tool,,,,7134aa4e-9dc5-41cc-8698-dc03126fe29f,Power Caulk Gun,fuzzy_suggestion,keep_pp,power-caulk-gun,Power Caulk Gun,,,suggest=Caulk Gun [caulk-gun] (0.67),keep_pp
+tool,2606fe72-9916-4c36-a623-5bca0f18072c,power-drill,Power Drill,008edd1b-d61a-4b6c-b50c-a5125ac3b92e,Power Drill,exact,merge_many,power-drill,Power Drill,,,synonyms=Power Drill | Cordless Drill,merge_many
+tool,2606fe72-9916-4c36-a623-5bca0f18072c,power-drill,Power Drill,b8e1d987-139f-4da7-833e-1bb923108c4f,Cordless Drill,alias,merge_many,power-drill,Power Drill,,,synonyms=Power Drill | Cordless Drill,merge_many
+tool,,,,ba7425bb-62a6-4103-b3bc-635d9b683b88,Power Planer,none,keep_pp,power-planer,Power Planer,,,,keep_pp
+tool,,,,e2ba43d6-5019-4372-bde3-5238a9a5cece,Power Shears,none,keep_pp,power-shears,Power Shears,,,,keep_pp
+tool,6e9e2bef-f77a-4ad8-8f53-9e86ebeac722,ppe-ear-plugs-disp,Disposable Ear Plugs,,,none,create_in_pp,ppe-ear-plugs-disp,Disposable Ear Plugs,,,,create_in_pp
+tool,dab8e524-fb3b-4dfc-bb9c-a58c71df5282,ppe-gloves,Work Gloves,85cfc25d-3c4f-4f4e-8d76-72488743005b,Work Gloves,exact,merge,ppe-gloves,Work Gloves,,,,merge
+tool,8cb70de8-5457-4254-a141-e138e04104fb,pressure-washer,Pressure Washer,07c36d08-3543-405c-b1d2-678876d6bafb,Pressure Washer,exact,merge,pressure-washer,Pressure Washer,,,,merge
+tool,1fc2be6a-e4ea-41cf-a1b1-49eada274d5d,pressure-washer-extension-wand,Pressure Washer Wand Extension,,,fuzzy_suggestion,create_in_pp,pressure-washer-extension-wand,Pressure Washer Wand Extension,,,suggest=Pressure Washer (0.5),create_in_pp
+tool,bcf19971-3a48-49cb-a12c-3b4238bd62dc,pressure-washer-hose-extension,Pressure Washer Hose Extension,,,fuzzy_suggestion,create_in_pp,pressure-washer-hose-extension,Pressure Washer Hose Extension,,,suggest=Pressure Washer (0.5),create_in_pp
+tool,2774e073-f30b-4316-b209-b7560a464939,pressure-washer-nozzle-set,Pressure Washer Nozzle Set,,,fuzzy_suggestion,create_in_pp,pressure-washer-nozzle-set,Pressure Washer Nozzle Set,,,suggest=Pressure Washer (0.5),create_in_pp
+tool,540de1b7-1782-41f6-b8c1-d8bba85f2f9c,propane-forced-air-heater,Propane Forced-Air Heater,,,none,create_in_pp,propane-forced-air-heater,Propane Forced-Air Heater,,,,create_in_pp
+tool,,,,586d636d-7eec-4a3c-ad9e-041ccb23559b,Pruning Shears,none,keep_pp,pruning-shears,Pruning Shears,,,,keep_pp
+tool,dd7f677e-61e4-499a-9a69-87df822df1d3,pry-bar,Pry Bar,8b1430ee-34fe-403b-8879-683cddfa67ae,Pry Bar,exact,merge,pry-bar,Pry Bar,,,,merge
+tool,207edb59-1660-48e8-ab55-7da4a5201169,pump-sprayer,Pump Sprayer,,,none,create_in_pp,pump-sprayer,Pump Sprayer,,,,create_in_pp
+tool,92b9d53c-777f-46b5-b5f9-710300b3f88a,push-broom,Push Broom,5a54d6bb-d02f-48a0-9d3f-37fea3abd861,Broom,alias,merge,push-broom,Push Broom,,,,merge
+tool,ecf33fa6-cd11-4bbc-9439-b86adfc554fb,putty-knife,Putty Knife,4175ef5d-092a-461a-a52c-97db01cb6704,Putty Knife,exact,merge,putty-knife,Putty Knife,,,,merge
+tool,f6573765-4eaa-4dcf-a3d6-388c9c5c8e8c,pvc-cement,PVC Cement,,,none,create_in_pp,pvc-cement,PVC Cement,,,,create_in_pp
+tool,822225f3-f0b8-40ce-acf7-c80fd6d1be7e,pvc-pipe-cutter,PVC Pipe Cutter,,,none,create_in_pp,pvc-pipe-cutter,PVC Pipe Cutter,,,,create_in_pp
+tool,5cb68b6a-b811-42bb-88a4-9114d8a03325,pvc-primer,PVC Primer,,,none,create_in_pp,pvc-primer,PVC Primer,,,,create_in_pp
+tool,b75c768b-82ee-432b-af9b-61c799233d25,quick-clamp,Quick Clamp,,,none,create_in_pp,quick-clamp,Quick Clamp,,,,create_in_pp
+tool,,,,9a5d55f8-e5ef-45dd-a4a4-74c553e21b25,Rags,none,keep_pp,rags,Rags,,,,keep_pp
+tool,e34e90df-0091-4c6e-a1c7-29bb7b9bd2bd,random-orbital-sander,Random Orbital Sander,b8fcf2ac-a349-49d1-b1a4-cab8cfef96ef,Random Orbital Sander,exact,merge,random-orbital-sander,Random Orbital Sander,,,,merge
+tool,ee180330-b400-4081-b924-6157b7381dc3,receptacle-tester,Receptacle Tester,a26f19c6-4ece-4f19-b3f5-6d32cec9ead3,Outlet Tester,alias,merge,receptacle-tester,Receptacle Tester,,,,merge
+tool,fc844c90-44e1-4fd6-96cf-75f485fd66fc,reciprocating-saw,Reciprocating Saw,3ee3d19d-46b3-4f62-8633-1f163aee6a9e,Reciprocating Saw,exact,merge,reciprocating-saw,Reciprocating Saw,,,,merge
+tool,2a8fc44d-d120-48bd-8412-8b22892acc07,respirator,Face Mask,,,none,create_in_pp,respirator,Face Mask,,,,create_in_pp
+tool,,,,3491de27-2bec-482b-a7d8-b4b35c9ac25d,Right Angle Drill,none,keep_pp,right-angle-drill,Right Angle Drill,,,,keep_pp
+tool,de06ed91-a704-43a2-9958-cb249150fd2f,roofing-nailer,Roofing Nailer,,,none,create_in_pp,roofing-nailer,Roofing Nailer,,,,create_in_pp
+tool,3cdcd8cb-d913-46db-913b-621b46cda4f3,rotary-hammer,Rotary Hammer,122686f6-1d37-449c-b859-87e61fee0f15,Rotary Hammer,exact,merge,rotary-hammer,Rotary Hammer,,,,merge
+tool,04bcbad8-7106-44a5-a1f5-b135591ff3fa,router,Router,c9e004a0-2e9c-4c66-b445-3eb6b845dbbd,Router,exact,merge,router,Router,,,,merge
+tool,354cf984-c3b3-4185-9fa5-2538cdd37bb6,rubber-boots,Rubber Boots,,,none,create_in_pp,rubber-boots,Rubber Boots,,,,create_in_pp
+tool,ea508615-7b6b-4aed-a993-6b109f26af36,rubber-gloves,Rubber Gloves,,,none,create_in_pp,rubber-gloves,Rubber Gloves,,,,create_in_pp
+tool,5ffb49cf-57d6-419d-9e15-dba64834977c,rubber-mallet,Rubber Mallet,a9168a0e-2d37-4f71-8e74-c894a2402350,Rubber Mallet,exact,merge,rubber-mallet,Rubber Mallet,,,,merge
+tool,c57ee27b-ab03-4721-ba54-f5abc190fb4b,safety-glasses,Safety Glasses,579eeb02-c184-493f-81e8-76537fcf4805,Safety Glasses,exact,merge,safety-glasses,Safety Glasses,,,,merge
+tool,,,,5c68c669-c5ef-4acd-8722-c1525831fcae,Safety Goggles,none,keep_pp,safety-goggles,Safety Goggles,,,,keep_pp
+tool,aa0a82b7-1934-4b17-b57a-b09d6f22f7ab,sanding-sponge,Sanding Sponge,,,fuzzy_suggestion,create_in_pp,sanding-sponge,Sanding Sponge,,,suggest=Sponge (0.5),create_in_pp
+tool,,,,da9edf68-1202-4d13-bee5-43f5e03d59b3,Sandpaper Block,none,keep_pp,sandpaper-block,Sandpaper Block,,,,keep_pp
+tool,,,,0a54a49a-7f80-4531-bbbb-ef1d3926de57,Scissors,none,keep_pp,scissors,Scissors,,,,keep_pp
+tool,,,,37127fe8-e6ca-4227-9fc2-28d6b3587335,Screw Gun,none,keep_pp,screw-gun,Screw Gun,,,,keep_pp
+tool,a90b78f8-385b-4325-a2c4-980bd1407177,screwdriver,Screwdriver,,,fuzzy_suggestion,create_in_pp,screwdriver,Screwdriver,,,suggest=Drywall Screwdriver (0.5) | Cordless Screwdriver (0.5) | Screwdriver Set (0.5),create_in_pp
+tool,e942b260-eabd-4593-b60b-89cbf46e26e5,screwdriver-bit-set,Screwdriver Bit Set,,,fuzzy_suggestion,create_in_pp,screwdriver-bit-set,Screwdriver Bit Set,,,suggest=Screwdriver Set (0.67) | Drill Bit Set (0.5),create_in_pp
+tool,,,,c995de35-5580-47cb-baf9-4fab46380d6e,Screwdriver Set,fuzzy_suggestion,keep_pp,screwdriver-set,Screwdriver Set,,,suggest=Insulated Screwdriver Set [insulated-screwdriver-set] (0.67) | Screwdriver Bit Set [screwdriver-bit-set] (0.67) | Screwdriver [screwdriver] (0.5),keep_pp
+tool,,,,0c107cae-2121-4b79-afc0-952419f58539,Sealer Applicator Bottle,none,keep_pp,sealer-applicator-bottle,Sealer Applicator Bottle,,,,keep_pp
+tool,ee7b2cd4-2541-493a-94e6-3116c26b004f,seam-roller,Seam Roller,,,none,create_in_pp,seam-roller,Seam Roller,,,,create_in_pp
+tool,,,,637ebdf6-a68c-4d8c-8867-c056cdb1d3b9,Shop Lights,none,keep_pp,shop-lights,Shop Lights,,,,keep_pp
+tool,78274273-570d-4c98-ad85-29a851607ab1,shop-vac,Shop Vac,7d666829-e7c0-48e8-8e55-121d9c9c82c2,Wet/Dry Vacuum,alias,merge,shop-vac,Shop Vac,,,,merge
+tool,,,,4fefb125-6314-468e-a714-b728c3b5d7e9,Shop Vacuum,none,keep_pp,shop-vacuum,Shop Vacuum,,,,keep_pp
+tool,0a1c1434-1bcb-4c8c-8eef-8ec05cdc9b93,shovel,Digging Shovel,60393f71-2c35-4e1b-ad8b-f0a7eb16c2a8,Shovel,alias,merge,shovel,Digging Shovel,,,,merge
+tool,268b8344-cb52-4e1c-abd5-8e53cd5a482a,shower-drain-test-plug,Drain Test Plug,,,none,create_in_pp,shower-drain-test-plug,Drain Test Plug,,,,create_in_pp
+tool,5127f9d9-728f-4d07-a796-db9e42e3e19c,siding-nailer,Siding Nailer,,,none,create_in_pp,siding-nailer,Siding Nailer,,,,create_in_pp
+tool,c8593c15-d3b7-434c-af73-ca09aba1a6bd,sledge-hammer,Sledge Hammer,,,none,create_in_pp,sledge-hammer,Sledge Hammer,,,,create_in_pp
+tool,,,,98a8c001-f474-4c2a-bcfb-fabdad638fbf,Smartphone or computer,none,keep_pp,smartphone-or-computer,Smartphone or computer,,,,keep_pp
+tool,,,,5e3df43e-66fd-426f-a202-7b3a60764f4e,Snow Shovel,none,keep_pp,snow-shovel,Snow Shovel,,,,keep_pp
+tool,,,,839c0c67-7506-4be6-8554-e86e7033a4ce,Socket Set,none,keep_pp,socket-set,Socket Set,,,,keep_pp
+tool,8cd6fb6c-6fb4-436d-8026-5a20da5d0c03,soft-wash-brush,Soft Wash Brush,,,none,create_in_pp,soft-wash-brush,Soft Wash Brush,,,,create_in_pp
+tool,,,,3af25c4c-8194-4929-a640-bbacecc5ae68,Space Heater,fuzzy_suggestion,keep_pp,space-heater,Space Heater,,,suggest=Electric Space Heater [electric-space-heater] (0.67),keep_pp
+tool,eb8bfb83-3948-45ee-8022-d973aadc6171,speed-square,Speed Square,f03517a7-d5c5-4bc7-95ea-3c1a2fe829b2,Speed Square,exact,merge,speed-square,Speed Square,,,,merge
+tool,6c093cba-f2ae-4cb5-b415-ebe2340bcc1a,cleaning-sponge,Cleaning Sponge,0b1b75d8-63e3-423c-a7b8-a2d6ecfb9d5e,Sponge,alias,one_to_many,sponge,Sponge,,,toolio=cleaning-sponge | sponge,one_to_many
+tool,9778d04f-bfb6-457a-a472-7d7ac889ad9e,sponge,Sponge,0b1b75d8-63e3-423c-a7b8-a2d6ecfb9d5e,Sponge,exact,one_to_many,sponge,Sponge,,,toolio=cleaning-sponge | sponge,one_to_many
+tool,,,,1fa1c7fa-3c84-44ae-a640-1f598ef16ce6,Spray Nozzle,none,keep_pp,spray-nozzle,Spray Nozzle,,,,keep_pp
+tool,,,,9a378db5-72f4-4fa4-a0d8-8a1f1691c99b,Staple Gun,none,keep_pp,staple-gun,Staple Gun,,,,keep_pp
+tool,e55d0d5d-45b3-447e-a07a-f974b441a58d,stiff-scrub-brush,Stiff Scrub Brush,,,none,create_in_pp,stiff-scrub-brush,Stiff Scrub Brush,,,,create_in_pp
+tool,,,,411360bf-a439-46a2-9573-aec47db97046,Storage Bins,none,keep_pp,storage-bins,Storage Bins,,,,keep_pp
+tool,,,,19ed7180-a706-45ae-80db-d04d40f9ce7b,Straightedge,none,keep_pp,straightedge,Straightedge,,,,keep_pp
+tool,4ac8aef7-64d7-44a3-827d-9eeb495ea7f7,string-line,String Line,,,none,create_in_pp,string-line,String Line,,,,create_in_pp
+tool,,,,06aa99f0-5e20-4934-98a5-968aea325e56,String Trimmer,none,keep_pp,string-trimmer,String Trimmer,,,,keep_pp
+tool,,,,b8d79855-ff10-4dc4-902c-dddd441dec3f,Stud Finder,none,keep_pp,stud-finder,Stud Finder,,,,keep_pp
+tool,d608b119-616c-40ce-a0b5-03509d5d5ad7,table-saw,Table Saw,4752c4e2-3812-48ae-9e30-0a4eafc80ac9,Table Saw,exact,merge,table-saw,Table Saw,,,,merge
+tool,,,,383b7ded-4618-49bf-8fee-ef9cf20e37d2,Tablet or laptop,none,keep_pp,tablet-or-laptop,Tablet or laptop,,,,keep_pp
+tool,6869b404-6683-41da-addd-90e5f6659717,tape-measure,Tape Measure,ff8e2e15-be5d-4a56-a615-10b6b122440f,Tape Measure,exact,merge,tape-measure,Tape Measure,,,,merge
+tool,ff7034ed-5b1b-4440-a3d7-b76d6a88a15f,tape-measure-digital,Digital Tape Measure,,,fuzzy_suggestion,create_in_pp,tape-measure-digital,Digital Tape Measure,,,suggest=Tape Measure (0.67),create_in_pp
+tool,879be48a-d777-433a-9387-3e99990fdd7d,tarp,Tarp,,,none,create_in_pp,tarp,Tarp,,,,create_in_pp
+tool,10a8a9a5-86eb-454d-987b-e32041fd57d8,tear-off-shovel,Tear-Off Shovel,,,none,create_in_pp,tear-off-shovel,Tear-Off Shovel,,,,create_in_pp
+tool,7a232e69-ac1e-4c37-9a7d-8aae6de9c26f,thinset-mortar,Thinset Mortar,,,fuzzy_suggestion,create_in_pp,thinset-mortar,Thinset Mortar,,,suggest=Tile Thinset Mortar (0.67),create_in_pp
+tool,0afc6257-5416-4a7d-8fae-e0ee3d7a5fb7,tile-addon-gauge-rake,Gauge Rake,,,none,create_in_pp,tile-addon-gauge-rake,Gauge Rake,,,,create_in_pp
+tool,ebb0b5e9-4958-406e-847a-d01e2b70aa98,tile-addon-spiked-shoes,Spiked Shoes,,,none,create_in_pp,tile-addon-spiked-shoes,Spiked Shoes,,,,create_in_pp
+tool,e20d9c03-a4b0-4ed1-8f29-30d5a2b4de45,tile-glass-suction-cup,Suction Cup Lifter,,,none,create_in_pp,tile-glass-suction-cup,Suction Cup Lifter,,,,create_in_pp
+tool,4880f1c2-1662-4dc2-bab4-5f896d7009f0,tile-leveling-cap,Tile Leveling Cap,,,fuzzy_suggestion,create_in_pp,tile-leveling-cap,Tile Leveling Cap,,,suggest=Tile Leveling Clips (0.5) | Tile Leveling Wedges (0.5),create_in_pp
+tool,,,,86a05b00-b026-4244-948a-eaff2812df4f,Tile Leveling Clip Tool,fuzzy_suggestion,keep_pp,tile-leveling-clip-tool,Tile Leveling Clip Tool,,,suggest=Tile Leveling Clip [tile-leveling-clips] (0.75),keep_pp
+tool,fbad86ed-b62f-4e3c-b56a-346b81258ee7,tile-leveling-clips,Tile Leveling Clip,2bce9e54-8276-4ed5-b92f-cb80845263c0,Tile Leveling Clips,reviewed,merge,tile-leveling-clips,Tile Leveling Clip,,,"ENTITY DIFFERS: Toolio tool, Project Partner material",merge
+tool,,,,b12386c2-dbc9-42fe-a55e-4c470fd32bd9,Tile Nippers,none,keep_pp,tile-nippers,Tile Nippers,,,,keep_pp
+tool,5e0767f6-c919-45e8-b847-a2f95a9fa5fe,tile-puck,Tile Puck,,,none,create_in_pp,tile-puck,Tile Puck,,,,create_in_pp
+tool,04660813-1656-4027-9a53-f67f775bb294,tile-saw,Wet Tile Saw,82f7579a-c347-4ae2-a2cc-ea429cf0636b,Tile Saw,reviewed,merge_many,tile-saw,Wet Tile Saw,,,synonyms=Tile Saw | Wet Tile Saw,merge_many
+tool,04660813-1656-4027-9a53-f67f775bb294,tile-saw,Wet Tile Saw,fc76778e-8170-4ea3-a6f2-5c4a2c090685,Wet Tile Saw,exact,merge_many,tile-saw,Wet Tile Saw,,,synonyms=Tile Saw | Wet Tile Saw,merge_many
+tool,9b5a6220-f95a-4315-a76d-45494046a04d,tile-spacer,Tile Spacer,,,fuzzy_suggestion,create_in_pp,tile-spacer,Tile Spacer,,,suggest=Tile Spacer Pack (0.67),create_in_pp
+tool,,,,18c8795b-3654-40c4-8c17-23d20a3a9b99,Tile Spacers,none,keep_pp,tile-spacers,Tile Spacers,,,,keep_pp
+tool,6cc9274b-6cc5-43f9-a619-ca9faad5ba49,timer,Timer,,,none,create_in_pp,timer,Timer,,,,create_in_pp
+tool,6fdd6d9c-69b2-4aa4-aced-a47471182acb,toilet-lifter-handle,Toilet Lifter Handle,,,none,create_in_pp,toilet-lifter-handle,Toilet Lifter Handle,,,,create_in_pp
+tool,,,,2d280fe7-633a-40bd-bff7-486a309fdad6,Tool Belt,none,keep_pp,tool-belt,Tool Belt,,,,keep_pp
+tool,,,,59fa4542-ec6e-4a4a-abe3-6a48c557d1e2,Toolbox,none,keep_pp,toolbox,Toolbox,,,,keep_pp
+tool,86d04d01-efc5-469f-a9fa-4316e6b08f6f,track-saw,Track Saw,cffb24a7-9485-4992-ae20-e0c4eb4de95f,Track Saw,exact,merge,track-saw,Track Saw,,,,merge
+tool,,,,a5bf6552-34f0-4076-bf56-d51e6ecf346e,Transfer Pump,none,keep_pp,transfer-pump,Transfer Pump,,,,keep_pp
+tool,,,,1586efe3-7a97-4122-942c-b2beb57f7e71,Trash Bags,none,keep_pp,trash-bags,Trash Bags,,,,fold_into
+tool,db4b7896-b6b6-44b0-8c9b-d0329234294a,trash-can,Trash Can,,,none,create_in_pp,trash-can,Trash Can,,,,create_in_pp
+tool,96c84b64-39f8-4eab-8a04-c68471f2ac84,trim-pry-tool,Trim Pry Tool,,,none,create_in_pp,trim-pry-tool,Trim Pry Tool,,,,create_in_pp
+tool,395c607f-6c42-49ca-92ae-ab43824ff4c0,trim-puller,Trim Puller,,,none,create_in_pp,trim-puller,Trim Puller,,,,create_in_pp
+tool,2a83083e-d3a3-45e7-9b63-de3ef2420fd7,tub-drain-wrench,Tub Drain Wrench,,,none,create_in_pp,tub-drain-wrench,Tub Drain Wrench,,,,create_in_pp
+tool,c749d088-2aea-4c64-a516-91523f7a5382,utility-knife,Utility Knife,920679a3-1887-482c-8867-5b45ddec02a2,Utility Knife,exact,merge,utility-knife,Utility Knife,,,,merge
+tool,e0a503d2-2827-4ba0-8adc-7e4d0ffaea2c,vinyl-flooring-adhesive,Vinyl Flooring Adhesive,,,none,create_in_pp,vinyl-flooring-adhesive,Vinyl Flooring Adhesive,,,,create_in_pp
+tool,5b8d62d9-9ede-4046-af6f-076bf8ed390a,vinyl-flooring-cutter,Vinyl Flooring Cutter,,,none,create_in_pp,vinyl-flooring-cutter,Vinyl Flooring Cutter,,,,create_in_pp
+tool,54eef519-8767-407b-8b7e-03ebcedca036,vinyl-siding-brake,Vinyl Siding Brake,,,none,create_in_pp,vinyl-siding-brake,Vinyl Siding Brake,,,,create_in_pp
+tool,,,,2f4921d2-c3dc-4151-8678-9e1a6907f2eb,Voltage Tester,fuzzy_suggestion,keep_pp,voltage-tester,Voltage Tester,,,suggest=Non-Contact Voltage Tester [non-contact-voltage-tester] (0.5),keep_pp
+tool,28deed1e-aadc-4e3c-939c-644bba342e9e,wall-wash-concentrate,Wall Wash Concentrate,,,none,create_in_pp,wall-wash-concentrate,Wall Wash Concentrate,,,,create_in_pp
+tool,5da2a5dd-78c4-4add-85a4-80bd8cd050f7,wallpaper-scraper,Wallpaper Scraper,,,none,create_in_pp,wallpaper-scraper,Wallpaper Scraper,,,,create_in_pp
+tool,19640d5b-09f4-4382-b301-64d534310792,wallpaper-steamer,Wallpaper Steamer,,,none,create_in_pp,wallpaper-steamer,Wallpaper Steamer,,,,create_in_pp
+tool,a91f93ea-a709-4439-bdb2-20ea785d4b1a,water-hose,Water Hose,a3540506-a781-4216-ace2-a497f6342456,Garden Hose,alias,merge,water-hose,Water Hose,,,,merge
+tool,d234570b-1ceb-4c71-b864-93dd74749112,waterproof-coveralls,Waterproof Coveralls,,,none,create_in_pp,waterproof-coveralls,Waterproof Coveralls,,,,create_in_pp
+tool,527a48c7-a3d9-40c9-8e18-217e85354718,wax-pencil,Wax Pencil,,,none,create_in_pp,wax-pencil,Wax Pencil,,,,create_in_pp
+tool,008ea27f-cdac-464d-8bff-e59159296989,wax-ring,Wax Ring,92f4f2b9-8f32-4840-9565-f8bcf6c51c96,Wax Ring,exact,merge,wax-ring,Wax Ring,,,"ENTITY DIFFERS: Toolio tool, Project Partner material",merge
+tool,ddda553a-3409-427c-86c7-dd455d3d0741,wet-floor-sign,Wet Floor Sign,,,none,create_in_pp,wet-floor-sign,Wet Floor Sign,,,,create_in_pp
+tool,,,,0f19787c-05c4-4e67-a983-0e2429333651,Wet Polisher,none,keep_pp,wet-polisher,Wet Polisher,,,,keep_pp
+tool,09ef9f12-9bda-49f7-a45d-39d754834026,wheelbarrow,Wheelbarrow,6027e726-2e82-4891-b473-7d112d49f522,Wheelbarrow,exact,merge,wheelbarrow,Wheelbarrow,,,,merge
+tool,83faac35-4a28-454a-bf28-03cd5469a91a,wire-brush,Wire Brush,ae914bcd-c5a2-444a-a346-35a014bcbefc,Masonry Brush,alias,merge,wire-brush,Wire Brush,,,,merge
+tool,0606b659-0686-44e8-bde4-983b1fb6030c,wire-stripper,Wire Stripper,,,none,create_in_pp,wire-stripper,Wire Stripper,,,,create_in_pp
+tool,,,,7fd3cca0-f2c8-47dd-b7cb-d608a10770fd,Wire Strippers,none,keep_pp,wire-strippers,Wire Strippers,,,,keep_pp
+tool,,,,67857772-3c43-4eeb-b31a-f2be5a0c0e6e,Wood Chisel,fuzzy_suggestion,keep_pp,wood-chisel,Wood Chisel,,,suggest=Wood Chisel Set [wood-chisel-set] (0.67),keep_pp
+tool,4175ece4-92d9-426f-b104-bd9c92c3d687,wood-chisel-set,Wood Chisel Set,,,fuzzy_suggestion,create_in_pp,wood-chisel-set,Wood Chisel Set,,,suggest=Wood Chisel (0.67),create_in_pp
+tool,4296ed9f-118e-4c98-b019-902fcb91a37b,wood-filler,Wood Filler,b0ad9aab-f167-4310-a21b-d10e05e7b318,Wood Filler,exact,merge,wood-filler,Wood Filler,,,,merge
+tool,278d0578-0cb2-4270-8b48-01a58b44f798,wood-sandpaper,Wood Sandpaper,,,fuzzy_suggestion,create_in_pp,wood-sandpaper,Wood Sandpaper,,,suggest=Sandpaper (0.5),create_in_pp
+tool,,,,cecd809c-d87d-4e25-bc58-af2254bf79b8,Wrench Set,none,keep_pp,wrench-set,Wrench Set,,,,keep_pp
+material,ac13ef05-0884-4712-9048-9f07e0a8793f,acrylic-bathtub,Acrylic Bathtub,,,none,create_in_pp,acrylic-bathtub,Acrylic Bathtub,,,,create_in_pp
+material,b8dd804c-328d-42be-921e-32241a889f67,acrylic-shower-base,Acrylic Shower Base,,,none,create_in_pp,acrylic-shower-base,Acrylic Shower Base,,,,create_in_pp
+material,4b70e60f-f93a-405a-ab36-2dc712231a7d,alkali-resistant-seam-tape,Alkali-Resistant Seam Tape,a3be3ed2-7ff1-44c4-b433-58995470735f,Alkali-Resistant Seam Tape,exact,merge,alkali-resistant-seam-tape,Alkali-Resistant Seam Tape,,,,merge
+material,df1fbc93-bee6-4f30-9301-be6a8ed807b6,asphalt-shingles,Asphalt Shingles,,,none,create_in_pp,asphalt-shingles,Asphalt Shingles,,,,create_in_pp
+material,,,,aef369a9-363b-4fcc-8e12-306151dc58e2,Backer Board Screws,fuzzy_suggestion,keep_pp,backer-board-screws,Backer Board Screws,,,suggest=Foam Board Backer [foam-board-backer] (0.5),keep_pp
+material,04c43b30-0f42-4c24-9140-3bf451ec0778,bar-and-chain-oil,Bar and Chain Oil,,,none,create_in_pp,bar-and-chain-oil,Bar and Chain Oil,,,,create_in_pp
+material,154b69b0-3a28-490d-92c2-e71f59fb0f78,board-seam-sealant,Board Seam Sealant,,,none,create_in_pp,board-seam-sealant,Board Seam Sealant,,,,create_in_pp
+material,b39c6a68-8836-4b81-9958-7abe55944f80,broadcast-spreader,Broadcast Spreader,,,none,create_in_pp,broadcast-spreader,Broadcast Spreader,,,,create_in_pp
+material,,,,152e19d9-7c7a-42de-9fba-20fe5b053a9b,Cardboard Boxes,none,keep_pp,cardboard-boxes,Cardboard Boxes,,,,keep_pp
+material,6620cbe5-4a21-40da-834b-79bf50ea4f58,carpenter-pencils,Carpenter Pencil,c27568eb-96d3-4ce2-863a-7ad2f11777e4,Carpenter Pencil,exact,merge,carpenter-pencils,Carpenter Pencil,,,"ENTITY DIFFERS: Toolio material, Project Partner tool",merge
+material,73af6047-0ee0-415e-8ce2-cfffc88038a9,carpet-broadloom,Carpet Broadloom,,,none,create_in_pp,carpet-broadloom,Carpet Broadloom,,,,create_in_pp
+material,c1e2a7bf-8b33-4f0b-b99f-141062ba5a7c,carpet-pad,Carpet Pad,,,none,create_in_pp,carpet-pad,Carpet Pad,,,,create_in_pp
+material,b5e20325-4d80-4dec-a4a8-225268a881aa,carpet-seam-tape,Carpet Seam Tape,,,none,create_in_pp,carpet-seam-tape,Carpet Seam Tape,,,,create_in_pp
+material,29b5142c-f3cd-47d1-b801-ede3f1cd01e9,carpet-tack-strip,Carpet Tack Strip,,,none,create_in_pp,carpet-tack-strip,Carpet Tack Strip,,,,create_in_pp
+material,d522c8c1-bd3a-4843-a996-819bcf3d07c0,caulk,Caulk,,,fuzzy_suggestion,create_in_pp,caulk,Caulk,,,suggest=Caulk Gun (0.5) | Silicone Caulk (0.5) | Silicon caulk (0.5),create_in_pp
+material,,,,72d8ad59-3ec9-4ec5-8bf6-99fd7f673036,Cement Backer Board,fuzzy_suggestion,keep_pp,cement-backer-board,Cement Backer Board,,,suggest=Cement Board [cement-board] (0.67) | Waterproof Cement Board [waterproof-cement-board] (0.5) | Foam Board Backer [foam-board-backer] (0.5),keep_pp
+material,dd9db117-b3d8-4b89-a739-7fbd42aa648d,cement-board,Cement Board,,,fuzzy_suggestion,create_in_pp,cement-board,Cement Board,,,suggest=Cement Backer Board (0.67),create_in_pp
+material,e74d0c46-cc1d-4df2-b614-dc7c6061d3e0,cement-board-screw,Cement Board Screw,,,fuzzy_suggestion,create_in_pp,cement-board-screw,Cement Board Screw,,,suggest=Cement Backer Board (0.5),create_in_pp
+material,7182ea2d-61b1-4c08-bb28-fed7a302a1c7,chain-link-fabric,Chain Link Fabric,,,none,create_in_pp,chain-link-fabric,Chain Link Fabric,,,,create_in_pp
+material,0e67c915-9f06-49e2-ac35-590ce3ed8b5b,chain-link-tension-wire,Chain Link Tension Wire,,,none,create_in_pp,chain-link-tension-wire,Chain Link Tension Wire,,,,create_in_pp
+material,81eb735f-cbd0-4080-a380-752fb7ac5fa8,concrete-cleaner,Concrete Cleaner,,,none,create_in_pp,concrete-cleaner,Concrete Cleaner,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef004,Concrete mix,fuzzy_suggestion,keep_pp,concrete-mix,Concrete mix,,,suggest=Ready-Mix Concrete [ready-mix-concrete] (0.67),keep_pp
+material,46fe3e80-4095-453f-9543-ea139d4798d4,contractor-trash-bags,Contractor Trash Bag,1b414da8-9759-4839-8b1e-ac992428dd9c,Contractor Trash Bags,reviewed,merge,contractor-trash-bags,Contractor Trash Bag,,,,merge
+material,938562cf-441e-41b7-8797-c3d630a869b4,deck-framing-lumber,Deck Framing Lumber,,,none,create_in_pp,deck-framing-lumber,Deck Framing Lumber,,,,create_in_pp
+material,068b5d7c-362f-4b91-bcbb-68dbc4db1cbf,deck-mud,Deck Mud,,,none,create_in_pp,deck-mud,Deck Mud,,,,create_in_pp
+material,6ba4b9ac-065a-44b0-954e-fcaa91a9f7da,deck-post-footings,Deck Post and Footing Kit,,,none,create_in_pp,deck-post-footings,Deck Post and Footing Kit,,,,create_in_pp
+material,3b14cbcf-41c1-48f9-bdae-4b1c41ed05cd,deck-railing-kit,Deck Railing Kit,,,none,create_in_pp,deck-railing-kit,Deck Railing Kit,,,,create_in_pp
+material,0f30dccf-2e7e-4f56-9e9d-4242e1f2ac40,deck-roofing-lumber,Deck and Roofing Lumber,,,none,create_in_pp,deck-roofing-lumber,Deck and Roofing Lumber,,,,create_in_pp
+material,4f6993a2-768a-40a3-9c36-319eb567bef9,degreasing-cleaner,Degreasing Cleaner,,,none,create_in_pp,degreasing-cleaner,Degreasing Cleaner,,,,create_in_pp
+material,,,,8b9838e9-7a89-4070-a8f7-5b23900bd01a,Diamond Saw Blade,none,keep_pp,diamond-saw-blade,Diamond Saw Blade,,,,keep_pp
+material,,,,52b1eaa9-8ac8-48dd-bbb2-af319242bc12,Disposable Coveralls,none,keep_pp,disposable-coveralls,Disposable Coveralls,,,,keep_pp
+material,8c733623-64a9-4fc6-ba0a-a70468c72657,door-shims,Door and Window Shims,,,none,create_in_pp,door-shims,Door and Window Shims,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef005,Double sided tape,none,keep_pp,double-sided-tape,Double sided tape,,,,keep_pp
+material,64ea0d71-1df3-4bc8-a1e3-da3f20e836e5,drainage-gravel,Drainage Gravel,,,none,create_in_pp,drainage-gravel,Drainage Gravel,,,,create_in_pp
+material,f343cabd-dfd8-4dc3-9f6f-7ce63943f67b,drip-edge,Drip Edge,,,none,create_in_pp,drip-edge,Drip Edge,,,,create_in_pp
+material,5697cefc-fbe6-46bf-9764-66ebc6c24a91,drywall-mesh-tape,Drywall Mesh Tape,,,none,create_in_pp,drywall-mesh-tape,Drywall Mesh Tape,,,,create_in_pp
+material,92bab8e5-1a98-487a-b474-51146913b932,drywall-repair-patch,Drywall Repair Patch,,,none,create_in_pp,drywall-repair-patch,Drywall Repair Patch,,,,create_in_pp
+material,a7bd958d-ee35-4786-834f-1aea4d5fc26e,drywall-sandpaper,Drywall Sandpaper,,,fuzzy_suggestion,create_in_pp,drywall-sandpaper,Drywall Sandpaper,,,suggest=Sandpaper (0.5),create_in_pp
+material,ace7d2a4-8da3-4a97-bfd1-83d1051e85bb,drywall-sheets,Drywall Sheets,,,none,create_in_pp,drywall-sheets,Drywall Sheets,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef006,Duct tape,none,keep_pp,duct-tape,Duct tape,,,,keep_pp
+material,,,,0d8c176a-5915-43dc-b896-331e3ec1a7df,Dust Mask,none,keep_pp,dust-mask,Dust Mask,,,,keep_pp
+material,84a91f42-8d26-45bf-9f93-5c165904428e,electrical-box-shim,Electrical Box Shim,,,none,create_in_pp,electrical-box-shim,Electrical Box Shim,,,,create_in_pp
+material,66fbb641-7eaa-4107-b08d-f2bb5852039b,electrical-receptacle,Electrical Receptacle,,,none,create_in_pp,electrical-receptacle,Electrical Receptacle,,,,create_in_pp
+material,3b04bedc-7c04-45da-87f7-6282a353a0a1,electrical-switch,Electrical Switch,,,none,create_in_pp,electrical-switch,Electrical Switch,,,,create_in_pp
+material,6575e039-ff16-4c15-b060-3a5a96307b49,exterior-deck-stain,Exterior Deck Stain,,,none,create_in_pp,exterior-deck-stain,Exterior Deck Stain,,,,create_in_pp
+material,f289e7aa-018f-4366-901a-ac2fa3ff5be1,exterior-door-unit,Exterior Door Unit,,,none,create_in_pp,exterior-door-unit,Exterior Door Unit,,,,create_in_pp
+material,44cea80e-c3f4-44c3-a227-ec1669edd2c2,exterior-screw,Exterior Screw,,,none,create_in_pp,exterior-screw,Exterior Screw,,,,create_in_pp
+material,047017b0-6086-4978-9f48-eaacf272646f,exterior-siding-trim,Exterior Siding and Trim,,,none,create_in_pp,exterior-siding-trim,Exterior Siding and Trim,,,,create_in_pp
+material,205d5908-b3d1-48dc-820b-5c3a6d5e7ae6,faceplate-screws,Faceplate Screws,,,none,create_in_pp,faceplate-screws,Faceplate Screws,,,,create_in_pp
+material,9ffa4514-b645-41c6-99f3-c32318e75796,fence-fasteners,Fence Fasteners,,,none,create_in_pp,fence-fasteners,Fence Fasteners,,,,create_in_pp
+material,91d5dc7a-66d3-4c1f-93ec-b0caa6f89de0,fence-gate-kit,Fence Gate Kit,,,none,create_in_pp,fence-gate-kit,Fence Gate Kit,,,,create_in_pp
+material,cffd9955-f02a-4a51-bcc3-ed66664f7c73,fence-posts,Fence Posts,,,none,create_in_pp,fence-posts,Fence Posts,,,,create_in_pp
+material,6fc9e87a-6896-4a75-92cd-b7e066df2bec,fence-rails,Fence Rails,,,none,create_in_pp,fence-rails,Fence Rails,,,,create_in_pp
+material,e2f43010-e888-469a-93d6-f31778c878c1,firewood,Firewood,,,none,create_in_pp,firewood,Firewood,,,,create_in_pp
+material,5a646e9f-4312-44e4-9a8d-156535092026,flashing-tape,Flashing Tape,,,none,create_in_pp,flashing-tape,Flashing Tape,,,,create_in_pp
+material,,,,bf644aef-71bc-432f-94af-cf2143e3437e,Floor Grout,fuzzy_suggestion,keep_pp,floor-grout,Floor Grout,,,suggest=Grout [grout] (0.5),keep_pp
+material,45fb2111-5f28-4782-856e-aad00f7dba2a,floor-polyurethane,Floor Polyurethane,,,none,create_in_pp,floor-polyurethane,Floor Polyurethane,,,,create_in_pp
+material,1a98d340-da96-484d-9bb6-0f987ac570e8,floor-sanding-belt,Floor Sanding Belt,,,none,create_in_pp,floor-sanding-belt,Floor Sanding Belt,,,,create_in_pp
+material,43e4f2a5-1361-4cb3-8f90-e8aea696390f,floor-sanding-disc,Floor Sanding Disc,,,none,create_in_pp,floor-sanding-disc,Floor Sanding Disc,,,,create_in_pp
+material,7e7cbd69-8454-486d-96e4-5e384d999061,floor-tile,Floor Tile,5212776d-6cee-4f79-8ee5-09f545188d06,Floor Tile,exact,merge,floor-tile,Floor Tile,,,,merge
+material,5129ca11-5d79-4575-b727-731202d6f3b4,flooring-planks,Flooring Planks,,,none,create_in_pp,flooring-planks,Flooring Planks,,,,create_in_pp
+material,d7dfeb8c-d067-4f98-9e94-1d4058b2f7f0,flooring-staples,Flooring Staples,,,none,create_in_pp,flooring-staples,Flooring Staples,,,,create_in_pp
+material,9156ca4d-baa3-4346-9527-95db16963245,foam-board-fastener,Foam Board Fastener,,,none,create_in_pp,foam-board-fastener,Foam Board Fastener,,,,create_in_pp
+material,,,,ad71d5be-cb64-4952-bd84-69fd64ee1d4a,Foam Earplugs,none,keep_pp,foam-earplugs,Foam Earplugs,,,,keep_pp
+material,f5a857bf-9113-464d-bfba-a46964e6e098,foam-shower-base,Foam Shower Base,,,none,create_in_pp,foam-shower-base,Foam Shower Base,,,,create_in_pp
+material,a1b38d4c-d435-4f4e-a44b-26516b150cf1,furniture-lumber,Furniture Lumber,,,none,create_in_pp,furniture-lumber,Furniture Lumber,,,,create_in_pp
+material,cae2de96-44d9-40a2-af7d-451c57247d9b,MAT-FUEL-GASOLINE,Gasoline,,,none,create_in_pp,gasoline,Gasoline,,,,create_in_pp
+material,eb43e261-ea2b-4db8-ac86-66ff53debb0b,glue-sticks,Glue Sticks,,,none,create_in_pp,glue-sticks,Glue Sticks,,,,create_in_pp
+material,73959cd6-1e62-40fb-8d8d-542e0943c804,grass-seed,Grass Seed,,,none,create_in_pp,grass-seed,Grass Seed,,,,create_in_pp
+material,b9b520b9-f062-4854-9928-4ebcbb362890,grout,Grout,,,fuzzy_suggestion,create_in_pp,grout,Grout,,,suggest=Grout Float (0.5) | Grout Saw (0.5) | Floor Grout (0.5),create_in_pp
+material,,,,2c34149c-bbcc-460a-b25e-d84a581638ac,Grout Haze Remover,none,keep_pp,grout-haze-remover,Grout Haze Remover,,,,keep_pp
+material,9710480c-8502-4992-a623-b0c08629521b,hardwood-flooring,Hardwood Flooring,,,none,create_in_pp,hardwood-flooring,Hardwood Flooring,,,,create_in_pp
+material,306977ca-6b37-4d72-bf1e-b8f12ea43ee5,house-wash-concentrate,House Wash Concentrate,,,none,create_in_pp,house-wash-concentrate,House Wash Concentrate,,,,create_in_pp
+material,2ae604cc-e879-494e-b37a-911e60ab2298,house-wrap,House Wrap,,,none,create_in_pp,house-wrap,House Wrap,,,,create_in_pp
+material,e597267e-f24d-46f1-aaa1-3a52a593b94b,interior-door,Interior Door,,,none,create_in_pp,interior-door,Interior Door,,,,create_in_pp
+material,a48555b3-4bc8-4876-99d1-92e5146661ed,lawn-lime,Lawn Lime,,,none,create_in_pp,lawn-lime,Lawn Lime,,,,create_in_pp
+material,63c7cab9-f922-46bf-811e-6b07ee2ef2d5,lawn-starter-fertilizer,Lawn Starter Fertilizer,,,none,create_in_pp,lawn-starter-fertilizer,Lawn Starter Fertilizer,,,,create_in_pp
+material,9f2fe81c-2604-4b75-8a18-9de1b0f81d97,lead-test-kit,Lead Test Kit,,,none,create_in_pp,lead-test-kit,Lead Test Kit,,,,create_in_pp
+material,805d28d6-64f0-4a6a-b1a2-f5d8adb2da41,leaf-bags,Leaf Bags,,,none,create_in_pp,leaf-bags,Leaf Bags,,,,create_in_pp
+material,01147185-59d1-42a0-b1fa-2778cf341e5e,leaf-rake,Leaf Rake,7b6fa535-bee0-44d3-af5c-c8262de351f7,Leaf Rake,exact,merge,leaf-rake,Leaf Rake,,,"ENTITY DIFFERS: Toolio material, Project Partner tool",merge
+material,cea7e3d9-9969-4070-b23f-00df10a28646,liquid-waterproofing-membrane,Liquid Waterproofing Membrane,,,none,create_in_pp,liquid-waterproofing-membrane,Liquid Waterproofing Membrane,,,,create_in_pp
+material,2bb73ba5-d668-4130-bd33-e6486522d8ff,lumber-and-trim,Lumber and Trim,,,none,create_in_pp,lumber-and-trim,Lumber and Trim,,,,create_in_pp
+material,5ef128b9-a79d-45e7-acd8-a2023e7b18fd,lvp-planks,LVP Planks,,,none,create_in_pp,lvp-planks,LVP Planks,,,,create_in_pp
+material,,,,5386ceae-af63-4cb2-9994-a76ae8314015,Marking Chalk,none,keep_pp,marking-chalk,Marking Chalk,,,,keep_pp
+material,,,,0d9970b6-7830-46c7-80db-1ea41730a418,Masking Tape,none,keep_pp,masking-tape,Masking Tape,,,,keep_pp
+material,,,,5945eeb7-8994-4885-9d96-a7174bb8407a,Membrane Thinset,none,keep_pp,membrane-thinset,Membrane Thinset,,,,keep_pp
+material,,,,006d37c6-b6de-41d3-9400-65ed71547e8d,Microfiber Cloths,none,keep_pp,microfiber-cloths,Microfiber Cloths,,,,keep_pp
+material,12626ac4-7ca0-43e4-84e5-459c20447843,mold-mildew-remover,Mold and Mildew Remover,,,none,create_in_pp,mold-mildew-remover,Mold and Mildew Remover,,,,create_in_pp
+material,,,,acb2943b-07f6-4401-9b64-635f644d53ba,Movement Joint Sealant,none,keep_pp,movement-joint-sealant,Movement Joint Sealant,,,,keep_pp
+material,,,,872ffccc-c418-4d0b-bcd4-326aecbd5680,N95 Disposable Respirator,none,keep_pp,n95-disposable-respirator,N95 Disposable Respirator,,,,keep_pp
+material,,,,300da1fb-e629-4630-94c0-d5cec9a8cff3,Organic Vapor Cartridges,none,keep_pp,organic-vapor-cartridges,Organic Vapor Cartridges,,,,keep_pp
+material,,,,4957ae17-3cf0-4473-90d8-36e8f7d42531,OV/P100 Combination Cartridges,none,keep_pp,ov-p100-combination-cartridges,OV/P100 Combination Cartridges,,,,keep_pp
+material,,,,813ac13c-6908-475c-a6a6-d8c83af30e4a,P100 Particulate Filters,none,keep_pp,p100-particulate-filters,P100 Particulate Filters,,,,keep_pp
+material,cf6251fd-56f7-46ec-a14e-b494c35394d5,paint,Paint,,,fuzzy_suggestion,create_in_pp,paint,Paint,,,suggest=Paint Sprayer (0.5) | Paint Roller (0.5) | Paint Tray (0.5),create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef008,Paint stir,fuzzy_suggestion,keep_pp,paint-stir,Paint stir,,,suggest=Paint [paint] (0.5),keep_pp
+material,,,,6ec6dff3-93ca-4d15-b605-fc890a2343ca,Painter's Tape,none,keep_pp,painter-s-tape,Painter's Tape,,,,keep_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef010,Painters caulk,fuzzy_suggestion,keep_pp,painters-caulk,Painters caulk,,,suggest=Caulk [caulk] (0.5),keep_pp
+material,,,,a998435b-cbbe-41ab-a73b-1dfeb0aad359,Penetrating Grout Sealer,none,keep_pp,penetrating-grout-sealer,Penetrating Grout Sealer,,,,keep_pp
+material,dc721bb5-ad82-4d1b-8f23-573b2d95033b,pine-fence-panels,Pine Fence Panels,,,none,create_in_pp,pine-fence-panels,Pine Fence Panels,,,,create_in_pp
+material,862b8e69-bfbe-4d40-be4a-a8ff90a35906,plastic-sheeting,Plastic Sheeting,54d8ba92-e6bf-43bc-bee8-7643e3f5be4a,Plastic Sheeting,exact,merge,plastic-sheeting,Plastic Sheeting,,,,merge
+material,ea580cb9-1cee-4b9f-a3a8-d0357a2acefb,pressure-treated-deck-boards,Pressure-Treated Deck Boards,,,none,create_in_pp,pressure-treated-deck-boards,Pressure-Treated Deck Boards,,,,create_in_pp
+material,4316dc21-82c8-4e6e-9781-44514c8728e4,primer,Primer,,,none,create_in_pp,primer,Primer,,,,create_in_pp
+material,69661097-da44-4a40-9e7c-505dd544d233,project-plywood,Project Plywood,,,none,create_in_pp,project-plywood,Project Plywood,,,,create_in_pp
+material,,,,f4f0fc5e-12df-4c9c-9848-5d58819d7e64,PTFE Tape,none,keep_pp,ptfe-tape,PTFE Tape,,,,keep_pp
+material,aaabbc0b-92c2-4407-afe1-85d295063f5e,push-in-connector,Push In Connector,,,none,create_in_pp,push-in-connector,Push In Connector,,,,create_in_pp
+material,46a26093-04d5-4a04-9894-53039f072036,pvc-fence-brackets,PVC Fence Brackets,,,none,create_in_pp,pvc-fence-brackets,PVC Fence Brackets,,,,create_in_pp
+material,7a5a96d7-4255-4b66-8778-ccc0965da0c5,pvc-fence-panels,PVC Fence Panels,,,none,create_in_pp,pvc-fence-panels,PVC Fence Panels,,,,create_in_pp
+material,6e4eeed6-7e32-4192-a754-b1ea04b9d572,ready-mix-concrete,Ready-Mix Concrete,,,fuzzy_suggestion,create_in_pp,ready-mix-concrete,Ready-Mix Concrete,,,suggest=Concrete mix (0.67),create_in_pp
+material,5e2fe3fe-00d8-404f-97e7-0161a213ddb7,roofing-nails,Roofing Nails,,,none,create_in_pp,roofing-nails,Roofing Nails,,,,create_in_pp
+material,6b559d90-67ae-4f6f-83dc-82898e2a2e26,roofing-underlayment,Roofing Underlayment,,,none,create_in_pp,roofing-underlayment,Roofing Underlayment,,,,create_in_pp
+material,67f4f3d7-d70f-4c7d-bcfb-a8ef3f29f7ee,sanding-pads-5in,Sanding Discs,,,none,create_in_pp,sanding-pads-5in,Sanding Discs,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef011,Sandpaper,fuzzy_suggestion,keep_pp,sandpaper,Sandpaper,,,suggest=Wood Sandpaper [wood-sandpaper] (0.5) | Drywall Sandpaper [drywall-sandpaper] (0.5),keep_pp
+material,ef9c251f-7e07-4c56-9e7f-5eb7bb3773af,setting-joint-compound,Setting Joint Compound,,,none,create_in_pp,setting-joint-compound,Setting Joint Compound,,,,create_in_pp
+material,,,,5befaf8c-1f8e-4685-86c7-2c0a989cc2f7,Shoe Covers,none,keep_pp,shoe-covers,Shoe Covers,,,,keep_pp
+material,065d6d17-fde0-4b4f-8a9c-edcaec29c935,shower-drain,Shower Drain,,,none,create_in_pp,shower-drain,Shower Drain,,,,create_in_pp
+material,46f15ece-4909-4276-9fdd-c5f393e9e648,shower-pan-liner,Shower Pan Liner,,,none,create_in_pp,shower-pan-liner,Shower Pan Liner,,,,create_in_pp
+material,096026d9-7da1-4f2b-9fa2-a9711c501564,siding-nails,Siding Nails,,,none,create_in_pp,siding-nails,Siding Nails,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef009,Silicon caulk,fuzzy_suggestion,keep_pp,silicon-caulk,Silicon caulk,,,suggest=Caulk [caulk] (0.5),keep_pp
+material,,,,a3258e6c-dcdd-4c65-8b51-a0c89acb7fe9,Silicone Caulk,fuzzy_suggestion,keep_pp,silicone-caulk,Silicone Caulk,,,suggest=Caulk [caulk] (0.5),keep_pp
+material,b9f671e1-c089-4b19-8c0d-5e6dc3271d4d,spackling,Spackling,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef002,Spackle,reviewed,one_to_many,spackle,Spackle,,,toolio=joint-compound | spackling,one_to_many
+material,aaf35f6e-b6ea-47f6-9af2-acb9c25e3395,joint-compound,Joint Compound,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef002,Spackle,alias,one_to_many,spackle,Spackle,,,toolio=joint-compound | spackling,one_to_many
+material,,,,abe67a24-1da7-43cf-b1b4-94bbbabf26f0,Storage Bins,none,keep_pp,storage-bins,Storage Bins,,,,fold_into
+material,5f701eb2-7df9-4503-b2ed-ed3ee5acf397,structural-screw,Structural Screw,,,none,create_in_pp,structural-screw,Structural Screw,,,,create_in_pp
+material,f9439af5-51c9-4876-b1d0-2f8289aaa138,surface-cleaner,Surface Cleaner,,,none,create_in_pp,surface-cleaner,Surface Cleaner,,,,create_in_pp
+material,879c187d-e18b-4fc3-b2b3-1a73250d7760,tack-cloth,Tack Cloth,,,none,create_in_pp,tack-cloth,Tack Cloth,,,,create_in_pp
+material,,,,60543da1-80ad-425c-af2f-5c6a0386a8e8,Tile Leveling Wedges,fuzzy_suggestion,keep_pp,tile-leveling-wedges,Tile Leveling Wedges,,,suggest=Tile Leveling Cap [tile-leveling-cap] (0.5) | Tile Leveling Clip [tile-leveling-clips] (0.5),keep_pp
+material,,,,f4182a67-2846-4d69-97dd-99796c2afdee,Tile Spacer Pack,fuzzy_suggestion,keep_pp,tile-spacer-pack,Tile Spacer Pack,,,suggest=Tile Spacer [tile-spacer] (0.67),keep_pp
+material,,,,f9730afd-540e-4150-8bd4-19ce3694fade,Tile Thinset Mortar,fuzzy_suggestion,keep_pp,tile-thinset-mortar,Tile Thinset Mortar,,,suggest=Thinset Mortar [thinset-mortar] (0.67),keep_pp
+material,,,,1a65ef2d-722c-4e2c-97c8-850d0b08275a,Toilet Supply Line,none,keep_pp,toilet-supply-line,Toilet Supply Line,,,,keep_pp
+material,eb9748dd-fa63-425d-88f2-d3bd51d4bb1b,transition-strip,Transition Strip,,,none,create_in_pp,transition-strip,Transition Strip,,,,create_in_pp
+material,,,,3c3e6480-492d-4a4a-8179-c24636a35e20,Trash Bags,none,keep_pp,trash-bags,Trash Bags,,,,keep_pp
+material,2a8a2982-6742-4646-8bad-0c944bf2a1f0,trim-pieces,Tile Edge Trim,,,none,create_in_pp,trim-pieces,Tile Edge Trim,,,,create_in_pp
+material,9c1cf008-77b8-4a74-98df-77dd7768c650,tub-drain,Tub Drain,,,none,create_in_pp,tub-drain,Tub Drain,,,,create_in_pp
+material,bbd297f7-a34f-44a5-9fa2-c75d5374be9e,uncoupling-membrane,Uncoupling Membrane,ecc409ba-6240-4a17-bdef-7f67afbb6d95,Uncoupling Membrane,exact,merge,uncoupling-membrane,Uncoupling Membrane,,,,merge
+material,74a17651-5eba-4237-9580-5a8228f7a469,underlayment-roll,Underlayment,,,none,create_in_pp,underlayment-roll,Underlayment,,,,create_in_pp
+material,363a3cd4-8743-4b31-899d-3ec0c59cfcc4,wall-plate,Wall Plate,,,none,create_in_pp,wall-plate,Wall Plate,,,,create_in_pp
+material,a1cb7315-fb9f-457a-b725-e55a569b7d47,waterproof-cement-board,Waterproof Cement Board,,,fuzzy_suggestion,create_in_pp,waterproof-cement-board,Waterproof Cement Board,,,suggest=Cement Backer Board (0.5),create_in_pp
+material,d67b2d8f-ad37-4994-9321-b08f7c4a4ede,waterproof-foam-board,Waterproof Foam Board,,,none,create_in_pp,waterproof-foam-board,Waterproof Foam Board,,,,create_in_pp
+material,d17a7372-30bf-4458-968f-33db69abdf16,wedge-spacer,Wedge Spacer,,,none,create_in_pp,wedge-spacer,Wedge Spacer,,,,create_in_pp
+material,f6e4f36d-06d3-4445-a952-3b007f65fe89,window-unit,Window Unit,,,none,create_in_pp,window-unit,Window Unit,,,,create_in_pp
+material,82a8b6f1-3e0d-40ad-b9af-cf3107e30e6f,wire-nut,Wire Nut,,,none,create_in_pp,wire-nut,Wire Nut,,,,create_in_pp
+material,,,,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef001,Wire nuts,none,keep_pp,wire-nuts,Wire nuts,,,,keep_pp
+material,87ed0da1-4f02-4ba1-ad31-6e2f1ce4a440,wire-pigtail,Wire Pigtail,,,none,create_in_pp,wire-pigtail,Wire Pigtail,,,,create_in_pp
+material,b572da06-e78d-48d7-827d-872d5145c8b5,wood-fence-pickets,Wood Fence Pickets,,,none,create_in_pp,wood-fence-pickets,Wood Fence Pickets,,,,create_in_pp
+material,ba5bb16e-7a99-4902-85fa-84a2b870496c,wood-finish,Wood Finish,,,none,create_in_pp,wood-finish,Wood Finish,,,,create_in_pp
+material,e20b7a07-c64a-44ca-8412-4f01b56737bf,wood-glue,Wood Glue,d3b50e21-61fc-4a87-9a2f-7ae6ea4ef003,Wood glue,exact,merge,wood-glue,Wood Glue,,,,merge
+material,b148afc5-e8f2-49d9-8ab0-38388da2e53d,wood-stain,Wood Stain,,,none,create_in_pp,wood-stain,Wood Stain,,,,create_in_pp
+reference,,,,,Clamp Set,fuzzy_suggestion,map_to,clamp-set,,,,kind=tool; count=1; resolution=dangling_id; sources=user_profiles.owned_tools:1; suggest=Clamp Set [clamp-set],map_to
+reference,,,,,Level,exact,map_to,level,Level,,,kind=tool; count=20; resolution=ambiguous; sources=operation_steps:4 project_runs.phases:12 projects.phases:4; Toolio core Level [level] has this name; suggest=Level [level] | Level [level] | Laser Level [laser-level],map_to
+reference,,,,,Nitrile gloves,exact,map_to,nitrile-gloves,Nitrile Gloves,,,kind=material; count=18; resolution=ambiguous; sources=operation_steps:4 project_runs.phases:6 projects.phases:8; Toolio core Nitrile Gloves [nitrile-gloves] has this name; suggest=Nitrile Gloves [nitrile-gloves] | Nitrile gloves [nitrile-gloves],map_to
+reference,,,,,Tongue-and-Groove Pliers,none,create_library_term,tongue-and-groove-pliers,Tongue-and-Groove Pliers,,,kind=tool; count=14; resolution=dangling_id; sources=operation_steps:2 project_runs.phases:6 projects.phases:6,create_library_term

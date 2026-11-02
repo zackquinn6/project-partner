@@ -46,10 +46,8 @@ const GROUPS = {
     leftKey: (c) => c.sku,
     leftEntity: (c) => c.entity,
     rightEntity: (e) => e.entity,
-    alias: (c, e) =>
-      e.alternate_keys.includes(c.name_key) ||
-      e.variations.some((v) => v.name_key === c.name_key) ||
-      c.discovery_tag_keys.includes(e.name_key),
+    /** Toolio discovery_tags are single search words from descriptions, not names, so they never pair items. */
+    alias: (c, e) => e.alternate_keys.includes(c.name_key) || e.variations.some((v) => v.name_key === c.name_key),
   },
   project: {
     lefts: toolioProjects.filter((p) => !p.is_grouping),
@@ -57,7 +55,7 @@ const GROUPS = {
     leftKey: (p) => p.slug,
     leftEntity: () => 'project',
     rightEntity: () => 'project',
-    alias: (p, f) => f.revision_name_keys.includes(p.name_key) || (f.name_key !== null && p.discovery_tag_keys.includes(f.name_key)),
+    alias: (p, f) => f.revision_name_keys.includes(p.name_key),
   },
   category: {
     lefts: toolioProjects.filter((p) => p.is_grouping),
@@ -223,20 +221,29 @@ function keyOwner(row) {
   return row.toolio_id ? `${group}:toolio:${row.toolio_id}` : `${group}:pp:${row.pp_id}`;
 }
 
+/** map_to and fold_into point at another term's key instead of owning one. */
+const pointsElsewhere = (row) => row.proposed_action === 'map_to' || row.decision === 'fold_into';
+
 const keyOwners = new Map();
 for (const row of rows) {
-  if (!row.canonical_key || row.proposed_action === 'map_to') continue;
+  if (!row.canonical_key || pointsElsewhere(row)) continue;
   if (!keyOwners.has(row.canonical_key)) keyOwners.set(row.canonical_key, new Set());
   keyOwners.get(row.canonical_key).add(keyOwner(row));
 }
 for (const row of rows) {
   const owners = keyOwners.get(row.canonical_key);
-  if (owners && owners.size > 1 && row.proposed_action !== 'map_to') {
+  if (owners && owners.size > 1 && !pointsElsewhere(row)) {
     row.notes = appendNote(row.notes, `KEY CLASH: ${row.canonical_key} also proposed for ${[...owners].join(', ')}`);
     row.decision = '';
   }
   if (row.canonical_key && !KEY_FORMAT.test(row.canonical_key)) {
     row.notes = appendNote(row.notes, `BAD KEY: ${row.canonical_key} is not lowercase kebab-case`);
+    row.decision = '';
+  }
+}
+for (const row of rows.filter((r) => r.decision === 'fold_into')) {
+  if (!keyOwners.has(row.canonical_key)) {
+    row.notes = appendNote(row.notes, `FOLD TARGET MISSING: no term owns ${row.canonical_key}`);
     row.decision = '';
   }
 }

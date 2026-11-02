@@ -168,12 +168,14 @@ Columns: `entity`, `toolio_id`, `toolio_key`, `toolio_name`, `pp_id`, `pp_name`,
 | `keep_pp` | Project Partner only: stays and is mirrored to Toolio |
 | `merge_many` | Several Project Partner synonyms for one Toolio entry: one canonical, the rest retired with `replaced_by` |
 | `one_to_many` | One Project Partner entry matches several Toolio entries: all link to one key, or `-` in `pair_with` splits a Toolio entry off into its own term |
+| `fold_into` | A Project Partner-only entry that duplicates another Project Partner entry (for example the same item stored as both a tool and a material): retired with `replaced_by` set to `canonical_key`, its references repointed |
 | `create_library_term` | A reference that resolves to no library row becomes a new library term |
 | `map_to` | A reference maps to an existing term; `canonical_key` holds the target key |
 
-- **Matching tiers:** pairings made in review; exact normalized name; aliases (Project Partner alternates and variation names, revision names, Toolio `discovery_tags`; categories match by exact name only). Fuzzy token overlap is only ever a suggestion in `notes`.
+- **Matching tiers:** pairings made in review; exact normalized name; aliases (Project Partner alternates and variation names, family revision names; categories match by exact name only). Toolio `discovery_tags` are single search words taken from descriptions, so they never pair items. Fuzzy token overlap is only ever a suggestion in `notes`.
 - **Decision:** the final action name. `match.mjs` pre-fills it for exact one-to-one tool and material merges with a valid Toolio key and matching type, for pairings made in review, and for Project Partner-only library terms with nothing similar in Toolio. A key clash or bad key clears any pre-fill.
-- **Flags in `notes` that need a person:** `KEY CLASH`, `BAD KEY`, `NO KEY`, `NO NAME`, `ENTITY DIFFERS`, `STRUCTURE DIFFERS`, `NO CURRENT REVISION`, `many-to-many component`.
+- **Flags in `notes` that need a person:** `KEY CLASH`, `BAD KEY`, `NO KEY`, `NO NAME`, `FOLD TARGET MISSING`, `ENTITY DIFFERS`, `STRUCTURE DIFFERS`, `NO CURRENT REVISION`, `many-to-many component`.
+- **Keys** are checked after review decisions apply; a clash or bad key clears the decision. `map_to` and `fold_into` rows point at another term's key instead of owning one.
 
 ### Review
 
@@ -185,3 +187,12 @@ Columns: `entity`, `toolio_id`, `toolio_key`, `toolio_name`, `pp_id`, `pp_name`,
 3. Save as **CSV UTF-8** and run `match.mjs --archive <folder> --carry <saved review>`, then `recommend.mjs` again. Decisions carry over; pairings and breaks persist (`match_tier = reviewed`, `unpaired_from`); only rows that changed need a new look.
 - Loads fail on any row without a decision or with an unknown `canonical_key`.
 - The reviewed crosswalk is committed to this repo at `docs/integration/vocab-crosswalk.csv` in phase 2.
+
+### Phase 2 decisions (export 2026-11-02)
+
+- **Crosswalk:** 577 rows, all decided. Tools and materials take Toolio's wording and type; projects and categories take Project Partner's names. Projects new to Project Partner are named Item + Action, the convention of Project Partner's create-project screen.
+- **Flooring:** Project Partner's "Laminate or Engineered Flooring Installation" splits in two. Toolio Hardwood Flooring keeps the existing family, renamed "Engineered Flooring Installation"; Toolio LVP Flooring becomes "Laminate Flooring Installation", a new family built on it (matching Toolio's foundation and variant link).
+- **Categories:** Toolio Electrical joins Project Partner's "Electrical" and "Lighting & Electrical" into one category, "Lighting & Electrical" (key `electrical`). Project Partner's Interior Carpentry and Exterior Carpentry categories take keys `interior-carpentry-category` and `exterior-carpentry-category`, since the plain keys belong to Toolio projects.
+- **Project Partner commerce fields** (`tool_variations.sku`, `pricing`, `estimated_rental_lifespan_days`, `materials.is_rental_available`, `scrape-tool-pricing`): reference-only after phase 3, dropped in phase 6.
+- **Load method:** re-install the tool and material library and the step tool/material JSON (new shapes); alter everything else in place.
+- **Before phase 4:** Toolio has two section items with no inventory item (`extract/toolio_dangling_lines.json`, used by two projects); they are repaired or confirmed intentional in Toolio before the Toolio load.
