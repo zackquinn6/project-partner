@@ -12,7 +12,7 @@
  */
 import { readFileSync } from 'node:fs';
 import { basename, join } from 'node:path';
-import { EXPORT_QUERIES, exportDir, hashMap, parseArgs, payloadPath, readPayload, sha256, tableRows, writeJson } from './lib.mjs';
+import { EXPORT_QUERIES, exportDir, hashMap, parseArgs, payloadSource, readPayload, sha256, tableRows, writeJson } from './lib.mjs';
 
 const args = parseArgs();
 const dir = exportDir(args.archive);
@@ -20,7 +20,7 @@ const manifest = { validated_at: new Date().toISOString(), files: [], counts: {}
 
 for (const query of EXPORT_QUERIES) {
   const payload = readPayload(dir, query);
-  const path = payloadPath(dir, query);
+  const path = payloadSource(dir, query);
   const counts = {};
   for (const table of Object.keys(payload.tables ?? {})) counts[table] = tableRows(payload, table).length;
   for (const table of Object.keys(payload.content_hashes ?? {})) counts[`${table} fingerprints`] = Object.keys(hashMap(payload, table)).length;

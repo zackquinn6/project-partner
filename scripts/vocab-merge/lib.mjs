@@ -13,6 +13,14 @@ const PAYLOAD_VERSIONS = {
   'pp-3-references': 2,
   [NAME_KEYS_QUERY]: 1,
   'toolio-4-name-key-function': 1,
+  'pp-export': 1,
+  'toolio-export': 1,
+};
+
+/** One query per app: each combined result carries the parts below under `parts`. */
+export const COMBINED_EXPORTS = {
+  'pp-export': ['pp-1-library', 'pp-2-projects', 'pp-3-references'],
+  'toolio-export': ['toolio-1-catalog', 'toolio-2-checks', NAME_KEYS_QUERY, 'toolio-4-name-key-function'],
 };
 
 export const CROSSWALK_COLUMNS = [
@@ -41,10 +49,11 @@ export function requireEnv(name) {
 }
 
 export function parseArgs(argv = process.argv.slice(2)) {
-  const args = { dryRun: false, archive: null, against: null, carry: null, out: null, check: [] };
+  const args = { dryRun: false, archive: null, against: null, carry: null, out: null, app: null, check: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--dry-run') args.dryRun = true;
+    else if (arg === '--app') args.app = argv[++i];
     else if (arg === '--out') args.out = argv[++i];
     else if (arg === '--archive') args.archive = argv[++i];
     else if (arg === '--against') args.against = argv[++i];
@@ -98,13 +107,37 @@ export function payloadPath(dir, query) {
   return null;
 }
 
+function combinedFor(query) {
+  return Object.keys(COMBINED_EXPORTS).find((name) => COMBINED_EXPORTS[name].includes(query)) ?? null;
+}
+
+/** The saved file holding a query's result: its own file, else the app's combined export. */
+export function payloadSource(dir, query) {
+  const own = payloadPath(dir, query);
+  if (own) return own;
+  const combined = combinedFor(query);
+  return combined ? payloadPath(dir, combined) : null;
+}
+
 /**
- * Reads a saved query result: either the copied `payload` cell (.json) or the editor's CSV
- * download with a single `payload` column (.csv).
+ * Reads a saved query result, from its own file or from the app's combined export. A file is
+ * either the copied `payload` cell (.json) or the editor's CSV download with one `payload` column.
  */
 export function readPayload(dir, query) {
-  const path = payloadPath(dir, query);
-  if (!path) throw new Error(`Missing ${query}.json (or .csv) in ${dir}`);
+  if (payloadPath(dir, query)) return readPayloadFile(payloadPath(dir, query), query);
+  const combined = combinedFor(query);
+  const path = combined ? payloadPath(dir, combined) : null;
+  if (!path) throw new Error(`Missing ${query}.json (or .csv)${combined ? ` and ${combined}.json (or .csv)` : ''} in ${dir}`);
+  const part = readPayloadFile(path, combined).parts?.[query];
+  if (!part) throw new Error(`${path} has no ${query} part`);
+  if (part.query !== query) throw new Error(`${path}: part ${query} holds ${part.query}`);
+  if (part.version !== PAYLOAD_VERSIONS[query]) {
+    throw new Error(`${path}: ${query} version ${part.version}, expected ${PAYLOAD_VERSIONS[query]}; regenerate the export query`);
+  }
+  return part;
+}
+
+function readPayloadFile(path, query) {
   let text;
   if (path.endsWith('.csv')) {
     const rows = readCsv(path);
@@ -218,6 +251,27 @@ export function readCsv(path) {
   }
   const [header, ...body] = records;
   return body.map((cells) => Object.fromEntries(header.map((h, i) => [h, cells[i] ?? ''])));
+}
+
+/** Same parsing as the app's expandToolAlternateKeys: JSON array of names/objects, else one name. */
+export function alternateNames(alternates) {
+  if (alternates === null || alternates === undefined) return [];
+  let value = alternates;
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return [];
+    try {
+      value = JSON.parse(trimmed);
+    } catch {
+      return [trimmed];
+    }
+  }
+  if (typeof value === 'string') return value.trim() ? [value.trim()] : [];
+  if (!Array.isArray(value)) return [];
+  return value
+    .map((alt) => (typeof alt === 'string' ? alt : alt?.name || alt?.item || alt?.label))
+    .filter((name) => typeof name === 'string' && name.trim())
+    .map((name) => name.trim());
 }
 
 export function kebabKey(name) {

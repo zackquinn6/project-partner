@@ -161,14 +161,16 @@ Both apps work the same way: nothing in this integration connects to a database 
 ### Running
 
 1. Create an export folder under `VOCAB_MERGE_ARCHIVE_DIR` (an absolute path outside every git work tree; the export holds production user data). Never commit it.
-2. Run the five queries in `sql/` and save each `payload` cell as `<query name>.json` in the folder. The editor's CSV download saved as `<query name>.csv` also works. Run them close together; validation prints the time spread.
+2. One query per app, Project Partner first:
+   - `node scripts/vocab-merge/export-sql.mjs --app pp --out <file>`; run it in Project Partner's Supabase SQL editor; save the payload as `pp-export.json` (or `.csv`) in the folder.
+   - `node scripts/vocab-merge/export-sql.mjs --app toolio --archive <folder> --out <file>`; run it in Toolio's SQL editor (Lovable); save it as `toolio-export.json` (or `.csv`) in the folder. It carries Toolio's catalog, checks, name function, and the name keys for every name in both apps, so no further round trip is needed.
+
+   The part queries in `sql/` remain the single source; the combined queries are built from them. A part saved on its own (`<part>.json`) is still read.
 3. In the terminal:
 
 ```
 $env:VOCAB_MERGE_ARCHIVE_DIR = "C:\vocab-merge-archive"
 node scripts/vocab-merge/validate-export.mjs --archive <folder>
-node scripts/vocab-merge/extract.mjs --archive <folder>      # first run writes toolio-3-name-keys.sql and stops
-#   run <folder>\toolio-3-name-keys.sql in Toolio's SQL editor, save it as toolio-3-name-keys.json
 node scripts/vocab-merge/extract.mjs --archive <folder>
 node scripts/vocab-merge/match.mjs --archive <folder> [--carry <reviewed crosswalk.csv>]
 node scripts/vocab-merge/verify.mjs --archive <baseline folder> [--against <later folder>]

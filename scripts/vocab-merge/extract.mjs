@@ -14,7 +14,17 @@
 import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { NAME_KEYS_QUERY, archiveDir, parseArgs, payloadPath, readJson, readPayload, tableRows, writeJson } from './lib.mjs';
+import {
+  NAME_KEYS_QUERY,
+  alternateNames,
+  archiveDir,
+  parseArgs,
+  payloadSource,
+  readJson,
+  readPayload,
+  tableRows,
+  writeJson,
+} from './lib.mjs';
 
 const args = parseArgs();
 const dir = archiveDir(args.archive);
@@ -364,7 +374,7 @@ console.log(`Next: node scripts/vocab-merge/match.mjs --archive ${args.archive}`
 
 function loadNameKeys() {
   const sqlPath = join(dir, `${NAME_KEYS_QUERY}.sql`);
-  if (payloadPath(dir, NAME_KEYS_QUERY)) {
+  if (payloadSource(dir, NAME_KEYS_QUERY)) {
     const keys = readPayload(dir, NAME_KEYS_QUERY).keys;
     if (!keys || typeof keys !== 'object') throw new Error(`${NAME_KEYS_QUERY}: no keys object`);
     const missing = [...names].filter((name) => typeof keys[name] !== 'string');
@@ -404,27 +414,6 @@ function writeNameKeysSql(path) {
 
 function tagKeys(tags) {
   return (tags ?? []).filter((tag) => typeof tag === 'string' && tag.trim()).map(keyOf);
-}
-
-/** Same parsing as the app's expandToolAlternateKeys: JSON array of names/objects, else one name. */
-function alternateNames(alternates) {
-  if (alternates === null || alternates === undefined) return [];
-  let value = alternates;
-  if (typeof value === 'string') {
-    const trimmed = value.trim();
-    if (!trimmed) return [];
-    try {
-      value = JSON.parse(trimmed);
-    } catch {
-      return [trimmed];
-    }
-  }
-  if (typeof value === 'string') return value.trim() ? [value.trim()] : [];
-  if (!Array.isArray(value)) return [];
-  return value
-    .map((alt) => (typeof alt === 'string' ? alt : alt?.name || alt?.item || alt?.label))
-    .filter((name) => typeof name === 'string' && name.trim())
-    .map((name) => name.trim());
 }
 
 function groupBy(rows, keyFn) {
