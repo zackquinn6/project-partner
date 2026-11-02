@@ -151,10 +151,15 @@ for (const row of rows) {
   if (!keyOwners.has(row.canonical_key)) keyOwners.set(row.canonical_key, new Set());
   keyOwners.get(row.canonical_key).add(owner);
 }
+const KEY_FORMAT = /^[a-z0-9]+(-[a-z0-9]+)*$/;
 for (const row of rows) {
   const owners = keyOwners.get(row.canonical_key);
   if (owners && owners.size > 1) {
     row.notes = appendNote(row.notes, `KEY CLASH: ${row.canonical_key} also proposed for ${[...owners].join(', ')}`);
+    row.decision = '';
+  }
+  if (row.canonical_key && !KEY_FORMAT.test(row.canonical_key)) {
+    row.notes = appendNote(row.notes, `BAD KEY: ${row.canonical_key} is not lowercase kebab-case`);
     row.decision = '';
   }
 }
@@ -187,7 +192,7 @@ const summary = {
   matched: rows.filter((r) => ['merge', 'merge_many', 'one_to_many'].includes(r.proposed_action)).length,
   toolio_only_candidates: rows.filter((r) => r.proposed_action === 'create_in_pp').length,
   pp_only: rows.filter((r) => r.proposed_action === 'keep_pp').length,
-  conflicts: rows.filter((r) => /KEY CLASH|NO KEY|NO NAME|many-to-many|ENTITY DIFFERS|STRUCTURE DIFFERS|NO CURRENT REVISION/.test(r.notes ?? '')).length,
+  conflicts: rows.filter((r) => /KEY CLASH|BAD KEY|NO KEY|NO NAME|many-to-many|ENTITY DIFFERS|STRUCTURE DIFFERS|NO CURRENT REVISION/.test(r.notes ?? '')).length,
   unresolved_reference_groups: unresolved.size,
   unresolved_references: references.filter((r) => UNRESOLVED.includes(r.resolved_by)).reduce((sum, r) => sum + r.count, 0),
   unnamed_references: references.filter((r) => r.resolved_by === 'unnamed').reduce((sum, r) => sum + r.count, 0),
