@@ -53,13 +53,21 @@ flowchart TD
 ```
 
 - **Started by Toolio.** Deleting a Toolio inventory core or project works as today (Toolio hides and deletes its own item). When it was the last Toolio item linked to the term, Toolio sends a removal request. Project Partner admins get a notification and approve or reject. Rejecting keeps the term as a Project Partner-only term.
-- **Started by Project Partner.** An admin's Delete on a tool, material, project family, or category becomes **Request removal**, with an optional replacement term. Toolio staff see it in Toolio admin's review queue. To approve, every Toolio item still linked to the term is relinked (to the replacement, or another term) or deleted in Toolio first; rejecting keeps the term in both apps.
+- **Started by Project Partner.** An admin's Delete on a tool, material, project family, or category becomes **Request removal**, with an optional replacement term. Toolio staff see it in Toolio's Admin → Catalog → Project Partner. To approve, every Toolio item still linked to the term is relinked (to the replacement, or another term) or deleted in Toolio first; rejecting keeps the term in both apps.
 - **Completion** happens in Project Partner, in the same transaction as the second approval:
   - references (step lists, user tools and materials, owned tools, family tool lists, aliases) move to the replacement term; a term that still has references and no replacement cannot be removed, and the approval fails with the list of references;
   - the term row is deleted and its key becomes a tombstone;
   - a `remove` event tells Toolio's mirror to drop the term.
 - While a request is open the term stays fully usable in both apps. A requester can cancel an open request.
 - Direct deletes of shared terms are blocked by a trigger; completing an approved request is the only path.
+
+## New terms from Toolio
+
+Toolio never creates shared terms itself. A new Toolio inventory core or project links to the term with the same normalized name when exactly one exists; otherwise Toolio proposes one.
+
+- **Proposal.** `vocab_propose_term` records the proposed key (the Toolio `sku` or `slug`), name, description, and the waiting Toolio item, and notifies Project Partner admins.
+- **Decision.** In Admin → **Requests**, an admin either adds the proposal as a new term (choosing type, category, and for tools specialty) or maps it to an existing term of a matching kind (a Toolio product to a tool or material, a project to a project family). Toolio links the waiting item when the decision syncs.
+- **Withdrawal.** Toolio cancels a proposal when its item is deleted or no longer waits. Cancelling a proposal that was already decided returns the decision unchanged.
 
 ## Project Partner schema (added in phase 3)
 
@@ -73,11 +81,12 @@ flowchart TD
 | `vocab_removal_requests (id, public_key, requested_by_app pp/toolio, requested_by_email, reason, replacement_key, pp_decision, pp_decided_by, toolio_decision, toolio_decided_by, status open/approved/rejected/cancelled, timestamps)` | Two-sided removal; the requesting app's decision is `approve` on creation |
 | `vocab_aliases (public_key, alias, alias_key, source)` | Sources: `pp_name`, `pp_revision_name`, `toolio_name`, `alternates` |
 | `project_family_tools (family_key, term_key, role, source)` | `role`: `required` or `substitute`; `source`: `steps` or `toolio_seed` |
-| `vocab_change_events (seq bigserial, entity, public_key, change_kind, payload, created_at)` | Change feed; `change_kind`: `upsert`, `remove` (payload carries `replaced_by_public_key`), `removal_request` (payload is the request's current row); `payload` is the full current row |
+| `vocab_term_proposals (id, entity tool/material/project, proposed_key, proposed_name, description, requested_by, toolio_item_kind, toolio_item_id, status open/approved/mapped/cancelled, result_key, decided_by, timestamps)` | Terms Toolio proposes for its waiting items (phase 5); one open proposal per Toolio item |
+| `vocab_change_events (seq bigserial, entity, public_key, change_kind, payload, created_at)` | Change feed; `change_kind`: `upsert`, `remove` (payload carries `replaced_by_public_key`), `removal_request` and `term_proposal` (payload is the request's or proposal's current row); `payload` is the full current row |
 | Delete guard trigger | Blocks direct deletes of categories, tools, materials, and family roots; only completing an approved removal request deletes them |
 
 - The events table has no client access. Aliases and family tool lists are readable as the app needs them and writable by admins only. Removal requests are readable and decidable by admins only.
-- **Admin screens.** Delete on a tool, material, project family, or category becomes **Request removal** (optional replacement, reason). Open requests from Toolio appear in a review list with Approve and Reject, and each new one creates an admin notification.
+- **Admin screens.** Delete on a tool, material, project family, or category becomes **Request removal** (optional replacement, reason). Admin → **Requests** lists open removal requests from Toolio (Approve or Reject) and new terms from Toolio (add or map); each new one creates an admin notification.
 - **Publishing.** Publishing a revision is a client-side `UPDATE projects SET publish_status = 'published'` in `confirmStatusChangeDirect` (`src/components/UnifiedProjectManagement.tsx`); there is no publish function in the database. `project_family_tools` is therefore rebuilt by a database trigger on that status change, so the list stays correct whichever screen publishes.
 - **Family removal** never deletes users' `project_runs`; runs keep their snapshot and their `project_id` moves to the replacement family when there is one.
 
@@ -117,9 +126,10 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 
 | Action | Input | Result |
 | --- | --- | --- |
-| `snapshot` | none | Every term, project, family tool list, and alias, plus `as_of_seq` |
+| `snapshot` | none | Every term, project, family tool list, alias, and open term proposal, plus `as_of_seq` |
 | `changes_since` | `after_seq`, `limit` | Events with `seq > after_seq` that are older than a 5-minute settle window, in `seq` order |
-| `create_term` | `entity`, `key`, `name`, `description`, `category`, `requested_by_email` | 201 with the term. 403 unless the email belongs to a Project Partner admin. 409 with the existing key when the key or normalized name already exists. |
+| `propose_term` | `entity` (`tool`, `material`, `project`), `key`, `name`, `description?`, `toolio_item_kind` (`inventory_core` or `project`), `toolio_item_id`, `requested_by` | 201 with the proposal. Fails when the item already has an open proposal. A taken key or name is caught when an admin adds the proposal, who then maps it instead. |
+| `cancel_proposal` | `proposal_id`, `requested_by` | 200 with the proposal: cancelled when it was open, unchanged when already decided. |
 | `request_removal` | `key`, `reason`, `replacement_key?`, `requested_by_email` | 201 with the request (Toolio's decision `approve`). 409 when an open request for the key exists. |
 | `decide_removal` | `request_id`, `decision` (`approve` or `reject`), `decided_by_email` | 200 with the request. On approval of a Project Partner request, completes the removal in the same transaction; 409 with the blocking references when the term has references and no replacement. |
 | `cancel_removal` | `request_id`, `requested_by_email` | 200; only the requesting app can cancel an open request. |
@@ -129,9 +139,9 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 
 ## Toolio side (summary)
 
-- Mirror tables `pp_vocab_terms`, `pp_vocab_projects` (families and categories, by `kind`), `pp_vocab_project_terms`, `pp_vocab_aliases`, `pp_vocab_removal_requests`, `pp_vocab_sync_state`.
-- Link column `pp_vocab_key` on `projects` (guided projects link to families, groupings to categories) and on `inventory_items` cores. Every core and project is linked.
-- Edge function `project-partner-link` with actions `sync`, `snapshot_reload`, `create_term`, `request_removal`, `decide_removal`, `cancel_removal`.
+- Mirror tables `pp_vocab_terms`, `pp_vocab_projects` (families and categories, by `kind`), `pp_vocab_project_terms`, `pp_vocab_aliases`, `pp_vocab_removal_requests`, `pp_vocab_term_proposals`, `pp_vocab_sync_state`.
+- Link column `pp_vocab_key` on `projects` (guided projects link to families, groupings to categories) and on `inventory_items` cores; `pp_vocab_pending` marks items waiting for a proposed term. Every core and project is linked or waiting.
+- Edge function `project-partner-link` with actions `sync`, `refresh_proposals`, `release_term`, `decide_removal`, `cancel_removal`, `snapshot_reload`.
 - Details: Toolio `docs/PROJECT_PARTNER_INTEGRATION.md`.
 
 ## How changes reach the databases

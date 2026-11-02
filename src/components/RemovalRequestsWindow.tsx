@@ -5,6 +5,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import { TermProposalsSection } from '@/components/TermProposalsSection';
 import { toast } from 'sonner';
 
 type RemovalRequest = {
@@ -86,11 +87,13 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="flex max-h-[90dvh] w-[95vw] max-w-5xl flex-col">
         <DialogHeader>
-          <DialogTitle>Removal requests</DialogTitle>
+          <DialogTitle>Requests</DialogTitle>
           <DialogDescription>
-            Shared categories, projects, tools, and materials are removed only when Project Partner and Toolio both approve.
+            Shared categories, projects, tools, and materials change only when Project Partner and Toolio both approve.
           </DialogDescription>
         </DialogHeader>
+        <TermProposalsSection />
+        <h3 className="text-sm font-semibold">Removal requests</h3>
         <div className="min-h-0 flex-1 overflow-auto rounded-md border">
           {loading ? (
             <p className="p-6 text-center text-sm text-muted-foreground">Loading...</p>

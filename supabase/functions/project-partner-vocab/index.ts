@@ -92,26 +92,6 @@ serve(async (req) => {
         return respond(200, { events: data });
       }
 
-      case "create_term": {
-        const entity = requireString(input, "entity");
-        if (!["category", "project", "tool", "material"].includes(entity)) return respond(400, { error: "Unknown entity" });
-        const specialty = input.specialty_scale;
-        if (entity === "tool" && (typeof specialty !== "number" || ![1, 2, 3].includes(specialty))) {
-          return respond(400, { error: "Tools need specialty_scale 1, 2, or 3" });
-        }
-        const { data, error } = await db.rpc("vocab_create_term", {
-          p_entity: entity,
-          p_key: requireString(input, "key"),
-          p_name: requireString(input, "name"),
-          p_description: optionalString(input, "description"),
-          p_category: optionalString(input, "category"),
-          p_specialty_scale: entity === "tool" ? specialty : null,
-          p_email: requireString(input, "requested_by_email"),
-        });
-        if (error) return respond(statusForDbError(error.code), { error: error.message });
-        return respond(201, data);
-      }
-
       case "request_removal": {
         const { data, error } = await db.rpc("vocab_request_removal", {
           p_key: requireString(input, "key"),
@@ -142,6 +122,33 @@ serve(async (req) => {
           p_request_id: requireString(input, "request_id"),
           p_app: "toolio",
           p_email: requireString(input, "requested_by_email"),
+        });
+        if (error) return respond(statusForDbError(error.code), { error: error.message });
+        return respond(200, data);
+      }
+
+      case "propose_term": {
+        const entity = requireString(input, "entity");
+        if (!["tool", "material", "project"].includes(entity)) return respond(400, { error: "entity must be tool, material, or project" });
+        const itemKind = requireString(input, "toolio_item_kind");
+        if (!["inventory_core", "project"].includes(itemKind)) return respond(400, { error: "toolio_item_kind must be inventory_core or project" });
+        const { data, error } = await db.rpc("vocab_propose_term", {
+          p_entity: entity,
+          p_key: requireString(input, "key"),
+          p_name: requireString(input, "name"),
+          p_description: optionalString(input, "description"),
+          p_item_kind: itemKind,
+          p_item_id: requireString(input, "toolio_item_id"),
+          p_requested_by: requireString(input, "requested_by"),
+        });
+        if (error) return respond(statusForDbError(error.code), { error: error.message });
+        return respond(201, data);
+      }
+
+      case "cancel_proposal": {
+        const { data, error } = await db.rpc("vocab_cancel_proposal", {
+          p_proposal_id: requireString(input, "proposal_id"),
+          p_requested_by: requireString(input, "requested_by"),
         });
         if (error) return respond(statusForDbError(error.code), { error: error.message });
         return respond(200, data);

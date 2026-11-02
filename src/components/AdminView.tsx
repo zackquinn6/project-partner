@@ -292,8 +292,8 @@ export const AdminView: React.FC = () => {
     {
       id: 'removal-requests',
       requireFullAdmin: true,
-      title: 'Removal Requests',
-      description: 'Approve or reject removing categories, projects, tools, and materials shared with Toolio',
+      title: 'Requests',
+      description: 'New and removed categories, projects, tools, and materials shared with Toolio',
       actionLabel: 'Open Requests',
       icon: Trash2,
       onOpen: () => setRemovalRequestsOpen(true),
