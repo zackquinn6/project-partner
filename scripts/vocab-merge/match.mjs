@@ -197,27 +197,6 @@ for (const group of unresolved.values()) {
   });
 }
 
-// ---------- Key checks across the shared key space ----------
-
-const keyOwners = new Map();
-for (const row of rows) {
-  if (!row.canonical_key || row.proposed_action === 'map_to') continue;
-  const owner = row.entity === 'reference' ? `reference:${row.pp_name}` : `${row.entity}:${row.toolio_id || row.pp_id}`;
-  if (!keyOwners.has(row.canonical_key)) keyOwners.set(row.canonical_key, new Set());
-  keyOwners.get(row.canonical_key).add(owner);
-}
-for (const row of rows) {
-  const owners = keyOwners.get(row.canonical_key);
-  if (owners && owners.size > 1 && row.proposed_action !== 'map_to') {
-    row.notes = appendNote(row.notes, `KEY CLASH: ${row.canonical_key} also proposed for ${[...owners].join(', ')}`);
-    row.decision = '';
-  }
-  if (row.canonical_key && !KEY_FORMAT.test(row.canonical_key)) {
-    row.notes = appendNote(row.notes, `BAD KEY: ${row.canonical_key} is not lowercase kebab-case`);
-    row.decision = '';
-  }
-}
-
 // ---------- Carry reviewed decisions ----------
 
 let carried = 0;
@@ -231,6 +210,34 @@ if (carryRows.length) {
     row.canonical_key = prior.canonical_key;
     row.canonical_name = prior.canonical_name;
     carried += 1;
+  }
+}
+
+// ---------- Key checks on the final keys ----------
+
+/** Who a key belongs to: one_to_many rows share their Project Partner term; other rows their Toolio item. */
+function keyOwner(row) {
+  if (row.entity === 'reference') return `reference:${row.pp_name}`;
+  const group = groupOfEntity[row.entity];
+  if (row.proposed_action === 'one_to_many') return `${group}:pp:${row.pp_id}`;
+  return row.toolio_id ? `${group}:toolio:${row.toolio_id}` : `${group}:pp:${row.pp_id}`;
+}
+
+const keyOwners = new Map();
+for (const row of rows) {
+  if (!row.canonical_key || row.proposed_action === 'map_to') continue;
+  if (!keyOwners.has(row.canonical_key)) keyOwners.set(row.canonical_key, new Set());
+  keyOwners.get(row.canonical_key).add(keyOwner(row));
+}
+for (const row of rows) {
+  const owners = keyOwners.get(row.canonical_key);
+  if (owners && owners.size > 1 && row.proposed_action !== 'map_to') {
+    row.notes = appendNote(row.notes, `KEY CLASH: ${row.canonical_key} also proposed for ${[...owners].join(', ')}`);
+    row.decision = '';
+  }
+  if (row.canonical_key && !KEY_FORMAT.test(row.canonical_key)) {
+    row.notes = appendNote(row.notes, `BAD KEY: ${row.canonical_key} is not lowercase kebab-case`);
+    row.decision = '';
   }
 }
 

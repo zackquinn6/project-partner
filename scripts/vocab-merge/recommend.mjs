@@ -43,7 +43,7 @@ for (const row of rows) {
 
 // One key and name per one_to_many component (all rows sharing a Project Partner item).
 const oneToMany = new Map();
-for (const row of rows.filter((r) => r.proposed_action === 'one_to_many')) {
+for (const row of rows.filter((r) => r.proposed_action === 'one_to_many' && !r.decision)) {
   if (!oneToMany.has(row.pp_id)) oneToMany.set(row.pp_id, []);
   oneToMany.get(row.pp_id).push(row);
 }
@@ -72,7 +72,13 @@ function recommend(row) {
   const suggest = /suggest=([^;]+)/.exec(notes)?.[1];
   const flags = /KEY CLASH|NO KEY|NO NAME|many-to-many|STRUCTURE DIFFERS|NO CURRENT REVISION/.exec(notes)?.[0];
 
-  if (row.decision && !/BAD KEY/.test(notes)) {
+  if (row.decision && row.canonical_name && ![row.toolio_name, row.pp_name].includes(row.canonical_name)) {
+    return {
+      confidence: 'check',
+      reason: `New name "${row.canonical_name}" (Toolio: "${row.toolio_name || '-'}", Project Partner: "${row.pp_name || '-'}"). Confirm or edit canonical_name.`,
+    };
+  }
+  if (row.decision) {
     return { confidence: 'confident', reason: decidedReason(row) };
   }
 
