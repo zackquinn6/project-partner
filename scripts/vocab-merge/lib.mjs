@@ -5,7 +5,14 @@ import { dirname, isAbsolute, join, resolve } from 'node:path';
 /** Read-only export queries in scripts/vocab-merge/sql/, run by hand in each app's SQL editor. */
 export const EXPORT_QUERIES = ['toolio-1-catalog', 'toolio-2-checks', 'pp-1-library', 'pp-2-projects', 'pp-3-references'];
 export const NAME_KEYS_QUERY = 'toolio-3-name-keys';
-const PAYLOAD_VERSION = 1;
+const PAYLOAD_VERSIONS = {
+  'toolio-1-catalog': 1,
+  'toolio-2-checks': 1,
+  'pp-1-library': 1,
+  'pp-2-projects': 1,
+  'pp-3-references': 2,
+  [NAME_KEYS_QUERY]: 1,
+};
 
 export function requireEnv(name) {
   const value = process.env[name];
@@ -96,7 +103,9 @@ export function readPayload(dir, query) {
     throw new Error(`${path} is not complete JSON (${error.message}); copy the whole payload cell again`);
   }
   if (payload.query !== query) throw new Error(`${path} holds the result of ${payload.query}, not ${query}`);
-  if (payload.version !== PAYLOAD_VERSION) throw new Error(`${path}: query version ${payload.version}, expected ${PAYLOAD_VERSION}`);
+  if (payload.version !== PAYLOAD_VERSIONS[query]) {
+    throw new Error(`${path}: query version ${payload.version}, expected ${PAYLOAD_VERSIONS[query]}; re-run the current sql/${query}.sql`);
+  }
   return payload;
 }
 

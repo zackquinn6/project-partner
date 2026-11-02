@@ -40,17 +40,24 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 
 | Location | Shape | Links to the library by |
 | --- | --- | --- |
-| `operation_steps.tools`, `operation_steps.materials` | JSON array of `{ id, name, description, category, alternates, quantity, parentId?, linkedContentSectionIds? }` | **Name only.** `id` is a per-entry value (`tool-<time>-<random>`), not a library id. `parentId` points to the primary entry in the same step that this row substitutes for. |
-| `projects.phases` | JSON copy of phases, operations, and steps with the same entries | Name only |
-| `project_runs.phases` | Run snapshot with the same entries | Name only |
+| `operation_steps.tools`, `operation_steps.materials` | JSON array mixing two entry shapes (below) | Depends on the shape |
+| `projects.phases` | JSON copy of phases, operations, and steps with the same entries | Depends on the shape |
+| `project_runs.phases` | Run snapshot with the same entries, stored as a JSON string that contains the JSON | Depends on the shape |
 | `project_runs.shopping_checklist_data.orderedItems` | `{ itemId, itemName, itemType }` | Name only (`itemId` is the step entry id) |
 | `user_tools` | Row with `tool_id` FK and `name` | `tool_id` |
 | `user_materials` | Row with `material_id` FK and `name` | `material_id` |
 | `user_profiles.owned_tools` | JSON array of `{ id, tool_id?, name, item }` | `tool_id` when present, else name |
 
-**Ownership matching** (`src/utils/ownedToolsMatching.ts`) compares normalized names, and ids only where both sides carry the same id. Because step entries carry no library id, a merge that changes a canonical name would stop matching unless the step entries gain a library id. The phase 3 load therefore:
+**Step entry shapes** (export of 2026-11-02: roughly 40% of step entries are library selections):
 
-- adds `library_id` (the library row's UUID) to every step entry, plus `legacy_name` holding the pre-merge name; the per-entry `id` and `parentId` are unchanged;
+| Shape | Fields | Links to the library by |
+| --- | --- | --- |
+| Step entry | `{ id, name, description, category, alternates, quantity, parentId?, linkedContentSectionIds? }` | **Name only.** `id` is a per-entry value (`tool-<time>-<random>`), not a library id. `parentId` points to the primary entry in the same step that this row substitutes for. |
+| Library selection | `{ item, coreItemId, isPrime, quantity, attributes }` | `coreItemId` (library tool or material id); `item` is the display name |
+
+**Ownership matching** (`src/utils/ownedToolsMatching.ts`) compares normalized names, and ids only where both sides carry the same id. Because most step entries carry no library id, a merge that changes a canonical name would stop matching unless the step entries gain one. The phase 3 load therefore:
+
+- normalizes every step entry to one shape with `library_id` (the library row's UUID) and `legacy_name` holding the pre-merge name; the per-entry `id` and `parentId` are unchanged;
 - repoints `user_tools.tool_id` and `user_materials.material_id` from merged-away duplicates to the canonical row;
 - keeps Project Partner's existing UUIDs for canonical rows, so only merged-away duplicates change.
 

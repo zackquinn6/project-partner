@@ -296,6 +296,7 @@ function resolveReference(ref) {
 const referencesOut = references.map((ref) => ({
   source: ref.source,
   kind: ref.kind,
+  shape: ref.shape,
   name: ref.name,
   stored_library_id: ref.library_id,
   count: ref.count,
