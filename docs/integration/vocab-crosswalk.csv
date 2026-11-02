@@ -1,24 +1,33 @@
 entity,toolio_id,toolio_key,toolio_name,pp_id,pp_name,match_tier,proposed_action,canonical_key,canonical_name,pair_with,unpaired_from,notes,decision
 category,,,,Appliances,Appliances,none,keep_pp,appliances,Appliances,,,families=Dishwasher Replacement,keep_pp
 category,,,,Bathroom,Bathroom,none,keep_pp,bathroom,Bathroom,,,families=Shower Fixture Replacement | Tile Flooring Installation | Tile Shower/Bath Installation | Electric Radiant Floor Heat Installation | Toilet Flange Repair | Toilet Replacement | Vanity Replacement | Caulking Application,keep_pp
-category,192f584e-e620-4826-a8c1-a04d0d335a63,carpentry,Carpentry,,,fuzzy_suggestion,create_in_pp,carpentry,Carpentry,,,groups=interior-carpentry | drywall-finishing | furniture-building | exterior-carpentry; suggest=Interior Carpentry (0.5) | Exterior Carpentry (0.5),create_in_pp
+category,192f584e-e620-4826-a8c1-a04d0d335a63,carpentry,Carpentry,,,fuzzy_suggestion,create_in_pp,carpentry,Carpentry,,,groups=interior-carpentry | drywall-finishing | furniture-building | exterior-carpentry; suggest=Exterior Carpentry (0.5) | Interior Carpentry (0.5),create_in_pp
+category,,,,Ceilings,Ceilings,none,keep_pp,ceilings,Ceilings,,,families=,keep_pp
+category,,,,Decks & Patios,Decks & Patios,none,keep_pp,decks-patios,Decks & Patios,,,families=,keep_pp
 category,,,,Decor,Decor,none,keep_pp,decor,Decor,,,families=Wallpaper Installation or Removal,keep_pp
 category,6ecaf302-abcd-4c3b-8847-7256f5ff9eea,demolition,Demolition,Demolition,Demolition,exact,merge,demolition,Demolition,,,groups=general-demo,merge
 category,,,,Doors & Windows,Doors & Windows,none,keep_pp,doors-windows,Doors & Windows,,,families=Storm Door Installation | Window Installation | Door & Trim Trimming | Interior Door Replacement,keep_pp
-category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Lighting & Electrical,Lighting & Electrical,reviewed,merge_many,electrical,Lighting & Electrical,,,synonyms=Lighting & Electrical | Electrical; groups=outlet-and-switch-replacement,merge_many
-category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Electrical,Electrical,exact,merge_many,electrical,Lighting & Electrical,,,synonyms=Lighting & Electrical | Electrical; groups=outlet-and-switch-replacement,merge_many
+category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Lighting & Electrical,Lighting & Electrical,reviewed,merge_many,electrical,Lighting & Electrical,,,synonyms=Electrical | Lighting & Electrical; groups=outlet-and-switch-replacement,merge_many
+category,8c630419-b76a-4d47-b9f5-239cffa98b72,electrical,Electrical,Electrical,Electrical,exact,merge_many,electrical,Lighting & Electrical,,,synonyms=Electrical | Lighting & Electrical; groups=outlet-and-switch-replacement,merge_many
 category,,,,Exterior Carpentry,Exterior Carpentry,fuzzy_suggestion,keep_pp,exterior-carpentry-category,Exterior Carpentry,,,families=Storm Door Installation; suggest=Carpentry [carpentry] (0.5),keep_pp
 category,5e593f10-0b03-459d-bdb2-d1c49897d10d,exterior-projects,Exterior Projects,,,none,create_in_pp,exterior-projects,Exterior Projects,,,groups=exterior-doors-windows | siding | deck-building | shingle-roofing | fencing,create_in_pp
 category,7247f541-8547-4701-bcdd-72ac456bdab2,flooring,Flooring,Flooring,Flooring,exact,merge,flooring,Flooring,,,groups=lvp-flooring-install | hardwood-flooring-install | hardwood-flooring-refinishing | tile-flooring | carpet-install,merge
 category,,,,Foundation,Foundation,none,keep_pp,foundation,Foundation,,,families=Standard Foundation,keep_pp
 category,,,,General Repairs & Maintenance,General Repairs & Maintenance,none,keep_pp,general-repairs-maintenance,General Repairs & Maintenance,,,families=Manage Dust Control | Caulking Application,keep_pp
+category,,,,HVAC & Ventilation,HVAC & Ventilation,none,keep_pp,hvac-ventilation,HVAC & Ventilation,,,families=,keep_pp
+category,,,,Insulation & Weatherproofing,Insulation & Weatherproofing,none,keep_pp,insulation-weatherproofing,Insulation & Weatherproofing,,,families=,keep_pp
 category,,,,Interior,Interior,none,keep_pp,interior,Interior,,,families=Interior Painting,keep_pp
 category,,,,Interior Carpentry,Interior Carpentry,fuzzy_suggestion,keep_pp,interior-carpentry-category,Interior Carpentry,,,families=Framing a Non‑Load‑Bearing Wall | Window Installation | Baseboard & Trim Installation | Interior Stair Refacing | Kitchen Cabinet Installation | Interior Door Replacement | Shiplap or Accent Wall Installation; suggest=Carpentry [carpentry] (0.5),keep_pp
 category,,,,Kitchen,Kitchen,none,keep_pp,kitchen,Kitchen,,,families=Dishwasher Replacement | Tile Flooring Installation | Tile Backsplash Installation | Kitchen Sink Replacement | Garbage Disposal Installation | Kitchen Cabinet Installation,keep_pp
-category,0b8ebfce-14b7-43b8-8748-0915ba4e318d,landscaping,Landscaping,,,none,create_in_pp,landscaping,Landscaping,,,groups=log-splitting-firewood | home-power-washing | leaf-cleanup | lawn-care | french-drain | tree-shrub-trimming,create_in_pp
+category,0b8ebfce-14b7-43b8-8748-0915ba4e318d,landscaping,Landscaping,Landscaping & Outdoor Projects,Landscaping & Outdoor Projects,reviewed,merge,landscaping,Landscaping & Outdoor Projects,,,groups=log-splitting-firewood | home-power-washing | leaf-cleanup | lawn-care | french-drain | tree-shrub-trimming,merge
+category,,,,Masonry & Concrete,Masonry & Concrete,none,keep_pp,masonry-concrete,Masonry & Concrete,,,families=,keep_pp
 category,52d326f2-37b5-4c82-84bd-dc8bf8cc718a,painting,Painting,Painting & Finishing,Painting & Finishing,reviewed,merge,painting,Painting & Finishing,,,groups=exterior-painting | interior-painting,merge
 category,,,,Plumbing,Plumbing,none,keep_pp,plumbing,Plumbing,,,families=Dishwasher Replacement | Shower Fixture Replacement | Kitchen Sink Replacement | Toilet Replacement | Vanity Replacement | Garbage Disposal Installation,keep_pp
 category,a6d5db08-3411-4982-8b18-dc5dc77776aa,Renovation,Renovation,,,none,create_in_pp,renovation,Renovation,,,groups=Bathroom-Renovation | kitchen-renovation,create_in_pp
+category,,,,Roofing,Roofing,none,keep_pp,roofing,Roofing,,,families=,keep_pp
+category,,,,Safety & Security,Safety & Security,none,keep_pp,safety-security,Safety & Security,,,families=,keep_pp
+category,,,,Smart Home & Technology,Smart Home & Technology,none,keep_pp,smart-home-technology,Smart Home & Technology,,,families=,keep_pp
+category,,,,Storage & Organization,Storage & Organization,none,keep_pp,storage-organization,Storage & Organization,,,families=,keep_pp
 category,,,,System,System,none,keep_pp,system,System,,,families=Standard Foundation,keep_pp
 category,572eea1a-6b0f-4ad2-8ce1-ad4183e2702b,tile,Tile,Tile,Tile,exact,merge,tile,Tile,,,groups=tile-backsplash | tile-shower | tile-flooring,merge
 category,,,,Walls & Drywall,Walls & Drywall,none,keep_pp,walls-drywall,Walls & Drywall,,,families=Framing a Non‑Load‑Bearing Wall | Drywall Repair + Finishing | Interior Wood Staining | Shiplap or Accent Wall Installation,keep_pp
