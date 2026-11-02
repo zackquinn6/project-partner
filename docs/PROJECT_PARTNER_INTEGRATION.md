@@ -7,7 +7,27 @@ This is the canonical contract. Toolio's `docs/PROJECT_PARTNER_INTEGRATION.md` c
 - **Project Partner** owns the general vocabulary: projects (one entry per revision family), tools, and materials.
 - **Toolio** owns SKUs, pricing, guided sections, customer copy, orders, and accounts.
 - The databases are never shared. Toolio keeps a local mirror of the vocabulary, fed by the change feed below; Toolio's shop and checkout never call Project Partner.
-- Where both apps had an entry before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases.
+- Where both apps had a tool or material before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases. Project names are decided per project in review (see [Toolio project rebuild](#toolio-project-rebuild-final-step)).
+
+## Toolio project rebuild (final step)
+
+Toolio has more built-out guided projects; Project Partner has the stronger project structure (families, revisions, foundations). After switch-over, Toolio's guided projects are rebuilt for **identity only**:
+
+- Each Toolio guided project links to one Project Partner family, or is marked `toolio_only` (for example catalog groupings such as Tile or Flooring).
+- The project name is decided per project in crosswalk review (Project Partner's name, Toolio's name, or a new one); the other names become aliases.
+- Toolio's foundation and variant links (`content_foundation_project_id`) follow the family's foundation structure.
+- Toolio's ordering content is carried over unchanged: sections, section items, packages, default quantities, customization questions and rules.
+- A changed slug gets a redirect, so customer URLs and `orders.project_slug` on past orders still resolve.
+
+**Parity control.** The rebuild ships only when a before/after comparison of two exports (taken right before and right after) shows, for every guided project:
+
+- the same visible cores per package (Essentials and Comprehensive) with the same default quantities;
+- the same sections and section visibility;
+- the same customization questions, options, and rules;
+- the same released, coming soon, or hidden status;
+- differences only in the fields the crosswalk decided to change (name, slug, foundation link), each listed in the report.
+
+Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing reads only those. The comparison is a `verify.mjs` check added with the rebuild.
 
 ## Keys
 
