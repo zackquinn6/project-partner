@@ -32,7 +32,7 @@ const FUZZY_MIN = 0.5;
 const FUZZY_LIMIT = 3;
 
 const args = parseArgs();
-const dir = archiveDir(args);
+const dir = archiveDir(args.archive);
 const extract = (name) => readJson(join(dir, 'extract', `${name}.json`));
 const cores = extract('toolio_cores');
 const toolioProjects = extract('toolio_projects');
@@ -89,14 +89,24 @@ for (const component of components(toolioProjects, familyAsRight, projectEdges))
 
 // ---------- References that resolve to no library row ----------
 
+const UNRESOLVED = ['none', 'ambiguous', 'dangling_id'];
 const unresolved = new Map();
 for (const ref of references) {
-  if (!['none', 'ambiguous', 'dangling_id'].includes(ref.resolved_by)) continue;
-  const groupKey = `${ref.kind}|${ref.name_key ?? `id:${ref.library_id}`}`;
-  if (!unresolved.has(groupKey)) unresolved.set(groupKey, { kind: ref.kind, name_key: ref.name_key, names: new Map(), sources: new Map(), resolutions: new Set() });
+  if (!UNRESOLVED.includes(ref.resolved_by)) continue;
+  const groupKey = ref.name_key ? `${ref.kind}|${ref.name_key}` : `${ref.kind}|id:${ref.stored_library_id}`;
+  if (!unresolved.has(groupKey)) {
+    unresolved.set(groupKey, {
+      kind: ref.kind,
+      name_key: ref.name_key,
+      stored_library_id: ref.name_key ? null : ref.stored_library_id,
+      names: new Map(),
+      sources: new Map(),
+      resolutions: new Set(),
+    });
+  }
   const group = unresolved.get(groupKey);
-  group.names.set(ref.name, (group.names.get(ref.name) ?? 0) + 1);
-  group.sources.set(ref.source, (group.sources.get(ref.source) ?? 0) + 1);
+  group.names.set(ref.name, (group.names.get(ref.name) ?? 0) + ref.count);
+  group.sources.set(ref.source, (group.sources.get(ref.source) ?? 0) + ref.count);
   group.resolutions.add(ref.resolved_by);
 }
 for (const group of unresolved.values()) {
@@ -105,14 +115,18 @@ for (const group of unresolved.values()) {
     ? fuzzy(group.name_key, library.filter((e) => group.kind === 'unknown' || e.entity === group.kind))
     : [];
   const count = [...group.sources.values()].reduce((a, b) => a + b, 0);
+  const named = Boolean(group.name_key);
+  const create = named && candidates.length === 0;
   rows.push({
     entity: 'reference',
-    pp_name: topName,
+    pp_id: named ? '' : group.stored_library_id,
+    pp_name: named ? topName : '',
     match_tier: candidates.length ? 'fuzzy_suggestion' : 'none',
-    proposed_action: candidates.length ? 'map_to' : 'create_library_term',
-    canonical_key: candidates.length ? '' : kebabKey(topName),
-    canonical_name: candidates.length ? '' : topName,
+    proposed_action: create ? 'create_library_term' : 'map_to',
+    canonical_key: create ? kebabKey(topName) : '',
+    canonical_name: create ? topName : '',
     notes: [
+      named ? null : 'NO NAME: stored library id points to no library row',
       `kind=${group.kind}`,
       `count=${count}`,
       `resolution=${[...group.resolutions].join('/')}`,
@@ -173,9 +187,10 @@ const summary = {
   matched: rows.filter((r) => ['merge', 'merge_many', 'one_to_many'].includes(r.proposed_action)).length,
   toolio_only_candidates: rows.filter((r) => r.proposed_action === 'create_in_pp').length,
   pp_only: rows.filter((r) => r.proposed_action === 'keep_pp').length,
-  conflicts: rows.filter((r) => /KEY CLASH|NO KEY|many-to-many|ENTITY DIFFERS|STRUCTURE DIFFERS|NO CURRENT REVISION/.test(r.notes ?? '')).length,
+  conflicts: rows.filter((r) => /KEY CLASH|NO KEY|NO NAME|many-to-many|ENTITY DIFFERS|STRUCTURE DIFFERS|NO CURRENT REVISION/.test(r.notes ?? '')).length,
   unresolved_reference_groups: unresolved.size,
-  unresolved_references: references.filter((r) => ['none', 'ambiguous', 'dangling_id'].includes(r.resolved_by)).length,
+  unresolved_references: references.filter((r) => UNRESOLVED.includes(r.resolved_by)).reduce((sum, r) => sum + r.count, 0),
+  unnamed_references: references.filter((r) => r.resolved_by === 'unnamed').reduce((sum, r) => sum + r.count, 0),
 };
 
 if (args.dryRun) {

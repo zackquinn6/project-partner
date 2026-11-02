@@ -1,9 +1,11 @@
 import { createHash } from 'node:crypto';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, isAbsolute, join, resolve } from 'node:path';
-import { createClient } from '@supabase/supabase-js';
 
-const PAGE_SIZE = 1000;
+/** Read-only export queries in scripts/vocab-merge/sql/, run by hand in each app's SQL editor. */
+export const EXPORT_QUERIES = ['toolio-1-catalog', 'toolio-2-checks', 'pp-1-library', 'pp-2-projects', 'pp-3-references'];
+export const NAME_KEYS_QUERY = 'toolio-3-name-keys';
+const PAYLOAD_VERSION = 1;
 
 export function requireEnv(name) {
   const value = process.env[name];
@@ -14,61 +16,17 @@ export function requireEnv(name) {
 }
 
 export function parseArgs(argv = process.argv.slice(2)) {
-  const args = {
-    dryRun: false,
-    printCountSql: false,
-    skipDump: [],
-    toolioCounts: null,
-    archive: null,
-    carry: null,
-    check: [],
-  };
+  const args = { dryRun: false, archive: null, against: null, carry: null, check: [] };
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
     if (arg === '--dry-run') args.dryRun = true;
-    else if (arg === '--print-toolio-count-sql') args.printCountSql = true;
-    else if (arg === '--skip-dump') args.skipDump.push(argv[++i]);
-    else if (arg === '--toolio-counts') args.toolioCounts = argv[++i];
     else if (arg === '--archive') args.archive = argv[++i];
+    else if (arg === '--against') args.against = argv[++i];
     else if (arg === '--carry') args.carry = argv[++i];
     else if (arg === '--check') args.check.push(argv[++i]);
     else throw new Error(`Unknown argument ${arg}`);
   }
   return args;
-}
-
-const TOKEN_MIN_REMAINING_MS = 10 * 60 * 1000;
-
-/**
- * Toolio runs on Lovable Cloud, which exposes no service-role key, so scripts read Toolio as a
- * signed-in catalog admin. Export proves completeness against true row counts (see export.mjs).
- */
-export function toolioClient() {
-  const url = requireEnv('TOOLIO_SUPABASE_URL');
-  const token = requireEnv('TOOLIO_ACCESS_TOKEN');
-  const segments = token.split('.');
-  if (segments.length !== 3) throw new Error('TOOLIO_ACCESS_TOKEN is not a JWT');
-  const claims = JSON.parse(Buffer.from(segments[1], 'base64url').toString('utf8'));
-  if (claims.role !== 'authenticated') {
-    throw new Error(`TOOLIO_ACCESS_TOKEN has role "${claims.role}"; copy a signed-in admin's access token, not the publishable key`);
-  }
-  if (typeof claims.iss !== 'string' || !claims.iss.startsWith(url)) {
-    throw new Error(`TOOLIO_ACCESS_TOKEN was issued by ${claims.iss}, not ${url}`);
-  }
-  const remainingMs = claims.exp * 1000 - Date.now();
-  if (remainingMs < TOKEN_MIN_REMAINING_MS) {
-    throw new Error('TOOLIO_ACCESS_TOKEN expires in under 10 minutes; copy a fresh one');
-  }
-  return createClient(url, requireEnv('TOOLIO_PUBLISHABLE_KEY'), {
-    global: { headers: { Authorization: `Bearer ${token}` } },
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
-}
-
-export function ppClient() {
-  return createClient(requireEnv('PP_SUPABASE_URL'), requireEnv('PP_SERVICE_ROLE_KEY'), {
-    auth: { persistSession: false, autoRefreshToken: false },
-  });
 }
 
 /** Archive holds production user data, so it must live outside every git work tree. */
@@ -89,70 +47,91 @@ export function archiveRoot() {
   return resolve(root);
 }
 
-export function archiveDir(args) {
-  if (!args.archive) {
-    throw new Error('Pass --archive <export folder name> (a folder under VOCAB_MERGE_ARCHIVE_DIR)');
-  }
-  const dir = join(archiveRoot(), args.archive);
+export function exportDir(name) {
+  if (!name) throw new Error('Pass --archive <export folder name> (a folder under VOCAB_MERGE_ARCHIVE_DIR)');
+  const dir = join(archiveRoot(), name);
+  if (!existsSync(dir)) throw new Error(`Export folder not found: ${dir}`);
+  return dir;
+}
+
+/** An export folder that validate-export.mjs has already checked. */
+export function archiveDir(name) {
+  const dir = exportDir(name);
   if (!existsSync(join(dir, 'manifest.json'))) {
-    throw new Error(`No manifest.json in ${dir}`);
+    throw new Error(`${dir} has no manifest.json; run validate-export.mjs --archive ${name} first`);
   }
   return dir;
 }
 
-export function stableStringify(value) {
-  if (value === null || typeof value !== 'object') return JSON.stringify(value);
-  if (Array.isArray(value)) return `[${value.map(stableStringify).join(',')}]`;
-  const keys = Object.keys(value).sort();
-  return `{${keys.map((k) => `${JSON.stringify(k)}:${stableStringify(value[k])}`).join(',')}}`;
+export function payloadPath(dir, query) {
+  const json = join(dir, `${query}.json`);
+  const csv = join(dir, `${query}.csv`);
+  if (existsSync(json) && existsSync(csv)) throw new Error(`${dir} has both ${query}.json and ${query}.csv; keep one`);
+  if (existsSync(json)) return json;
+  if (existsSync(csv)) return csv;
+  return null;
 }
 
-export function sha256(text) {
-  return createHash('sha256').update(text).digest('hex');
-}
-
-export function rowHash(row, omitColumns = []) {
-  if (omitColumns.length === 0) return sha256(stableStringify(row));
-  const copy = { ...row };
-  for (const column of omitColumns) delete copy[column];
-  return sha256(stableStringify(copy));
-}
-
-export async function liveCount(client, table) {
-  const { count, error } = await client.from(table).select('*', { count: 'exact', head: true });
-  if (error) throw new Error(`count ${table}: ${error.message}`);
-  if (count === null) throw new Error(`count ${table}: no count returned`);
-  return count;
-}
-
-/** Reads every row ordered by primary key; fails when the row count moves during the read. */
-export async function fetchAll(client, spec) {
-  const before = await liveCount(client, spec.table);
-  const rows = [];
-  for (let from = 0; ; from += PAGE_SIZE) {
-    const { data, error } = await client
-      .from(spec.table)
-      .select(spec.select)
-      .order(spec.pk, { ascending: true })
-      .range(from, from + PAGE_SIZE - 1);
-    if (error) throw new Error(`read ${spec.table}: ${error.message}`);
-    rows.push(...data);
-    if (data.length < PAGE_SIZE) break;
+/**
+ * Reads a saved query result: either the copied `payload` cell (.json) or the editor's CSV
+ * download with a single `payload` column (.csv).
+ */
+export function readPayload(dir, query) {
+  const path = payloadPath(dir, query);
+  if (!path) throw new Error(`Missing ${query}.json (or .csv) in ${dir}`);
+  let text;
+  if (path.endsWith('.csv')) {
+    const rows = readCsv(path);
+    if (rows.length !== 1 || !('payload' in rows[0])) {
+      throw new Error(`${path}: expected one row with a payload column, found ${rows.length} rows`);
+    }
+    text = rows[0].payload;
+  } else {
+    text = readFileSync(path, 'utf8').replace(/^\uFEFF/, '');
   }
-  const after = await liveCount(client, spec.table);
-  if (before !== after || rows.length !== after) {
-    throw new Error(
-      `${spec.table}: live count changed during export (before ${before}, read ${rows.length}, after ${after}). Re-run the export.`,
-    );
+  let payload;
+  try {
+    payload = JSON.parse(text);
+  } catch (error) {
+    throw new Error(`${path} is not complete JSON (${error.message}); copy the whole payload cell again`);
   }
-  const seen = new Set();
-  for (const row of rows) {
-    const key = row[spec.pk];
-    if (key === null || key === undefined) throw new Error(`${spec.table}: row without ${spec.pk}`);
-    if (seen.has(key)) throw new Error(`${spec.table}: duplicate ${spec.pk} ${key}`);
-    seen.add(key);
+  if (payload.query !== query) throw new Error(`${path} holds the result of ${payload.query}, not ${query}`);
+  if (payload.version !== PAYLOAD_VERSION) throw new Error(`${path}: query version ${payload.version}, expected ${PAYLOAD_VERSION}`);
+  return payload;
+}
+
+/** jsonb_agg returns null for an empty table; that is only valid when the count is zero. */
+export function tableRows(payload, table) {
+  const rows = payload.tables?.[table];
+  const count = payload.counts?.[table];
+  if (!Number.isInteger(count)) throw new Error(`${payload.query}: no count for ${table}`);
+  if (rows === null) {
+    if (count !== 0) throw new Error(`${payload.query}: ${table} has no rows but count ${count}`);
+    return [];
   }
+  if (!Array.isArray(rows)) throw new Error(`${payload.query}: ${table} is missing`);
+  if (rows.length !== count) throw new Error(`${payload.query}: ${table} has ${rows.length} rows, count ${count}`);
   return rows;
+}
+
+/** jsonb_object_agg returns null for an empty table; that is only valid when the count is zero. */
+export function hashMap(payload, table) {
+  const hashes = payload.content_hashes?.[table];
+  const count = payload.counts?.[table];
+  if (!Number.isInteger(count)) throw new Error(`${payload.query}: no count for ${table}`);
+  if (hashes === null) {
+    if (count !== 0) throw new Error(`${payload.query}: ${table} has no fingerprints but count ${count}`);
+    return {};
+  }
+  if (!hashes || typeof hashes !== 'object') throw new Error(`${payload.query}: ${table} fingerprints missing`);
+  if (Object.keys(hashes).length !== count) {
+    throw new Error(`${payload.query}: ${table} has ${Object.keys(hashes).length} fingerprints, count ${count}`);
+  }
+  return hashes;
+}
+
+export function sha256(data) {
+  return createHash('sha256').update(data).digest('hex');
 }
 
 export function writeJson(path, value) {
@@ -162,12 +141,6 @@ export function writeJson(path, value) {
 
 export function readJson(path) {
   return JSON.parse(readFileSync(path, 'utf8'));
-}
-
-export function readArchiveTable(dir, db, table) {
-  const path = join(dir, db, `${table}.json`);
-  if (!existsSync(path)) throw new Error(`Archive is missing ${db}/${table}.json`);
-  return readJson(path).rows;
 }
 
 const CSV_SPECIAL = /[",\r\n]/;
@@ -186,7 +159,7 @@ export function writeCsv(path, columns, rows) {
 }
 
 export function readCsv(path) {
-  const text = readFileSync(path, 'utf8');
+  const text = readFileSync(path, 'utf8').replace(/^\uFEFF/, '');
   const records = [];
   let field = '';
   let record = [];
@@ -217,20 +190,6 @@ export function readCsv(path) {
   }
   const [header, ...body] = records;
   return body.map((cells) => Object.fromEntries(header.map((h, i) => [h, cells[i] ?? ''])));
-}
-
-export async function mapWithConcurrency(items, limit, fn) {
-  const results = new Array(items.length);
-  let next = 0;
-  async function worker() {
-    while (next < items.length) {
-      const index = next;
-      next += 1;
-      results[index] = await fn(items[index], index);
-    }
-  }
-  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, worker));
-  return results;
 }
 
 export function kebabKey(name) {

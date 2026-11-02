@@ -1,34 +1,27 @@
 #!/usr/bin/env node
 /**
- * Merge step 1: build matching views from an export archive.
+ * Merge step 1: build matching views from a validated export.
  *
  *   node scripts/vocab-merge/extract.mjs --archive <export folder> [--dry-run]
  *
- * Name keys come from Toolio's inventory_item_name_comparison_key RPC so both sides share
- * Toolio's normalization. The current revision of each Project Partner family comes from
- * Project Partner's latest_published_in_family RPC.
+ * Name keys come from Toolio's inventory_item_name_comparison_key so both apps share Toolio's
+ * normalization. The first run writes toolio-3-name-keys.sql into the export folder and stops
+ * (exit 2); run it in Toolio's SQL editor, save the payload as toolio-3-name-keys.json (or .csv)
+ * in the same folder, and run extract again.
  *
- * Env: TOOLIO_SUPABASE_URL, TOOLIO_PUBLISHABLE_KEY, TOOLIO_ACCESS_TOKEN, PP_SUPABASE_URL,
- *      PP_SERVICE_ROLE_KEY, VOCAB_MERGE_ARCHIVE_DIR.
+ * Env: VOCAB_MERGE_ARCHIVE_DIR.
  */
+import { writeFileSync } from 'node:fs';
 import { join } from 'node:path';
-import {
-  archiveDir,
-  mapWithConcurrency,
-  parseArgs,
-  ppClient,
-  readArchiveTable,
-  toolioClient,
-  writeJson,
-} from './lib.mjs';
+import { NAME_KEYS_QUERY, archiveDir, parseArgs, payloadPath, readPayload, tableRows, writeJson } from './lib.mjs';
 
 const args = parseArgs();
-const dir = archiveDir(args);
-const toolio = toolioClient();
-const pp = ppClient();
-
-const t = (table) => readArchiveTable(dir, 'toolio', table);
-const p = (table) => readArchiveTable(dir, 'pp', table);
+const dir = archiveDir(args.archive);
+const toolioCatalog = readPayload(dir, 'toolio-1-catalog');
+const ppLibrary = readPayload(dir, 'pp-1-library');
+const ppProjectsPayload = readPayload(dir, 'pp-2-projects');
+const ppReferences = readPayload(dir, 'pp-3-references');
+const t = (table) => tableRows(toolioCatalog, table);
 
 // ---------- Toolio ----------
 
@@ -112,13 +105,18 @@ function projectLines(projectId, viewers = [projectId]) {
 
 // ---------- Project Partner ----------
 
-const ppProjects = p('projects');
+const ppProjects = tableRows(ppProjectsPayload, 'projects');
 const ppProjectById = new Map(ppProjects.map((row) => [row.id, row]));
 const families = groupBy(ppProjects, (row) => row.parent_project_id ?? row.id);
-const tools = p('tools');
-const materials = p('materials');
-const toolVariations = p('tool_variations');
-const materialVariants = p('materials_variants');
+if (families.size !== ppProjectsPayload.counts.families) {
+  throw new Error(`pp-2-projects: ${families.size} families from rows, count ${ppProjectsPayload.counts.families}`);
+}
+const latestPublished = ppProjectsPayload.latest_published;
+const tools = tableRows(ppLibrary, 'tools');
+const materials = tableRows(ppLibrary, 'materials');
+const toolVariations = tableRows(ppLibrary, 'tool_variations');
+const materialVariants = tableRows(ppLibrary, 'materials_variants');
+const references = ppReferences.references ?? [];
 
 // ---------- Name keys (Toolio normalization) ----------
 
@@ -126,11 +124,7 @@ const names = new Set();
 const addName = (value) => {
   if (typeof value === 'string' && value.trim()) names.add(value);
 };
-cores.forEach((row) => {
-  addName(row.name);
-  (row.discovery_tags ?? []).forEach(addName);
-});
-toolioProjects.forEach((row) => {
+[...cores, ...toolioProjects].forEach((row) => {
   addName(row.name);
   (row.discovery_tags ?? []).forEach(addName);
 });
@@ -140,28 +134,21 @@ ppProjects.forEach((row) => addName(row.name));
   alternateNames(row.alternates).forEach(addName);
 });
 [...toolVariations, ...materialVariants].forEach((row) => addName(row.name));
-
-const references = collectReferences();
 references.forEach((ref) => addName(ref.name));
 
 if (args.dryRun) {
   console.log(`Toolio cores: ${cores.length}, projects: ${toolioProjects.length}`);
   console.log(`Project Partner families: ${families.size}, tools: ${tools.length}, materials: ${materials.length}`);
-  console.log(`References: ${references.length}, distinct names to normalize: ${names.size}`);
+  console.log(`Reference groups: ${references.length}, distinct names to normalize: ${names.size}`);
   process.exit(0);
 }
 
-const nameList = [...names];
-const keyList = await mapWithConcurrency(nameList, 8, async (name) => {
-  const { data, error } = await toolio.rpc('inventory_item_name_comparison_key', { p_name: name });
-  if (error) throw new Error(`inventory_item_name_comparison_key(${JSON.stringify(name)}): ${error.message}`);
-  if (typeof data !== 'string') throw new Error(`inventory_item_name_comparison_key(${JSON.stringify(name)}) returned no key`);
-  return data;
-});
-const nameKeys = new Map(nameList.map((name, i) => [name, keyList[i]]));
+const nameKeys = loadNameKeys();
+
 const keyOf = (name) => {
-  if (!nameKeys.has(name)) throw new Error(`No name key for ${JSON.stringify(name)}`);
-  return nameKeys.get(name);
+  const key = nameKeys.get(name);
+  if (typeof key !== 'string') throw new Error(`No name key for ${JSON.stringify(name)}`);
+  return key;
 };
 
 // ---------- Output: Toolio ----------
@@ -179,7 +166,7 @@ const toolioCoresOut = cores.map((row) => ({
   lifecycle_status: row.lifecycle_status,
   equipment_category_slug: row.equipment_category_slug,
   discovery_tags: row.discovery_tags,
-  discovery_tag_keys: (row.discovery_tags ?? []).filter((tag) => names.has(tag)).map(keyOf),
+  discovery_tag_keys: tagKeys(row.discovery_tags),
   use_cases: row.use_cases,
   description: row.description,
 }));
@@ -196,28 +183,21 @@ const toolioProjectsOut = toolioProjects.map((row) => ({
   parent_id: row.parent_id,
   catalog_parent_ids: (catalogParents.get(row.id) ?? []).map((link) => link.parent_project_id),
   discovery_tags: row.discovery_tags,
-  discovery_tag_keys: (row.discovery_tags ?? []).filter((tag) => names.has(tag)).map(keyOf),
+  discovery_tag_keys: tagKeys(row.discovery_tags),
   lines: projectLines(row.id),
 }));
 
 // ---------- Output: Project Partner families ----------
 
-const familyRoots = [...families.keys()];
-const latestIds = await mapWithConcurrency(familyRoots, 8, async (rootId) => {
-  const { data, error } = await pp.rpc('latest_published_in_family', { p_any_project_id: rootId });
-  if (error) throw new Error(`latest_published_in_family(${rootId}): ${error.message}`);
-  return data;
-});
-
-const ppFamiliesOut = familyRoots.map((rootId, i) => {
+const ppFamiliesOut = [...families.keys()].map((rootId) => {
   const members = families.get(rootId);
-  const root = ppProjectById.get(rootId);
-  if (!root) throw new Error(`Project Partner family ${rootId} has revisions but no root row in the archive`);
+  if (!ppProjectById.get(rootId)) throw new Error(`Project Partner family ${rootId} has revisions but no root row`);
+  if (!(rootId in latestPublished)) throw new Error(`pp-2-projects: no latest_published entry for family ${rootId}`);
   let current = null;
   let currentSource;
-  if (latestIds[i]) {
-    current = ppProjectById.get(latestIds[i]);
-    if (!current) throw new Error(`latest_published_in_family(${rootId}) returned ${latestIds[i]}, which is not in the archive`);
+  if (latestPublished[rootId]) {
+    current = ppProjectById.get(latestPublished[rootId]);
+    if (!current) throw new Error(`latest_published_in_family(${rootId}) returned ${latestPublished[rootId]}, which is not in the export`);
     currentSource = 'latest_published';
   } else {
     const drafts = members.filter((row) => row.publish_status === 'draft');
@@ -275,7 +255,7 @@ function libraryEntry(entity, row, variations) {
     description: row.description,
     alternates,
     alternate_keys: alternates.map(keyOf),
-    variations: variations.map((v) => ({ id: v.id, name: v.name, name_key: keyOf(v.name), sku: v.sku ?? null })),
+    variations: variations.map((v) => ({ id: v.id, name: v.name, name_key: keyOf(v.name), sku: v.sku })),
   };
 }
 
@@ -301,7 +281,7 @@ function resolveReference(ref) {
     if (entry) return { resolved_by: 'id', library_id: entry.id, library_entity: entry.entity };
     return { resolved_by: 'dangling_id', library_id: null, library_entity: null };
   }
-  if (!ref.name || !ref.name.trim()) return { resolved_by: 'none', library_id: null, library_entity: null };
+  if (!ref.name || !ref.name.trim()) return { resolved_by: 'unnamed', library_id: null, library_entity: null };
   const key = keyOf(ref.name);
   for (const [via, index] of Object.entries(byKey)) {
     const hits = [...(index.get(key)?.values() ?? [])].filter((e) => ref.kind === 'unknown' || e.entity === ref.kind);
@@ -314,7 +294,11 @@ function resolveReference(ref) {
 }
 
 const referencesOut = references.map((ref) => ({
-  ...ref,
+  source: ref.source,
+  kind: ref.kind,
+  name: ref.name,
+  stored_library_id: ref.library_id,
+  count: ref.count,
   name_key: ref.name && ref.name.trim() ? keyOf(ref.name) : null,
   ...resolveReference(ref),
 }));
@@ -322,7 +306,6 @@ const referencesOut = references.map((ref) => ({
 // ---------- Write ----------
 
 const outDir = join(dir, 'extract');
-writeJson(join(outDir, 'name_keys.json'), Object.fromEntries(nameKeys));
 writeJson(join(outDir, 'toolio_cores.json'), toolioCoresOut);
 writeJson(join(outDir, 'toolio_projects.json'), toolioProjectsOut);
 writeJson(join(outDir, 'pp_families.json'), ppFamiliesOut);
@@ -335,93 +318,60 @@ const summary = {
   toolio_projects: toolioProjectsOut.length,
   toolio_dangling_lines: danglingLines.length,
   pp_families: ppFamiliesOut.length,
+  pp_families_without_current_revision: ppFamiliesOut.filter((f) => f.current_source === 'none').length,
   pp_tools: tools.length,
   pp_materials: materials.length,
-  references_by_source: countBy(referencesOut, (r) => r.source),
-  references_by_resolution: countBy(referencesOut, (r) => r.resolved_by),
+  references_by_source: sumBy(referencesOut, (r) => r.source),
+  references_by_resolution: sumBy(referencesOut, (r) => r.resolved_by),
 };
 writeJson(join(outDir, 'summary.json'), summary);
 console.log(JSON.stringify(summary, null, 2));
 console.log(`Next: node scripts/vocab-merge/match.mjs --archive ${args.archive}`);
 
+// ---------- Name keys round trip ----------
+
+function loadNameKeys() {
+  const sqlPath = join(dir, `${NAME_KEYS_QUERY}.sql`);
+  if (payloadPath(dir, NAME_KEYS_QUERY)) {
+    const keys = readPayload(dir, NAME_KEYS_QUERY).keys;
+    if (!keys || typeof keys !== 'object') throw new Error(`${NAME_KEYS_QUERY}: no keys object`);
+    const missing = [...names].filter((name) => typeof keys[name] !== 'string');
+    if (missing.length === 0) return new Map(Object.entries(keys));
+    writeNameKeysSql(sqlPath);
+    console.error(`${NAME_KEYS_QUERY} is missing ${missing.length} names (first: ${JSON.stringify(missing[0])}).`);
+  } else {
+    writeNameKeysSql(sqlPath);
+  }
+  console.error(`Run ${sqlPath} in Toolio's SQL editor, save the payload as ${NAME_KEYS_QUERY}.json (or .csv) in ${dir}, then run extract again.`);
+  process.exit(2);
+}
+
+function writeNameKeysSql(path) {
+  const list = JSON.stringify([...names].sort());
+  const tag = '$vocab_names$';
+  if (list.includes(tag)) throw new Error(`A name contains ${tag}; pick another dollar-quote tag`);
+  const sql = [
+    '-- Vocab merge: Toolio name keys for every name in this export (read-only, generated by extract.mjs).',
+    `-- Run in Toolio's SQL editor (Lovable). Save the single payload cell as ${NAME_KEYS_QUERY}.json`,
+    `-- (or the downloaded result as ${NAME_KEYS_QUERY}.csv) in this export folder.`,
+    'SELECT jsonb_build_object(',
+    `  'query', '${NAME_KEYS_QUERY}',`,
+    "  'version', 1,",
+    "  'exported_at', now(),",
+    "  'keys', (",
+    '    SELECT jsonb_object_agg(n.name, public.inventory_item_name_comparison_key(n.name))',
+    `    FROM jsonb_array_elements_text(${tag}${list}${tag}::jsonb) AS n(name)`,
+    '  )',
+    ')::text AS payload;',
+    '',
+  ].join('\n');
+  writeFileSync(path, sql);
+}
+
 // ---------- Helpers ----------
 
-/**
- * Every tool or material reference outside the library tables. Step entries carry a per-entry
- * id (`tool-<time>-<random>`), not a library id, so they resolve by name; `parentId` points to
- * the primary entry the row substitutes for.
- */
-function collectReferences() {
-  const refs = [];
-  const fromEntries = (source, ownerId, kind, entries) => {
-    if (!Array.isArray(entries)) return;
-    for (const entry of entries) {
-      if (!entry || typeof entry !== 'object' || typeof entry.name !== 'string' || !entry.name.trim()) continue;
-      refs.push({
-        source,
-        owner_id: ownerId,
-        kind,
-        entry_id: entry.id ?? null,
-        parent_entry_id: entry.parentId ?? null,
-        name: entry.name,
-        library_id: entry.library_tool_id ?? entry.library_material_id ?? null,
-      });
-    }
-  };
-  const fromPhasesJson = (source, ownerId, phases) => {
-    if (!Array.isArray(phases)) return;
-    for (const phase of phases) {
-      for (const operation of phase?.operations ?? []) {
-        for (const step of operation?.steps ?? []) {
-          fromEntries(source, ownerId, 'tool', step?.tools);
-          fromEntries(source, ownerId, 'material', step?.materials);
-        }
-      }
-    }
-  };
-
-  for (const step of p('operation_steps')) {
-    fromEntries('operation_steps', step.id, 'tool', step.tools);
-    fromEntries('operation_steps', step.id, 'material', step.materials);
-  }
-  for (const project of ppProjects) fromPhasesJson('projects.phases', project.id, project.phases);
-  for (const run of p('project_runs')) {
-    fromPhasesJson('project_runs.phases', run.id, run.phases);
-    for (const item of run.shopping_checklist_data?.orderedItems ?? []) {
-      if (typeof item?.itemName !== 'string' || !item.itemName.trim()) continue;
-      refs.push({
-        source: 'project_runs.shopping_checklist_data',
-        owner_id: run.id,
-        kind: item.itemType ?? 'unknown',
-        entry_id: item.itemId ?? null,
-        parent_entry_id: null,
-        name: item.itemName,
-        library_id: null,
-      });
-    }
-  }
-  for (const profile of p('user_profiles')) {
-    for (const owned of Array.isArray(profile.owned_tools) ? profile.owned_tools : []) {
-      const name = owned?.name || owned?.item;
-      if (typeof name !== 'string' || !name.trim()) continue;
-      refs.push({
-        source: 'user_profiles.owned_tools',
-        owner_id: profile.user_id,
-        kind: 'tool',
-        entry_id: owned.id ?? null,
-        parent_entry_id: null,
-        name,
-        library_id: owned.tool_id ?? null,
-      });
-    }
-  }
-  for (const row of p('user_tools')) {
-    refs.push({ source: 'user_tools', owner_id: row.user_id, kind: 'tool', entry_id: row.id, parent_entry_id: null, name: row.name, library_id: row.tool_id });
-  }
-  for (const row of p('user_materials')) {
-    refs.push({ source: 'user_materials', owner_id: row.user_id, kind: 'material', entry_id: row.id, parent_entry_id: null, name: row.name, library_id: row.material_id });
-  }
-  return refs;
+function tagKeys(tags) {
+  return (tags ?? []).filter((tag) => typeof tag === 'string' && tag.trim()).map(keyOf);
 }
 
 /** Same parsing as the app's expandToolAlternateKeys: JSON array of names/objects, else one name. */
@@ -466,11 +416,11 @@ function indexBy(rows, keyFn) {
   return map;
 }
 
-function countBy(rows, keyFn) {
-  const counts = {};
+function sumBy(rows, keyFn) {
+  const totals = {};
   for (const row of rows) {
     const key = keyFn(row);
-    counts[key] = (counts[key] ?? 0) + 1;
+    totals[key] = (totals[key] ?? 0) + row.count;
   }
-  return counts;
+  return totals;
 }

@@ -77,46 +77,51 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 - Edge function `project-partner-link` with actions `sync`, `snapshot_reload`, `create_term`.
 - Details: Toolio `docs/PROJECT_PARTNER_INTEGRATION.md`.
 
+## How changes reach the databases
+
+Both apps work the same way: nothing in this integration connects to a database with keys or a database URL.
+
+- **Schema and data changes** are migration files in each repo's `supabase/migrations/`, one per repo per phase, applied by hand: Toolio's in Lovable's SQL editor, Project Partner's in Supabase's SQL editor.
+- **Reads** are read-only queries in `scripts/vocab-merge/sql/`, also run by hand in the same editors. Each returns one `payload` cell of JSON that carries its own row counts, so a truncated copy fails validation.
+- **Generated queries** (such as Toolio name keys) are written by the scripts into the export folder and run the same way.
+- **Restore points** come from each platform's own backups. Toolio's link work only adds tables and columns, so it never needs a restore. Project Partner's phase 3 load needs a restorable backup taken just before it (Supabase dashboard backup or `pg_dump`).
+
 ## Merge scripts: `scripts/vocab-merge/`
 
-| Script | Step | Output |
+| File | Step | Run where |
 | --- | --- | --- |
-| `export.mjs` | 0: archive both databases | `<archive>/<timestamp>/` with `manifest.json`, per-table JSON (rows plus a hash per row), and `pg_dump` files |
-| `extract.mjs` | 1: matching views | `extract/*.json`: Toolio cores and project line lists, Project Partner families, library, and every reference with how it resolves |
-| `match.mjs` | 2: draft crosswalk | `vocab-crosswalk.csv` and `match_summary.json` |
-| `verify.mjs` | 6: accounting | PASS/FAIL per check; exit code 1 on any failure |
-
-### Environment
-
-| Variable | Used by |
-| --- | --- |
-| `TOOLIO_SUPABASE_URL`, `TOOLIO_PUBLISHABLE_KEY`, `TOOLIO_ACCESS_TOKEN` | export, extract, verify |
-| `PP_SUPABASE_URL`, `PP_SERVICE_ROLE_KEY` | export, extract |
-| `PP_DB_URL` (and `pg_dump` on PATH) | export, unless `--skip-dump pp` |
-| `TOOLIO_DB_URL` | export, unless `--skip-dump toolio` |
-| `VOCAB_MERGE_ARCHIVE_DIR` | all; an absolute path outside every git work tree (the archive holds production user data) |
-
-- Toolio runs on Lovable Cloud, which exposes no service-role key or database URL. Scripts read Toolio with a signed-in admin's access token (`TOOLIO_ACCESS_TOKEN`, about one hour of validity), so row security applies. Export therefore also requires `--toolio-counts`: the true row counts from the `--print-toolio-count-sql` query, run in Toolio's SQL editor just before the export. A mismatch fails the export.
-- Toolio has no `pg_dump`; its restore record is the JSON archive. Toolio's link work is additive (new tables, new columns, backfill), so rolling it back never needs a database restore.
-
-Never commit keys, tokens, or the archive.
+| `sql/toolio-1-catalog.sql` | 0: Toolio catalog, projects, guided wiring | Toolio SQL editor (Lovable) |
+| `sql/toolio-2-checks.sql` | 0: Toolio content fingerprints, row counts, unresolved past-order references | Toolio SQL editor (Lovable) |
+| `sql/pp-1-library.sql` | 0: tools, materials, variations | Project Partner SQL editor (Supabase) |
+| `sql/pp-2-projects.sql` | 0: projects and each family's current revision | Project Partner SQL editor (Supabase) |
+| `sql/pp-3-references.sql` | 0: every tool and material reference, grouped with counts | Project Partner SQL editor (Supabase) |
+| `validate-export.mjs` | 0: checks the saved results, writes `manifest.json` | Terminal |
+| `extract.mjs` | 1: matching views in `extract/*.json`; generates `toolio-3-name-keys.sql` | Terminal |
+| `match.mjs` | 2: `vocab-crosswalk.csv` and `match_summary.json` | Terminal |
+| `verify.mjs` | 6: PASS/FAIL per check; exit code 1 on any failure | Terminal |
 
 ### Running
 
+1. Create an export folder under `VOCAB_MERGE_ARCHIVE_DIR` (an absolute path outside every git work tree; the export holds production user data). Never commit it.
+2. Run the five queries in `sql/` and save each `payload` cell as `<query name>.json` in the folder. The editor's CSV download saved as `<query name>.csv` also works. Run them close together; validation prints the time spread.
+3. In the terminal:
+
 ```
-node scripts/vocab-merge/export.mjs --print-toolio-count-sql   # SQL to run in Toolio's SQL editor
-node scripts/vocab-merge/export.mjs --dry-run                  # live row counts only
-node scripts/vocab-merge/export.mjs --toolio-counts <file> --skip-dump toolio
+$env:VOCAB_MERGE_ARCHIVE_DIR = "C:\vocab-merge-archive"
+node scripts/vocab-merge/validate-export.mjs --archive <folder>
+node scripts/vocab-merge/extract.mjs --archive <folder>      # first run writes toolio-3-name-keys.sql and stops
+#   run <folder>\toolio-3-name-keys.sql in Toolio's SQL editor, save it as toolio-3-name-keys.json
 node scripts/vocab-merge/extract.mjs --archive <folder>
 node scripts/vocab-merge/match.mjs --archive <folder> [--carry <reviewed crosswalk.csv>]
-node scripts/vocab-merge/verify.mjs --archive <folder> [--check archive|toolio-content|toolio-orders]
+node scripts/vocab-merge/verify.mjs --archive <baseline folder> [--against <later folder>]
 ```
 
-- Export fails if a table's row count changes while it is read, or if a Toolio count differs from `--toolio-counts`; re-run the count query and the export.
-- Name keys come from Toolio's `inventory_item_name_comparison_key` RPC for both apps' names, so there is one normalization rule.
-- A family's current revision comes from Project Partner's `latest_published_in_family` RPC, else its newest draft. A family with neither is flagged `NO CURRENT REVISION` for review.
+- The scripts need only Node; no packages, keys, or tokens.
+- Name keys come from Toolio's `inventory_item_name_comparison_key` for both apps' names, so there is one normalization rule.
+- A family's current revision comes from Project Partner's `latest_published_in_family`, else its newest draft. A family with neither is flagged `NO CURRENT REVISION` for review.
+- `pp-3-references` groups references by source, kind, name, and stored library id. Entries with neither a name nor a stored id are counted as `unnamed` and reported in the match summary.
 - A Toolio project's line list follows the guided wiring: sections on the content foundation, standard section link stubs, composite members, and visibility overrides. Lines whose inventory item no longer exists are written to `extract/toolio_dangling_lines.json` and must be repaired in Toolio before the load.
-- `verify.mjs` currently checks the archive, unchanged Toolio content, and past-order resolution. The fate accounting, reference, mirror, and link-status checks are added in phases 3 and 4 along with the tables they read.
+- `verify.mjs` checks that saved results are unchanged since validation, and, given a later export with `--against`, that no archived Toolio content row was removed or changed and no past-order reference stopped resolving. The fate accounting, reference, mirror, and link-status checks are added in phases 3 and 4 with the tables they read; their queries go in `sql/` like the others.
 
 ## Crosswalk format
 
