@@ -8,11 +8,11 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 };
 
 async function resolveUserId(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   customerId: string,
   email: string | null | undefined,
 ): Promise<string | null> {
-  const { data: byCustomer } = await (supabase as any)
+  const { data: byCustomer } = await supabase
     .from("stripe_subscriptions")
     .select("user_id")
     .eq("stripe_customer_id", customerId)
@@ -39,11 +39,11 @@ async function resolveUserId(
 }
 
 async function setMemberRoles(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   isMember: boolean,
 ) {
-  const { data: profile } = await (supabase as any)
+  const { data: profile } = await supabase
     .from("user_profiles")
     .select("roles")
     .eq("user_id", userId)
@@ -60,7 +60,7 @@ async function setMemberRoles(
 }
 
 async function applyActiveSubscription(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   subscription: Stripe.Subscription,
   customerId: string,
@@ -101,7 +101,7 @@ async function applyActiveSubscription(
 }
 
 async function applyCanceledSubscription(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   subscription: Stripe.Subscription,
   customerId: string,
