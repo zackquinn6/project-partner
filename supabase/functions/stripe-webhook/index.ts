@@ -12,7 +12,7 @@ async function resolveUserId(
   customerId: string,
   email: string | null | undefined,
 ): Promise<string | null> {
-  const { data: byCustomer } = await supabase
+  const { data: byCustomer } = await (supabase as any)
     .from("stripe_subscriptions")
     .select("user_id")
     .eq("stripe_customer_id", customerId)
