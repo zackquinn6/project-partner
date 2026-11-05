@@ -109,7 +109,7 @@ Deno.serve(async (req) => {
     .from('template_operations')
     .select(`
       id,
-      operation_name,  // Changed from name
+      operation_name,
       project_phases!inner(is_standard)
     `)
     .eq('project_id', standardProjectId)
@@ -145,7 +145,7 @@ Deno.serve(async (req) => {
           .from('template_operations')
           .select(`
             id,
-            operation_name,  // Changed from name
+            operation_name,
             project_phases!inner(is_standard, name)
           `)
           .eq('project_id', standardProjectId)

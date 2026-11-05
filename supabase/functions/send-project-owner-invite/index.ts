@@ -139,7 +139,7 @@ serve(async (req) => {
       JSON.stringify({ ok: true, email_sent: !!RESEND_API_KEY }),
       { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     )
-  } catch (error) {
+  } catch (error: any) {
     console.error('send-project-owner-invite:', error)
     const status =
       error.message === 'Missing authorization header' || error.message === 'Invalid or expired token'

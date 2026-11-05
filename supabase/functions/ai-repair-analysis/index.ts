@@ -55,7 +55,7 @@ function validateBase64Image(base64String: string): { valid: boolean; error?: st
     }
 
     return { valid: true };
-  } catch (error) {
+  } catch (error: any) {
     return { valid: false, error: 'Failed to validate image format' };
   }
 }
@@ -67,7 +67,7 @@ async function logAuditEvent(userId: string, photosCount: number, success: boole
   try {
     // Log to console for edge function logs
     console.log(`AI Repair Analysis Request: user=${userId}, photos=${photosCount}, success=${success}, timestamp=${new Date().toISOString()}`);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Failed to log audit event:', error);
   }
 }
@@ -258,7 +258,7 @@ Please analyze these home repair photos. ${sanitizedDescription ? `Additional co
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in ai-repair-analysis function:', error);
     
     const statusCode = error.message?.includes('authorization') || error.message?.includes('token') ? 401 : 500;

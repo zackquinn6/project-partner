@@ -477,7 +477,7 @@ OTHERS GOT STUCK HERE (counts): ${stuckHint || "none yet"}
 });
 
 async function persistAndRespond(args: {
-  admin: ReturnType<typeof createClient>;
+  admin: any;
   userId: string;
   threadId: string;
   message: string;

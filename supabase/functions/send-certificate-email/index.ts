@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.39.3";
 import { verifyAuth } from "../_shared/auth.ts";
 import { escapeHtml } from "../_shared/validation.ts";
@@ -171,7 +171,7 @@ const handler = async (req: Request): Promise<Response> => {
           filename: `${(projectName || 'project').replace(/[^a-z0-9]/gi, '_').slice(0, 80)}-certificate.png`,
           content: imageData,
           content_id: 'certificate',
-        }
+        } as any
       ]
     });
 

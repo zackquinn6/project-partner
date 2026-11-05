@@ -8,7 +8,7 @@ const logStep = (step: string, details?: Record<string, unknown>) => {
 };
 
 async function resolveUserId(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   customerId: string,
   email: string | null | undefined,
 ): Promise<string | null> {
@@ -33,13 +33,13 @@ async function resolveUserId(
     return null;
   }
   const match = users.users.find(
-    (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    (u: any) => u.email?.toLowerCase() === email.toLowerCase(),
   );
   return match?.id ?? null;
 }
 
 async function setMemberRoles(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   isMember: boolean,
 ) {
@@ -60,7 +60,7 @@ async function setMemberRoles(
 }
 
 async function applyActiveSubscription(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   subscription: Stripe.Subscription,
   customerId: string,
@@ -101,7 +101,7 @@ async function applyActiveSubscription(
 }
 
 async function applyCanceledSubscription(
-  supabase: ReturnType<typeof createClient>,
+  supabase: any,
   userId: string,
   subscription: Stripe.Subscription,
   customerId: string,
