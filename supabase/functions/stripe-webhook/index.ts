@@ -43,7 +43,7 @@ async function setMemberRoles(
   userId: string,
   isMember: boolean,
 ) {
-  const { data: profile } = await supabase
+  const { data: profile } = await (supabase as any)
     .from("user_profiles")
     .select("roles")
     .eq("user_id", userId)
