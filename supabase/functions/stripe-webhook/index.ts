@@ -33,7 +33,7 @@ async function resolveUserId(
     return null;
   }
   const match = users.users.find(
-    (u) => u.email?.toLowerCase() === email.toLowerCase(),
+    (u: any) => u.email?.toLowerCase() === email.toLowerCase(),
   );
   return match?.id ?? null;
 }
