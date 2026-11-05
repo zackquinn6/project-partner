@@ -113,7 +113,7 @@ Deno.serve(async (req) => {
               zillowUrl: data.url || zillowSearchUrl,
             });
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('Error parsing JSON-LD:', e);
         }
       }
@@ -152,7 +152,7 @@ Deno.serve(async (req) => {
               });
             }
           }
-        } catch (e) {
+        } catch (e: any) {
           console.error('Error parsing search results data:', e);
         }
       }
@@ -184,7 +184,7 @@ Deno.serve(async (req) => {
                 zillowUrl: urlMatch ? `https://www.zillow.com${urlMatch[1]}` : zillowSearchUrl,
               });
             }
-          } catch (e) {
+          } catch (e: any) {
             console.error('Error parsing property card:', e);
           }
         }
@@ -213,7 +213,7 @@ Deno.serve(async (req) => {
       }
     );
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in scrape-zillow-data:', error);
     
     return new Response(
