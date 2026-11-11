@@ -77,6 +77,11 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 - Match by `name`; insert when absent with every NOT NULL / constrained column filled (`tools.category` ∈ `PPE` / `Hand Tool` / `Power Tool` / `Other`; `materials.category` ∈ `Components` / `Consumables` / `PPE`).
 - Write generic library copy (`description`, `unit`, `unit_size`, `alternates`) that reads correctly for any project, then keep project-specific quantities and coverage in the step JSON.
 - Resolve library ids after bootstrap or **RAISE**. No orphan JSON with invented ids.
+- **Shared with Toolio.** Tools, materials, project families (root `projects`), and `project_categories` are shared items with Toolio (`docs/PROJECT_PARTNER_INTEGRATION.md`):
+  - Match by `public.vocab_name_key(name)`, not exact `name`; a unique index enforces one row per name key.
+  - Never set or change `public_key`; a trigger assigns it from the name on insert and rejects changes.
+  - Renames are fine and reach Toolio on its next sync.
+  - Never `DELETE` a shared item (a trigger blocks it). Removal is a request (`vocab_request_removal`) that Toolio must also approve.
 
 ### H.5 Deliverable
 
@@ -608,7 +613,7 @@ Catalog + step JSON; bootstrap by `name`; **RAISE** if unresolved.
 
 #### `operation_steps.tools` JSON (app shape)
 
-Prefer library-backed refs: `id` / `name`, `description`, `category`, `alternates`, optional `quantity`, `purpose`, `linkedContentSectionIds` (show tool only when linked instruction sections are visible).
+Every entry: `id` (per-entry, `tool-<time>-<random>`), `name`, `library_id` (the `tools.id`; required, ownership matching uses it), `description`, `category`, `alternates`, optional `quantity`, `purpose`, `linkedContentSectionIds` (show tool only when linked instruction sections are visible). Materials use `library_id` = `materials.id` the same way.
 
 **Substitutes are child rows, not text.** `CompactToolsTable` renders a row carrying `parentId` (the id of the primary row it can replace) as an indented alternate, and it only falls back to the `alternates` string list when the primary has no child rows. Author the library-backed substitute as its own row with `parentId`, and keep `tools.alternates` in the catalog for substitutes that are guidance rather than a specific item.
 
@@ -878,6 +883,7 @@ Living changelog for **guide and planning-standard rule changes only**. Append a
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-11-11 | §H.4: tools, materials, project families, and categories are shared items with Toolio (match by `vocab_name_key`, never set `public_key`, never `DELETE`; removal is a two-sided request). Step 5/6 entries carry `library_id` | Project Partner and Toolio link: shared keys, delete guard, and the step entry shape from the phase 3 load |
 | 2026-09-24 | Revision history + `.cursor/rules/ai-project-dev-guide.mdc` continuous improvement: update the guide only when durable rules/fields change; do not append history for ordinary catalog content or project build-out migrations | Using the guide to create content was incorrectly treated as a guide update |
 | 2026-09-24 | Planning standard v1.5.0: quality-control-placement rule + Quality Control Methods catalog; Step 1/3 authoring: nest in-process QC in value-add ops; distinct QC ops/phases only for scheduled hold/soak/flood/pressure gates; `outputs.qualityChecks` must name the method on QC steps | Admin guidance: tile Prep/Install checks stay in-process; shower flood test is a rare distinct control |
 | 2026-09-22 | Tile Flooring owned Prepare subfloor: substrate assessment must be a shared prime operation before alternate underlayment paths; inspect/error-recovery gates Self-Leveler Application and Subfloor Replacement without teaching those methods; layout requires dye-lot shuffle + EJ171 planning; set keeps movement joints free of thinset; cut steps get anti-requirement PFMEA | Live audit vs TCNA/ANSI/EJ171 found Clean and inspect only on the membrane alternate, so the backer path skipped substrate assessment |
