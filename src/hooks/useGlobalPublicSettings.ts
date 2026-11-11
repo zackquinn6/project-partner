@@ -6,6 +6,7 @@ const KEYS = [
   'project_catalog_enabled',
   'workshop_labs_accordion_enabled',
   'tile_focus_mode',
+  'toolio_sign_in_enabled',
 ] as const;
 
 type GlobalPublicSettings = {
@@ -13,6 +14,7 @@ type GlobalPublicSettings = {
   projectCatalogEnabled: boolean;
   workshopLabsAccordionEnabled: boolean;
   tileFocusMode: boolean;
+  toolioSignInEnabled: boolean;
 };
 
 const DEFAULTS: GlobalPublicSettings = {
@@ -20,6 +22,7 @@ const DEFAULTS: GlobalPublicSettings = {
   projectCatalogEnabled: true,
   workshopLabsAccordionEnabled: true,
   tileFocusMode: false,
+  toolioSignInEnabled: false,
 };
 
 /** Survives remounts so consumers (e.g. ProjectCatalog after the page gate) don't flash wrong filters. */
@@ -44,6 +47,9 @@ function parseSettingsRows(
     if (row.setting_key === 'tile_focus_mode') {
       next.tileFocusMode = enabled;
     }
+    if (row.setting_key === 'toolio_sign_in_enabled') {
+      next.toolioSignInEnabled = enabled;
+    }
   }
   return next;
 }
@@ -61,6 +67,9 @@ export function useGlobalPublicSettings() {
   const [tileFocusMode, setTileFocusMode] = useState(
     () => settingsCache?.tileFocusMode ?? DEFAULTS.tileFocusMode
   );
+  const [toolioSignInEnabled, setToolioSignInEnabled] = useState(
+    () => settingsCache?.toolioSignInEnabled ?? DEFAULTS.toolioSignInEnabled
+  );
   const [loading, setLoading] = useState(() => settingsCache === null);
 
   const applySettings = useCallback((next: GlobalPublicSettings) => {
@@ -69,6 +78,7 @@ export function useGlobalPublicSettings() {
     setProjectCatalogEnabled(next.projectCatalogEnabled);
     setWorkshopLabsAccordionEnabled(next.workshopLabsAccordionEnabled);
     setTileFocusMode(next.tileFocusMode);
+    setToolioSignInEnabled(next.toolioSignInEnabled);
   }, []);
 
   const load = useCallback(async () => {
@@ -125,6 +135,7 @@ export function useGlobalPublicSettings() {
     projectCatalogEnabled,
     workshopLabsAccordionEnabled,
     tileFocusMode,
+    toolioSignInEnabled,
     loading,
     refetch: load,
   };

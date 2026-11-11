@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, type Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sanitizeInput } from '@/utils/inputSanitization';
 import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
@@ -15,11 +15,20 @@ interface AuthContextType {
   signUp: (email: string, password: string, guestData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
+  signInWithToolio: () => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+/**
+ * Supabase custom OIDC provider backed by Toolio's OAuth server. supabase-js 2.55's `Provider`
+ * union predates `custom:` identifiers; the client passes the string through to /authorize unchanged.
+ */
+const TOOLIO_PROVIDER = 'custom:toolio' as Provider;
+/** Set before the Toolio redirect so the return trip can be logged as a success or failure. */
+const TOOLIO_SIGN_IN_PENDING_KEY = 'pp_toolio_sign_in_pending';
 
 export const useAuth = () => {
   const context = useContext(AuthContext);
@@ -47,10 +56,25 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, nextSession) => {
+      (event, nextSession) => {
         applySession(nextSession);
+        if (event === 'SIGNED_IN' && nextSession && sessionStorage.getItem(TOOLIO_SIGN_IN_PENDING_KEY)) {
+          sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+          void logAuthenticationEvent(nextSession.user.email ?? nextSession.user.id, true, 'toolio_oauth', {
+            linked_providers: nextSession.user.app_metadata?.providers ?? [],
+          });
+        }
       }
     );
+
+    if (sessionStorage.getItem(TOOLIO_SIGN_IN_PENDING_KEY)) {
+      const returned = new URLSearchParams(`${window.location.search.slice(1)}&${window.location.hash.slice(1)}`);
+      const oauthError = returned.get('error_description') ?? returned.get('error');
+      if (oauthError) {
+        sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+        void logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: oauthError });
+      }
+    }
 
     // Preview iframes / tracking prevention can fail token refresh with "Failed to fetch".
     // Never leave the app stuck waiting on auth initialization.
@@ -262,6 +286,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /** Signs in through Toolio; an existing account with the same verified email is linked, not duplicated. */
+  const signInWithToolio = async (): Promise<{ error: { message: string } | null }> => {
+    sessionStorage.setItem(TOOLIO_SIGN_IN_PENDING_KEY, String(Date.now()));
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: TOOLIO_PROVIDER,
+      options: { redirectTo: `${window.location.origin}/` },
+    });
+    if (error) {
+      sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+      await logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: error.message });
+      return { error: { message: error.message } };
+    }
+    return { error: null };
+  };
+
   const signOut = async () => {
     if (signingOut) return; // Prevent multiple sign out attempts
     
@@ -294,6 +333,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     signUp,
     signIn,
     signInWithGoogle,
+    signInWithToolio,
     signOut,
     continueAsGuest,
   };

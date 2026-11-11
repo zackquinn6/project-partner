@@ -13,6 +13,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { Loader2, ArrowLeft, AlertCircle, User } from 'lucide-react';
 import { useGuest } from '@/contexts/GuestContext';
 import { useMarketingCopy } from '@/hooks/useMarketingCopy';
+import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { ProjectPartnerLogo } from '@/components/ProjectPartnerLogo';
 import { toast } from 'sonner';
 
@@ -51,9 +52,11 @@ export default function Auth() {
     signIn,
     signUp,
     signInWithGoogle,
+    signInWithToolio,
     continueAsGuest,
     loading
   } = useAuth();
+  const { toolioSignInEnabled } = useGlobalPublicSettings();
   const { validateAndSanitize, startFormTracking, trackFormSubmission, commonRules } = useSecureInput();
   const { guestData, transferGuestDataToUser } = useGuest();
   const { auth: authCopy } = useMarketingCopy();
@@ -325,6 +328,16 @@ export default function Auth() {
     }
     setIsLoading(false);
   };
+  const handleToolioSignIn = async () => {
+    setIsLoading(true);
+    setError(null);
+    const { error: toolioError } = await signInWithToolio();
+    if (toolioError) {
+      setError(toolioError.message);
+      setIsLoading(false);
+    }
+  };
+
   const handleGoogleSignIn = async () => {
     // Google provider is not configured, show error dialog
     setShowGoogleErrorDialog(true);
@@ -384,6 +397,22 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
+          {toolioSignInEnabled ? (
+            <div className="mb-6">
+              <Button type="button" className="w-full" onClick={handleToolioSignIn} disabled={isLoading}>
+                {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Continue with Toolio
+              </Button>
+              <div className="relative mt-6">
+                <div className="absolute inset-0 flex items-center">
+                  <span className="w-full border-t" />
+                </div>
+                <div className="relative flex justify-center text-xs uppercase">
+                  <span className="bg-background px-2 text-muted-foreground">Or use email</span>
+                </div>
+              </div>
+            </div>
+          ) : null}
           <Tabs value={isSignUp ? "signup" : "signin"} onValueChange={value => {
           const newMode = value === 'signup' ? 'signup' : 'signin';
           setIsSignUp(value === 'signup');
