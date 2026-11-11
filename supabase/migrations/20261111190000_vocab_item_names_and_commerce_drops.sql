@@ -1,5 +1,6 @@
 -- Removal requests keep the human name of the item (and its replacement) so a request still reads
 -- correctly after the item is removed. Shared-vocabulary messages say "item" instead of "term".
+-- Phase 6 contract step: drop materials.is_rental_available, which nothing reads (Toolio owns rental).
 -- Re-runnable; apply in one run.
 
 BEGIN;
@@ -190,5 +191,7 @@ BEGIN
   RETURN v_proposal;
 END;
 $$;
+
+ALTER TABLE public.materials DROP COLUMN IF EXISTS is_rental_available;
 
 COMMIT;

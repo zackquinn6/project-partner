@@ -1871,7 +1871,6 @@ export type Database = {
           created_by: string | null
           description: string | null
           id: string
-          is_rental_available: boolean | null
           name: string
           name_key: string
           notes: string | null
@@ -1890,7 +1889,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_rental_available?: boolean | null
           name: string
           name_key: string
           notes?: string | null
@@ -1909,7 +1907,6 @@ export type Database = {
           created_by?: string | null
           description?: string | null
           id?: string
-          is_rental_available?: boolean | null
           name?: string
           name_key?: string
           notes?: string | null

@@ -1,4 +1,4 @@
--- Checks for 20261111190000_vocab_request_item_names.sql, run on the local stand-in after phase 5.
+-- Checks for 20261111190000_vocab_item_names_and_commerce_drops.sql, run on the local stand-in after phase 5.
 CREATE TEMP TABLE _check (n serial, result text);
 
 DO $$
