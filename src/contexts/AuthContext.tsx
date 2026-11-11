@@ -1,8 +1,7 @@
 import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session, type Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { sanitizeInput } from '@/utils/inputSanitization';
-import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSecurityLogger';
+import { logAuthenticationEvent } from '@/utils/enhancedSecurityLogger';
 import { cleanupSessionData } from '@/utils/sessionSecurity';
 import { useGuest } from './GuestContext';
 import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
@@ -12,12 +11,8 @@ interface AuthContextType {
   session: Session | null;
   loading: boolean;
   signingOut: boolean;
-  signUp: (email: string, password: string, guestData?: any) => Promise<{ error: any }>;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signInWithGoogle: () => Promise<{ error: any }>;
   signInWithToolio: (redirectTo: string) => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
-  continueAsGuest: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -55,7 +50,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
-  const { setGuestMode, transferGuestDataToUser, guestData } = useGuest();
+  const { transferGuestDataToUser, guestData } = useGuest();
   const guestRunsRef = useRef(guestData.projectRuns);
   guestRunsRef.current = guestData.projectRuns;
 
@@ -145,173 +140,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     });
   }, [user?.id, loading]);
 
-  const signUp = async (email: string, password: string, guestData?: any) => {
-    // Sanitize inputs
-    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
-    
-    const explicitRedirect = import.meta.env.VITE_AUTH_EMAIL_REDIRECT_URL;
-    const redirectUrl =
-      typeof explicitRedirect === 'string' && explicitRedirect.trim() !== ''
-        ? explicitRedirect.trim()
-        : `${window.location.origin}/auth`;
-
-    const { error } = await supabase.auth.signUp({
-      email: sanitizedEmail,
-      password,
-      options: {
-        emailRedirectTo: redirectUrl,
-      },
-    });
-
-    // Log sign-up attempt
-    await logAuthenticationEvent(sanitizedEmail, !error, 'email_signup', {
-      redirectUrl,
-      timestamp: Date.now()
-    });
-
-    if (error) {
-      await logSecurityViolation(
-        'signup_failed',
-        `Sign-up failed for ${sanitizedEmail}: ${error.message}`,
-        'medium',
-        { email: sanitizedEmail, errorCode: error.message }
-      );
-    } else if (guestData) {
-      // Transfer guest data after successful signup
-      try {
-        const user = (await supabase.auth.getUser()).data.user;
-        if (user && guestData.projectRuns?.length > 0) {
-          await insertGuestProjectRuns(user.id, guestData.projectRuns);
-        }
-      } catch (transferError) {
-        console.error('Failed to transfer guest data:', transferError);
-      }
-    }
-
-    return { error };
-  };
-
-  const signIn = async (email: string, password: string) => {
-    // Sanitize inputs
-    const sanitizedEmail = sanitizeInput(email.trim().toLowerCase());
-    const LOGIN_TIMEOUT_MS = 8000;
-    const LOGIN_TIMEOUT_MESSAGE = 'Login failed. Try again later.';
-
-    const runSignIn = async (): Promise<{ error: any }> => {
-      // Primary path: server rate-limit gate. Deny on explicit allowed=false or transport failure.
-      const { data: rateLimitResult, error: rateLimitError } = await supabase.functions.invoke('auth-rate-limit', {
-        body: {
-          email: sanitizedEmail,
-          action: 'check',
-        },
-      });
-
-      if (rateLimitError || rateLimitResult?.allowed === false) {
-        await logSecurityViolation(
-          'rate_limit_exceeded',
-          `Authentication rate limit exceeded for ${sanitizedEmail}`,
-          'medium',
-          { email: sanitizedEmail }
-        );
-        return { error: { message: 'Too many login attempts. Please try again later.' } };
-      }
-
-      const { error } = await supabase.auth.signInWithPassword({
-        email: sanitizedEmail,
-        password,
-      });
-
-      // Log authentication attempt
-      await logAuthenticationEvent(sanitizedEmail, !error, 'email', {
-        timestamp: Date.now()
-      });
-      
-      // Log failed login attempts on server
-      if (error) {
-        await supabase.functions.invoke('auth-rate-limit', {
-          body: {
-            email: sanitizedEmail,
-            action: 'record_failure',
-            user_agent: navigator.userAgent
-          }
-        });
-
-        await logSecurityViolation(
-          'authentication_failed',
-          `Failed login attempt for ${sanitizedEmail}: ${error.message}`,
-          'medium',
-          { email: sanitizedEmail, errorCode: error.message }
-        );
-      }
-      
-      return { error };
-    };
-
-    let timeoutId: ReturnType<typeof setTimeout> | undefined;
-    try {
-      return await Promise.race([
-        runSignIn(),
-        new Promise<{ error: { message: string } }>((resolve) => {
-          timeoutId = setTimeout(() => {
-            resolve({ error: { message: LOGIN_TIMEOUT_MESSAGE } });
-          }, LOGIN_TIMEOUT_MS);
-        }),
-      ]);
-    } finally {
-      if (timeoutId !== undefined) {
-        clearTimeout(timeoutId);
-      }
-    }
-  };
-
-  const signInWithGoogle = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/`
-        }
-      });
-
-      // Log OAuth attempt
-      await logAuthenticationEvent('google_oauth', !error, 'google', {
-        redirectTo: `${window.location.origin}/`,
-        timestamp: Date.now()
-      });
-      
-      if (error) {
-        await logSecurityViolation(
-          'oauth_failed',
-          `Google OAuth authentication failed: ${error.message}`,
-          'medium',
-          { provider: 'google', errorCode: error.message }
-        );
-
-        // Show user-friendly error message and recommend direct signup
-        const userFriendlyError = { 
-          message: 'Google sign-up is currently experiencing issues. Please try signing up directly with your email and password instead.' 
-        };
-        return { error: userFriendlyError };
-      }
-      
-      return { error };
-    } catch (err) {
-      await logSecurityViolation(
-        'oauth_error',
-        `Google OAuth unexpected error: ${err}`,
-        'medium',
-        { provider: 'google', error: String(err) }
-      );
-
-      // Fallback error for any unexpected issues
-      return { 
-        error: { 
-          message: 'Google sign-up is currently experiencing issues. Please try signing up directly with your email and password instead.' 
-        } 
-      };
-    }
-  };
-
   /** Signs in through Toolio; an existing account with the same verified email is linked, not duplicated. */
   const signInWithToolio = async (redirectTo: string): Promise<{ error: { message: string } | null }> => {
     sessionStorage.setItem(TOOLIO_SIGN_IN_PENDING_KEY, String(Date.now()));
@@ -346,22 +174,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const continueAsGuest = () => {
-    setGuestMode(true);
-    setLoading(false);
-  };
-
   const value = {
     user,
     session,
     loading,
     signingOut,
-    signUp,
-    signIn,
-    signInWithGoogle,
     signInWithToolio,
     signOut,
-    continueAsGuest,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -18,11 +18,9 @@ export const PublicSiteSettingsCard: React.FC = () => {
     projectCatalogEnabled,
     workshopLabsAccordionEnabled,
     tileFocusMode,
-    toolioSignInEnabled,
     loading,
     refetch,
   } = useGlobalPublicSettings();
-  const [updatingToolio, setUpdatingToolio] = useState(false);
   const [updatingSimplified, setUpdatingSimplified] = useState(false);
   const [updatingCatalog, setUpdatingCatalog] = useState(false);
   const [updatingLabs, setUpdatingLabs] = useState(false);
@@ -33,8 +31,7 @@ export const PublicSiteSettingsCard: React.FC = () => {
       | 'simplified_public_landing'
       | 'project_catalog_enabled'
       | 'workshop_labs_accordion_enabled'
-      | 'tile_focus_mode'
-      | 'toolio_sign_in_enabled',
+      | 'tile_focus_mode',
     enabled: boolean,
     setBusy: (v: boolean) => void
   ) => {
@@ -59,9 +56,7 @@ export const PublicSiteSettingsCard: React.FC = () => {
             ? 'Project catalog'
             : settingKey === 'tile_focus_mode'
               ? 'Tile focus mode'
-              : settingKey === 'toolio_sign_in_enabled'
-                ? 'Sign in with Toolio'
-                : 'Workshop Labs accordion';
+              : 'Workshop Labs accordion';
       toast.success(`${label} ${enabled ? 'enabled' : 'disabled'}`);
     } catch (err) {
       console.error('Error updating public site setting:', err);
@@ -152,26 +147,7 @@ export const PublicSiteSettingsCard: React.FC = () => {
             }
             disabled={loading || updatingTileFocus}
           />
-        </div>
-
-        <div className="flex items-center justify-between gap-4">
-          <Label htmlFor="toolio-sign-in" className="flex-1">
-            <div className="font-medium">Sign in with Toolio</div>
-            <div className="text-sm text-muted-foreground">
-              Shows Continue with Toolio on the sign-in page. A Toolio account with the same email
-              opens the existing Project Partner account.
-            </div>
-          </Label>
-          <Switch
-            id="toolio-sign-in"
-            checked={toolioSignInEnabled}
-            onCheckedChange={(checked) =>
-              updateSetting('toolio_sign_in_enabled', checked, setUpdatingToolio)
-            }
-            disabled={loading || updatingToolio}
-          />
-        </div>
-      </CardContent>
+        </div>      </CardContent>
     </Card>
   );
 };
