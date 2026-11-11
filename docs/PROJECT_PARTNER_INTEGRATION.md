@@ -144,6 +144,16 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 - Edge function `project-partner-link` with actions `sync`, `refresh_proposals`, `release_term`, `decide_removal`, `cancel_removal`, `snapshot_reload`.
 - Details: Toolio `docs/PROJECT_PARTNER_INTEGRATION.md`.
 
+## Shared login
+
+Toolio is the identity provider for Project Partner; each app keeps its own profile and data, and Project Partner's Stripe membership stays here.
+
+- **Provider:** Supabase custom OIDC provider `custom:toolio` (Auth → Providers), with the issuer `https://yscicarelzxjidhlxstv.supabase.co/auth/v1` and the client ID and secret from Toolio's OAuth server. supabase-js 2.55's `Provider` type predates `custom:` identifiers, so `AuthContext` asserts the type; the client passes the name through to `/authorize` unchanged.
+- **Linking:** Supabase links a Toolio sign-in to the existing user with the same confirmed email, keeping the user id and with it projects, runs, and membership. Unconfirmed users are not linked, so every Project Partner user must have a confirmed email before email login is retired. A Toolio-only person gets a new user through `handle_new_user_trial`.
+- **Sign-in page:** **Continue with Toolio** calls `signInWithToolio`, which returns to `/auth` with the original query string. On return, `AuthContext` logs `toolio_oauth` (success or failure), records the session in `user_sessions`, and moves guest projects into the account. The sign-in page saves onboarding answers stashed before the redirect.
+- **Switch:** `app_settings.toolio_sign_in_enabled` (Admin → Public site & catalog → **Sign in with Toolio**) shows the button during the transition. Email login stays available alongside it.
+- **Retiring email login (7e):** branch `pp-link/phase-7e-retire-native-login` makes Continue with Toolio the only sign-in and drops the switch (migration `20261111230000_retire_toolio_sign_in_switch.sql`). Merge it after the transition window, then turn off email sign-ups in the Supabase dashboard.
+
 ## How changes reach the databases
 
 Both apps work the same way: nothing in this integration connects to a database with keys or a database URL.
