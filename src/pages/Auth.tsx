@@ -76,17 +76,20 @@ export default function Auth() {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   // When user becomes available, persist any pending onboarding (e.g. after email confirmation)
-  const flushPendingOnboarding = useCallback(async (userEmail: string, userId: string) => {
+  const flushPendingOnboarding = useCallback(async (userEmail: string, userId: string, viaToolio: boolean) => {
     try {
       const raw = localStorage.getItem(ONBOARDING_STORAGE_KEY);
       if (!raw) return;
       const pending = JSON.parse(raw) as {
-        email: string;
+        email?: string;
+        viaToolio?: boolean;
         name: string;
         diyLevel: string;
         pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null;
       };
-      if (pending.email !== userEmail.toLowerCase()) return;
+      // Email sign-up stores the email; a Toolio sign-in stores viaToolio because the email is unknown until return.
+      const matches = pending.viaToolio ? viaToolio : pending.email === userEmail.toLowerCase();
+      if (!matches) return;
       await saveOnboardingToProfile(userId, pending.name, pending.diyLevel, pending.pmFocus ?? null);
       localStorage.removeItem(ONBOARDING_STORAGE_KEY);
     } catch {
@@ -160,7 +163,8 @@ export default function Auth() {
   // When user is present, save any pending onboarding then redirect
   useEffect(() => {
     if (!user || loading || !landingLoaded) return;
-    flushPendingOnboarding(user.email ?? '', user.id).then(() => {
+    const viaToolio = ((user.app_metadata?.providers ?? []) as string[]).includes('custom:toolio');
+    flushPendingOnboarding(user.email ?? '', user.id, viaToolio).then(() => {
       const returnPath = searchParams.get('return');
       if (returnPath === 'projects') {
         if (projectCatalogEnabled) {
@@ -331,8 +335,25 @@ export default function Auth() {
   const handleToolioSignIn = async () => {
     setIsLoading(true);
     setError(null);
-    const { error: toolioError } = await signInWithToolio();
+    // Onboarding answers live in router state, which the Toolio redirect drops.
+    const onboarding = (location.state as {
+      onboarding?: { name: string; diyLevel: string; pmFocus?: 'schedule' | 'quality' | 'savings' | 'all_three' | null };
+    })?.onboarding;
+    if (onboarding?.name?.trim() && onboarding?.diyLevel) {
+      localStorage.setItem(
+        ONBOARDING_STORAGE_KEY,
+        JSON.stringify({
+          viaToolio: true,
+          name: onboarding.name.trim(),
+          diyLevel: onboarding.diyLevel,
+          pmFocus: onboarding.pmFocus ?? null,
+        })
+      );
+    }
+    // Back to this page so onboarding is saved and the landing settings route the user.
+    const { error: toolioError } = await signInWithToolio(`${window.location.origin}/auth${location.search}`);
     if (toolioError) {
+      localStorage.removeItem(ONBOARDING_STORAGE_KEY);
       setError(toolioError.message);
       setIsLoading(false);
     }

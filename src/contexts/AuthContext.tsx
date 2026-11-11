@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { User, Session, type Provider } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
 import { sanitizeInput } from '@/utils/inputSanitization';
@@ -15,7 +15,7 @@ interface AuthContextType {
   signUp: (email: string, password: string, guestData?: any) => Promise<{ error: any }>;
   signIn: (email: string, password: string) => Promise<{ error: any }>;
   signInWithGoogle: () => Promise<{ error: any }>;
-  signInWithToolio: () => Promise<{ error: { message: string } | null }>;
+  signInWithToolio: (redirectTo: string) => Promise<{ error: { message: string } | null }>;
   signOut: () => Promise<void>;
   continueAsGuest: () => void;
 }
@@ -30,6 +30,18 @@ const TOOLIO_PROVIDER = 'custom:toolio' as Provider;
 /** Set before the Toolio redirect so the return trip can be logged as a success or failure. */
 const TOOLIO_SIGN_IN_PENDING_KEY = 'pp_toolio_sign_in_pending';
 
+async function insertGuestProjectRuns(userId: string, projectRuns: any[]) {
+  for (const projectRun of projectRuns) {
+    const { id, createdAt, updatedAt, ...runData } = projectRun;
+    await supabase.from('project_runs').insert({
+      ...runData,
+      user_id: userId,
+      phases: JSON.stringify(runData.phases),
+      completed_steps: JSON.stringify(runData.completedSteps)
+    });
+  }
+}
+
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
@@ -43,7 +55,31 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [signingOut, setSigningOut] = useState(false);
-  const { setGuestMode, transferGuestDataToUser } = useGuest();
+  const { setGuestMode, transferGuestDataToUser, guestData } = useGuest();
+  const guestRunsRef = useRef(guestData.projectRuns);
+  guestRunsRef.current = guestData.projectRuns;
+
+  /** What the email sign-in and sign-up paths do, for a Toolio sign-in that just returned. */
+  const completeToolioSignIn = async (signedIn: User) => {
+    await logAuthenticationEvent(signedIn.email ?? signedIn.id, true, 'toolio_oauth', {
+      linked_providers: signedIn.app_metadata?.providers ?? [],
+    });
+    const { error: sessionErr } = await supabase.from('user_sessions').insert({
+      user_id: signedIn.id,
+      user_agent: navigator.userAgent
+    });
+    if (sessionErr && sessionErr.code !== 'PGRST204' && sessionErr.code !== '42P01') {
+      console.error('Failed to create session log:', sessionErr);
+    }
+    if (guestRunsRef.current.length > 0) {
+      try {
+        await insertGuestProjectRuns(signedIn.id, guestRunsRef.current);
+        await transferGuestDataToUser(signedIn.id);
+      } catch (transferError) {
+        console.error('Failed to transfer guest data:', transferError);
+      }
+    }
+  };
 
   useEffect(() => {
     let cancelled = false;
@@ -60,9 +96,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         applySession(nextSession);
         if (event === 'SIGNED_IN' && nextSession && sessionStorage.getItem(TOOLIO_SIGN_IN_PENDING_KEY)) {
           sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
-          void logAuthenticationEvent(nextSession.user.email ?? nextSession.user.id, true, 'toolio_oauth', {
-            linked_providers: nextSession.user.app_metadata?.providers ?? [],
-          });
+          // Supabase holds an auth lock during this callback; awaited queries must run after it.
+          setTimeout(() => void completeToolioSignIn(nextSession.user), 0);
         }
       }
     );
@@ -146,16 +181,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       try {
         const user = (await supabase.auth.getUser()).data.user;
         if (user && guestData.projectRuns?.length > 0) {
-          // Transfer guest project runs to real user
-          for (const projectRun of guestData.projectRuns) {
-            const { id, createdAt, updatedAt, ...runData } = projectRun;
-            await supabase.from('project_runs').insert({
-              ...runData,
-              user_id: user.id,
-              phases: JSON.stringify(runData.phases),
-              completed_steps: JSON.stringify(runData.completedSteps)
-            });
-          }
+          await insertGuestProjectRuns(user.id, guestData.projectRuns);
         }
       } catch (transferError) {
         console.error('Failed to transfer guest data:', transferError);
@@ -287,11 +313,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   /** Signs in through Toolio; an existing account with the same verified email is linked, not duplicated. */
-  const signInWithToolio = async (): Promise<{ error: { message: string } | null }> => {
+  const signInWithToolio = async (redirectTo: string): Promise<{ error: { message: string } | null }> => {
     sessionStorage.setItem(TOOLIO_SIGN_IN_PENDING_KEY, String(Date.now()));
     const { error } = await supabase.auth.signInWithOAuth({
       provider: TOOLIO_PROVIDER,
-      options: { redirectTo: `${window.location.origin}/` },
+      options: { redirectTo },
     });
     if (error) {
       sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
