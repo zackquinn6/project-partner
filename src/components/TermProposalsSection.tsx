@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
@@ -7,6 +6,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { TOOLS_LIBRARY_CATEGORIES } from '@/utils/toolCatalogCategory';
+import { SHARED_ITEM_TYPE_LABEL } from '@/components/RemovalRequestsWindow';
 import { toast } from 'sonner';
 
 type Proposal = {
@@ -50,8 +50,8 @@ async function loadExistingTerms(kind: Proposal['toolio_item_kind']): Promise<Te
 }
 
 /**
- * Terms Toolio proposes when it adds a product or project that matches no shared term by name.
- * Each one is added as a new term or pointed to an existing term; Toolio links its item either way.
+ * Items Toolio adds that match no shared item by name. Each one is added as a new item or pointed to
+ * an existing item; Toolio links its product or project either way.
  */
 export function TermProposalsSection() {
   const { user } = useAuth();
@@ -72,7 +72,7 @@ export function TermProposalsSection() {
       .eq('status', 'open')
       .order('created_at', { ascending: true });
     if (error) {
-      toast.error(`Could not load proposed terms: ${error.message}`);
+      toast.error(`Could not load new items: ${error.message}`);
       return;
     }
     setProposals((data ?? []) as Proposal[]);
@@ -94,14 +94,14 @@ export function TermProposalsSection() {
       setExistingTerms(terms);
       setMaterialCategories(materials);
     } catch (error) {
-      toast.error(`Could not load terms: ${error instanceof Error ? error.message : String(error)}`);
+      toast.error(`Could not load items: ${error instanceof Error ? error.message : String(error)}`);
     }
   };
 
   const decide = async () => {
     if (!active || !user?.email) return;
     const isProduct = active.toolio_item_kind === 'inventory_core';
-    if (mode === 'map' && !existingKey) return toast.error('Choose an existing term');
+    if (mode === 'map' && !existingKey) return toast.error('Choose an existing item');
     if (mode === 'approve' && isProduct && !category) return toast.error('Choose a category');
     if (mode === 'approve' && isProduct && entity === 'tool' && !specialty) return toast.error('Choose a specialty scale');
     setBusy(true);
@@ -116,7 +116,7 @@ export function TermProposalsSection() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(mode === 'approve' ? `Added "${active.proposed_name}"` : `Linked "${active.proposed_name}" to an existing term`);
+    toast.success(mode === 'approve' ? `Added "${active.proposed_name}"` : `Linked "${active.proposed_name}" to an existing item`);
     setActive(null);
     void load();
   };
@@ -126,7 +126,7 @@ export function TermProposalsSection() {
 
   return (
     <div className="space-y-2">
-      <h3 className="text-sm font-semibold">New terms from Toolio</h3>
+      <h3 className="text-sm font-semibold">New items from Toolio</h3>
       {proposals.length === 0 ? (
         <p className="text-sm text-muted-foreground">None waiting.</p>
       ) : (
@@ -136,7 +136,7 @@ export function TermProposalsSection() {
               <div className="min-w-0">
                 <div className="font-medium">{p.proposed_name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {p.toolio_item_kind === 'project' ? 'Project' : 'Product'} · {p.requested_by}
+                  {SHARED_ITEM_TYPE_LABEL[p.entity]} · {p.requested_by}
                 </div>
               </div>
               <Button size="sm" variant="outline" onClick={() => open(p)}>
@@ -152,16 +152,16 @@ export function TermProposalsSection() {
           <DialogHeader>
             <DialogTitle>{active?.proposed_name}</DialogTitle>
             <DialogDescription>
-              Toolio added this {isProduct ? 'product' : 'project'} and found no shared term with the same name.
+              Toolio added this {isProduct ? 'product' : 'project'} and found no shared item with the same name.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <div className="flex gap-2">
               <Button size="sm" variant={mode === 'approve' ? 'default' : 'outline'} onClick={() => setMode('approve')}>
-                Add as new term
+                Add as new item
               </Button>
               <Button size="sm" variant={mode === 'map' ? 'default' : 'outline'} onClick={() => setMode('map')}>
-                Use existing term
+                Use existing item
               </Button>
             </div>
             {mode === 'approve' && isProduct ? (
@@ -204,7 +204,7 @@ export function TermProposalsSection() {
             ) : null}
             {mode === 'map' ? (
               <div className="space-y-2">
-                <Label>Existing term</Label>
+                <Label>Existing item</Label>
                 <Select value={existingKey} onValueChange={setExistingKey}>
                   <SelectTrigger><SelectValue placeholder="Choose..." /></SelectTrigger>
                   <SelectContent className="z-[240] max-h-72">
@@ -216,11 +216,10 @@ export function TermProposalsSection() {
               </div>
             ) : null}
             {active?.description ? <p className="text-xs text-muted-foreground">{active.description}</p> : null}
-            <Badge variant="secondary">{active?.proposed_key}</Badge>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setActive(null)} disabled={busy}>Cancel</Button>
-            <Button onClick={decide} disabled={busy}>{mode === 'approve' ? 'Add term' : 'Use this term'}</Button>
+            <Button onClick={decide} disabled={busy}>{mode === 'approve' ? 'Add item' : 'Use this item'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

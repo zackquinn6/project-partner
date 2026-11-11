@@ -78,7 +78,7 @@ Toolio never creates shared terms itself. A new Toolio inventory core or project
 | `project_categories (public_key, name)` | Categories as vocabulary; replaces the free-text `projects.category` array |
 | `project_family_categories (family_key, category_key)` | Which categories a family belongs to |
 | `name_key` on `tools`, `materials` | Unique normalized name (Toolio's `inventory_item_name_comparison_key` rule) |
-| `vocab_removal_requests (id, public_key, requested_by_app pp/toolio, requested_by_email, reason, replacement_key, pp_decision, pp_decided_by, toolio_decision, toolio_decided_by, status open/approved/rejected/cancelled, timestamps)` | Two-sided removal; the requesting app's decision is `approve` on creation |
+| `vocab_removal_requests (id, public_key, item_name, requested_by_app pp/toolio, requested_by_email, reason, replacement_key, replacement_name, pp_decision, pp_decided_by, toolio_decision, toolio_decided_by, status open/approved/rejected/cancelled, timestamps)` | Two-sided removal; the requesting app's decision is `approve` on creation |
 | `vocab_aliases (public_key, alias, alias_key, source)` | Sources: `pp_name`, `pp_revision_name`, `toolio_name`, `alternates` |
 | `project_family_tools (family_key, term_key, role, source)` | `role`: `required` or `substitute`; `source`: `steps` or `toolio_seed` |
 | `vocab_term_proposals (id, entity tool/material/project, proposed_key, proposed_name, description, requested_by, toolio_item_kind, toolio_item_id, status open/approved/mapped/cancelled, result_key, decided_by, timestamps)` | Terms Toolio proposes for its waiting items (phase 5); one open proposal per Toolio item |

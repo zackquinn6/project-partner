@@ -8,13 +8,25 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TermProposalsSection } from '@/components/TermProposalsSection';
 import { toast } from 'sonner';
 
+export type SharedItemType = 'tool' | 'material' | 'project' | 'category';
+
+export const SHARED_ITEM_TYPE_LABEL: Record<SharedItemType, string> = {
+  tool: 'Tool',
+  material: 'Material',
+  project: 'Project',
+  category: 'Category',
+};
+
 type RemovalRequest = {
   id: string;
   public_key: string;
+  item_name: string;
+  vocab_keys: { entity: SharedItemType };
   requested_by_app: 'pp' | 'toolio';
   requested_by_email: string;
   reason: string | null;
   replacement_key: string | null;
+  replacement_name: string | null;
   pp_decision: 'approve' | 'reject' | null;
   toolio_decision: 'approve' | 'reject' | null;
   status: 'open' | 'approved' | 'rejected' | 'cancelled';
@@ -28,7 +40,7 @@ interface RemovalRequestsWindowProps {
   onOpenChange: (open: boolean) => void;
 }
 
-/** Two-sided removal of shared terms: both apps approve before a term is removed. */
+/** Two-sided removal of shared items: both apps approve before an item is removed. */
 export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWindowProps) {
   const { user } = useAuth();
   const [requests, setRequests] = useState<RemovalRequest[]>([]);
@@ -38,7 +50,7 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
   const load = useCallback(async () => {
     setLoading(true);
     const { data, error } = await (supabase.from('vocab_removal_requests' as any) as any)
-      .select('*')
+      .select('*, vocab_keys!vocab_removal_requests_public_key_fkey(entity)')
       .order('created_at', { ascending: false });
     setLoading(false);
     if (error) {
@@ -75,9 +87,9 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
     }
     toast.success(
       action === 'approve'
-        ? `"${request.public_key}" removed`
+        ? `"${request.item_name}" removed`
         : action === 'reject'
-          ? `Kept "${request.public_key}"`
+          ? `Kept "${request.item_name}"`
           : 'Request cancelled',
     );
     void load();
@@ -85,7 +97,7 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="flex max-h-[90dvh] w-[95vw] max-w-5xl flex-col">
+      <DialogContent className="flex w-[95vw] flex-col md:max-h-[calc(100dvh-6rem)] md:max-w-6xl">
         <DialogHeader>
           <DialogTitle>Requests</DialogTitle>
           <DialogDescription>
@@ -103,7 +115,8 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Term</TableHead>
+                  <TableHead>Item</TableHead>
+                  <TableHead>Type</TableHead>
                   <TableHead>Asked by</TableHead>
                   <TableHead>Reason</TableHead>
                   <TableHead>Replace with</TableHead>
@@ -114,13 +127,14 @@ export function RemovalRequestsWindow({ open, onOpenChange }: RemovalRequestsWin
               <TableBody>
                 {requests.map((r) => (
                   <TableRow key={r.id}>
-                    <TableCell className="font-medium">{r.public_key}</TableCell>
+                    <TableCell className="font-medium">{r.item_name}</TableCell>
+                    <TableCell className="text-xs">{SHARED_ITEM_TYPE_LABEL[r.vocab_keys.entity]}</TableCell>
                     <TableCell className="text-xs">
                       {APP_LABEL[r.requested_by_app]}
                       <div className="text-muted-foreground">{r.requested_by_email}</div>
                     </TableCell>
                     <TableCell className="max-w-xs text-xs">{r.reason ?? '-'}</TableCell>
-                    <TableCell className="text-xs">{r.replacement_key ?? '-'}</TableCell>
+                    <TableCell className="text-xs">{r.replacement_name ?? '-'}</TableCell>
                     <TableCell>
                       <Badge variant={r.status === 'open' ? 'default' : 'secondary'}>{r.status}</Badge>
                     </TableCell>
