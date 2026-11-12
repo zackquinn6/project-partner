@@ -23,6 +23,7 @@ import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { OutageBanner } from "@/components/OutageBanner";
+import { ToolioLinkPrompt } from "@/components/ToolioLinkPrompt";
 
 const queryClient = new QueryClient();
 
@@ -42,6 +43,7 @@ const App: React.FC = () => {
                       <ProjectProvider>
                     <BrowserRouter>
                       <OutageBanner />
+                      <ToolioLinkPrompt />
                       <Routes>
                         <Route path="/" element={<Index />} />
                         <Route path="/auth" element={<Auth />} />

@@ -386,3 +386,6 @@ verify_jwt = true
 [functions.project-partner-vocab]
 verify_jwt = false
 
+[functions.toolio-account]
+verify_jwt = false
+
