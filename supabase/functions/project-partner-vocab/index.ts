@@ -154,6 +154,38 @@ serve(async (req) => {
         return respond(200, data);
       }
 
+      // Shared login: Toolio admins view and change account links (the `custom:toolio` identity).
+      case "account_links": {
+        const { data, error } = await db.rpc("toolio_account_links");
+        if (error) return respond(statusForDbError(error.code), { error: error.message });
+        return respond(200, { links: data });
+      }
+
+      case "link_account": {
+        const ppEmail = requireString(input, "pp_email");
+        const { data: userId, error: findError } = await db.rpc("toolio_find_user_id", { p_email: ppEmail });
+        if (findError) return respond(statusForDbError(findError.code), { error: findError.message });
+        if (!userId) return respond(404, { error: `No Project Partner account uses ${ppEmail}` });
+        const { error } = await db.rpc("toolio_link_account", {
+          p_user_id: userId,
+          p_toolio_user_id: requireString(input, "toolio_user_id"),
+          p_toolio_email: requireString(input, "toolio_email"),
+        });
+        if (error) return respond(statusForDbError(error.code), { error: error.message });
+        return respond(200, { linked: true });
+      }
+
+      case "unlink_account": {
+        const toolioUserId = requireString(input, "toolio_user_id");
+        const { data: links, error: linksError } = await db.rpc("toolio_account_links");
+        if (linksError) return respond(statusForDbError(linksError.code), { error: linksError.message });
+        const link = (links as { user_id: string; toolio_user_id: string }[]).find((l) => l.toolio_user_id === toolioUserId);
+        if (!link) return respond(404, { error: "That Toolio account is not linked" });
+        const { error } = await db.rpc("toolio_unlink_account", { p_user_id: link.user_id });
+        if (error) return respond(statusForDbError(error.code), { error: error.message });
+        return respond(200, { linked: false });
+      }
+
       default:
         return respond(400, { error: "Unknown or missing action" });
     }

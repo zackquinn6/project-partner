@@ -32,6 +32,12 @@ interface ParentProject {
   name: string;
 }
 
+/** A Project Partner account's linked Toolio account (its `custom:toolio` sign-in). */
+interface ToolioLink {
+  user_id: string;
+  toolio_email: string;
+}
+
 function displayName(p: UserProfileRow): string {
   return p.email || p.display_name || p.full_name || p.nickname || p.user_id;
 }
@@ -60,6 +66,46 @@ export const UserRoleManager: React.FC = () => {
   const [sendInviteProjectIds, setSendInviteProjectIds] = useState<string[]>([]);
   const [sendInviteProjectSearch, setSendInviteProjectSearch] = useState('');
   const [sendingInvites, setSendingInvites] = useState(false);
+  const [toolioLinks, setToolioLinks] = useState<Record<string, string> | null>(null);
+  const [toolioLinksError, setToolioLinksError] = useState<string | null>(null);
+  const [linkForUserId, setLinkForUserId] = useState<string | null>(null);
+  const [linkToolioEmail, setLinkToolioEmail] = useState('');
+  const [linkBusy, setLinkBusy] = useState(false);
+
+  const loadToolioLinks = async () => {
+    const { data, error } = await supabase.functions.invoke<{ links: ToolioLink[]; error?: string }>('toolio-account', {
+      body: { action: 'admin_links' },
+    });
+    if (error || !data) {
+      setToolioLinksError(error?.message ?? 'Could not load Toolio links');
+      return;
+    }
+    setToolioLinksError(null);
+    setToolioLinks(Object.fromEntries(data.links.map((l) => [l.user_id, l.toolio_email])));
+  };
+
+  const toolioLinkAction = async (body: Record<string, unknown>, success: string) => {
+    setLinkBusy(true);
+    const { data, error } = await supabase.functions.invoke<{ error?: string }>('toolio-account', { body });
+    setLinkBusy(false);
+    if (error || data?.error) {
+      let message = data?.error ?? error?.message ?? 'Please try again.';
+      const context = (error as { context?: Response } | null)?.context;
+      if (context instanceof Response) {
+        const parsed = (await context.json().catch(() => null)) as { error?: string } | null;
+        if (parsed?.error) message = parsed.error;
+      }
+      toast({ title: 'Toolio link not changed', description: message, variant: 'destructive' });
+      return false;
+    }
+    toast({ title: success });
+    await loadToolioLinks();
+    return true;
+  };
+
+  useEffect(() => {
+    void loadToolioLinks();
+  }, []);
 
   const loadUsers = async () => {
     try {
@@ -277,9 +323,47 @@ export const UserRoleManager: React.FC = () => {
   }
 
   const sendInviteProfile = sendInviteForUserId ? users.find(u => u.user_id === sendInviteForUserId) : null;
+  const linkProfile = linkForUserId ? users.find(u => u.user_id === linkForUserId) : null;
 
   return (
     <div className="space-y-6">
+      <Dialog open={!!linkForUserId} onOpenChange={(open) => !open && setLinkForUserId(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Link a Toolio account</DialogTitle>
+            <p className="text-sm text-muted-foreground">
+              {linkProfile ? `Signing in with this Toolio account will open ${displayName(linkProfile)}.` : null}
+            </p>
+          </DialogHeader>
+          <div className="space-y-2">
+            <label className="text-sm font-medium" htmlFor="toolio-link-email">Toolio account email</label>
+            <Input
+              id="toolio-link-email"
+              type="email"
+              value={linkToolioEmail}
+              onChange={(e) => setLinkToolioEmail(e.target.value)}
+              disabled={linkBusy}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLinkForUserId(null)} disabled={linkBusy}>Cancel</Button>
+            <Button
+              disabled={linkBusy || !linkToolioEmail.trim() || !linkForUserId}
+              onClick={async () => {
+                if (!linkForUserId) return;
+                const ok = await toolioLinkAction(
+                  { action: 'admin_link', user_id: linkForUserId, toolio_email: linkToolioEmail.trim() },
+                  'Toolio account linked',
+                );
+                if (ok) setLinkForUserId(null);
+              }}
+            >
+              {linkBusy ? 'Linking…' : 'Link'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <Dialog open={!!sendInviteForUserId} onOpenChange={(open) => !open && setSendInviteForUserId(null)}>
         <DialogContent className="max-w-md max-h-[85vh] flex flex-col gap-0 p-0">
           <DialogHeader className="px-4 pt-4 pb-2">
@@ -370,6 +454,7 @@ export const UserRoleManager: React.FC = () => {
                   <TableHead>User</TableHead>
                   <TableHead>Change role</TableHead>
                   <TableHead>Projects owned</TableHead>
+                  <TableHead>Toolio account</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -486,6 +571,41 @@ export const UserRoleManager: React.FC = () => {
                             Send invite
                           </Button>
                         </div>
+                      </TableCell>
+                      <TableCell>
+                        {toolioLinksError ? (
+                          <span className="text-xs text-destructive">{toolioLinksError}</span>
+                        ) : toolioLinks == null ? (
+                          <span className="text-xs text-muted-foreground">Loading…</span>
+                        ) : toolioLinks[profile.user_id] ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs">{toolioLinks[profile.user_id]}</span>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              disabled={linkBusy}
+                              onClick={() => {
+                                if (confirm(`Unlink ${displayName(profile)} from Toolio account ${toolioLinks[profile.user_id]}?`)) {
+                                  void toolioLinkAction({ action: 'admin_unlink', user_id: profile.user_id }, 'Toolio account unlinked');
+                                }
+                              }}
+                            >
+                              Unlink
+                            </Button>
+                          </div>
+                        ) : (
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            disabled={linkBusy}
+                            onClick={() => {
+                              setLinkForUserId(profile.user_id);
+                              setLinkToolioEmail(profile.email ?? '');
+                            }}
+                          >
+                            Link
+                          </Button>
+                        )}
                       </TableCell>
                     </TableRow>
                   );
