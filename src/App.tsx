@@ -23,7 +23,6 @@ import AcceptProjectOwnerInvite from "./pages/AcceptProjectOwnerInvite";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as SonnerToaster } from "sonner";
 import { OutageBanner } from "@/components/OutageBanner";
-
 const queryClient = new QueryClient();
 
 // Main application component with authentication and membership providers

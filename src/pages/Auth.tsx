@@ -196,8 +196,8 @@ export default function Auth() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <Button type="button" className="w-full" onClick={handleToolioSignIn} disabled={isLoading}>
-            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+          <Button type="button" variant="outline" className="w-full" onClick={handleToolioSignIn} disabled={isLoading}>
+            {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <img src="/brand/toolio-mark.png" alt="" className="mr-2 h-4 w-4 rounded-[3px]" />}
             Continue with Toolio
           </Button>
 
