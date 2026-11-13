@@ -30,10 +30,11 @@ const CHECKS = {
 const NEEDS_AGAINST = ['toolio-content', 'toolio-orders', 'toolio-rebuild'];
 
 const args = parseArgs();
-const dir = archiveDir(args.archive);
 // The later export only needs the toolio-2-checks result (on its own or inside toolio-export).
 const laterDir = args.against ? exportDir(args.against) : null;
 const selected = args.check.length ? args.check : Object.keys(CHECKS).filter((c) => laterDir || !NEEDS_AGAINST.includes(c));
+// Only the archive check reads the manifest; the comparisons need just the toolio-2-checks result.
+const dir = selected.includes('archive') ? archiveDir(args.archive) : exportDir(args.archive);
 for (const name of selected) {
   if (!CHECKS[name]) throw new Error(`Unknown check ${name}. Known: ${Object.keys(CHECKS).join(', ')}`);
   if (NEEDS_AGAINST.includes(name) && !laterDir) throw new Error(`${name} needs --against <later export>`);

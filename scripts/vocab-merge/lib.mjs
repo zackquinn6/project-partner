@@ -7,7 +7,7 @@ export const EXPORT_QUERIES = ['toolio-1-catalog', 'toolio-2-checks', 'pp-1-libr
 export const NAME_KEYS_QUERY = 'toolio-3-name-keys';
 const PAYLOAD_VERSIONS = {
   'toolio-1-catalog': 1,
-  'toolio-2-checks': 1,
+  'toolio-2-checks': 2,
   'pp-1-library': 1,
   'pp-2-projects': 1,
   'pp-3-references': 2,
