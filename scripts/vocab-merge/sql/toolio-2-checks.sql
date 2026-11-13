@@ -7,8 +7,11 @@
 -- then). Comparing two exports shows exactly which archived rows changed.
 SELECT jsonb_build_object(
   'query', 'toolio-2-checks',
-  'version', 1,
+  'version', 2,
   'exported_at', now(),
+  -- The project rebuild changes only name and slug; this fingerprint leaves them out.
+  'projects_without_identity', (SELECT jsonb_object_agg(t.id, md5((to_jsonb(t) - 'updated_at' - 'pp_link_status' - 'pp_vocab_key' - 'pp_vocab_pending' - 'name' - 'slug')::text)) FROM public.projects t),
+  'project_identity', (SELECT jsonb_object_agg(t.id, jsonb_build_object('name', t.name, 'slug', t.slug)) FROM public.projects t),
   'content_hashes', jsonb_build_object(
     'projects', (SELECT jsonb_object_agg(t.id, md5((to_jsonb(t) - 'updated_at' - 'pp_link_status' - 'pp_vocab_key')::text)) FROM public.projects t),
     'project_catalog_parent_links', (SELECT jsonb_object_agg(t.id, md5((to_jsonb(t) - 'updated_at')::text)) FROM public.project_catalog_parent_links t),

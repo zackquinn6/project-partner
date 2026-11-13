@@ -8,7 +8,7 @@ This is the canonical contract. Toolio's `docs/PROJECT_PARTNER_INTEGRATION.md` c
 - **Toolio** owns SKUs, pricing, guided sections, customer copy, orders, and accounts.
 - Every Toolio project, catalog grouping, and inventory core links to a Project Partner term; there is no Toolio-only vocabulary. Project Partner may hold terms Toolio does not use.
 - The databases are never shared. Toolio keeps a local mirror of the vocabulary, fed by the change feed below; Toolio's shop and checkout never call Project Partner.
-- Where both apps had a tool or material before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases. Project names are decided per project in review (see [Toolio project rebuild](#toolio-project-rebuild-final-step)).
+- Where both apps had a tool or material before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases. Project and grouping names are Project Partner's, and Toolio follows them (see [Toolio project rebuild](#toolio-project-rebuild-final-step)).
 
 ## Toolio project rebuild (final step)
 
@@ -16,10 +16,10 @@ Toolio has more built-out guided projects; Project Partner has the stronger proj
 
 - Each Toolio guided project links to one Project Partner family.
 - Each Toolio catalog grouping (a project other projects are filed under, such as Tile or Flooring) links to a Project Partner project category, and the grouped projects' families carry that category.
-- The project name is decided per project in crosswalk review (Project Partner's name, Toolio's name, or a new one); the other names become aliases.
-- Toolio's foundation and variant links (`content_foundation_project_id`) follow the family's foundation structure.
-- Toolio's ordering content is carried over unchanged: sections, section items, packages, default quantities, customization questions and rules.
-- A changed slug gets a redirect, so customer URLs and `orders.project_slug` on past orders still resolve.
+- A linked Toolio project or grouping takes the Project Partner name and a slug made from it, at the rebuild and on every later sync that renames it. Toolio finds projects by key, never by slug.
+- Toolio's foundation and variant links (`content_foundation_project_id`) and its ordering content stay unchanged: sections, section items, packages, default quantities, customization questions and rules.
+- A changed slug rewrites the project slugs Toolio stores (past orders, missing-item feedback, saved carts, pending checkouts). Old URLs are not redirected.
+- The Toolio migration is `20261112240000_project_identity_follows_project_partner.sql`. It refuses to run while stored text links to an old project URL or a database function names an old slug.
 
 **Parity control.** The rebuild ships only when a before/after comparison of two exports (taken right before and right after) shows, for every guided project:
 
@@ -27,9 +27,9 @@ Toolio has more built-out guided projects; Project Partner has the stronger proj
 - the same sections and section visibility;
 - the same customization questions, options, and rules;
 - the same released, coming soon, or hidden status;
-- differences only in the fields the crosswalk decided to change (name, slug, foundation link), each listed in the report.
+- differences only in name and slug, each listed in the report.
 
-Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing reads only those. The comparison is a `verify.mjs` check added with the rebuild.
+Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing reads only those. Run `scripts/vocab-merge/sql/toolio-2-checks.sql` (v2) in Lovable before and after, then `node scripts/vocab-merge/verify.mjs --archive <before> --against <after> --check toolio-rebuild`.
 
 ## Keys
 
