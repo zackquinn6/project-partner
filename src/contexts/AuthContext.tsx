@@ -6,6 +6,7 @@ import { logAuthenticationEvent, logSecurityViolation } from '@/utils/enhancedSe
 import { cleanupSessionData } from '@/utils/sessionSecurity';
 import { useGuest } from './GuestContext';
 import { ensureDefaultHomeForUser } from '@/utils/ensureDefaultHome';
+import { TOOLIO_OAUTH_MESSAGE } from '@/components/ToolioPopupCallback';
 
 interface AuthContextType {
   user: User | null;
@@ -312,19 +313,101 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  /** Signs in through Toolio; an existing account with the same verified email is linked, not duplicated. */
-  const signInWithToolio = async (redirectTo: string): Promise<{ error: { message: string } | null }> => {
+  /**
+   * Signs in through Toolio in a small popup (OAuth stays off the main window).
+   * `redirectTo` is kept for callers; the popup always returns to /auth?toolio_popup=1 so
+   * the opener can keep its route and query string. Same-email accounts are linked, not duplicated.
+   */
+  const signInWithToolio = async (_redirectTo: string): Promise<{ error: { message: string } | null }> => {
     sessionStorage.setItem(TOOLIO_SIGN_IN_PENDING_KEY, String(Date.now()));
-    const { error } = await supabase.auth.signInWithOAuth({
+    const popupReturnTo = `${window.location.origin}/auth?toolio_popup=1`;
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: TOOLIO_PROVIDER,
-      options: { redirectTo },
+      options: {
+        redirectTo: popupReturnTo,
+        skipBrowserRedirect: true,
+      },
     });
-    if (error) {
+    if (error || !data.url) {
       sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
-      await logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: error.message });
-      return { error: { message: error.message } };
+      const message = error?.message ?? 'Toolio sign-in could not start.';
+      await logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: message });
+      return { error: { message } };
     }
-    return { error: null };
+
+    const width = 480;
+    const height = 640;
+    const left = Math.round(window.screenX + (window.outerWidth - width) / 2);
+    const top = Math.round(window.screenY + (window.outerHeight - height) / 2);
+    // Named window without noopener so the popup can postMessage back via window.opener.
+    const popup = window.open(
+      data.url,
+      'toolio-oauth',
+      `popup=yes,width=${width},height=${height},left=${left},top=${top}`
+    );
+    if (!popup) {
+      sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+      const message = 'Allow popups for this site to continue with Toolio.';
+      await logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: message });
+      return { error: { message } };
+    }
+
+    return await new Promise<{ error: { message: string } | null }>((resolve) => {
+      let settled = false;
+      let closedTimer: ReturnType<typeof setTimeout> | undefined;
+      let closedPoll = 0;
+      let stopAuthListen: (() => void) | undefined;
+
+      const onMessage = (event: MessageEvent) => {
+        if (event.origin !== window.location.origin) return;
+        const payload = event.data as { type?: string; status?: string; error?: string } | null;
+        if (!payload || payload.type !== TOOLIO_OAUTH_MESSAGE) return;
+        if (payload.status === 'error') {
+          sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+          void logAuthenticationEvent('toolio_oauth', false, 'toolio_oauth', { error: payload.error });
+          settle({ error: { message: payload.error ?? 'Toolio sign-in failed.' } });
+          return;
+        }
+        settle({ error: null });
+      };
+
+      const settle = (result: { error: { message: string } | null }) => {
+        if (settled) return;
+        settled = true;
+        window.clearInterval(closedPoll);
+        if (closedTimer !== undefined) window.clearTimeout(closedTimer);
+        window.removeEventListener('message', onMessage);
+        stopAuthListen?.();
+        resolve(result);
+      };
+
+      // Shared localStorage session broadcast; postMessage from the popup is a backup.
+      const {
+        data: { subscription: authSub },
+      } = supabase.auth.onAuthStateChange((event, nextSession) => {
+        if (event === 'SIGNED_IN' && nextSession) {
+          settle({ error: null });
+        }
+      });
+      stopAuthListen = () => authSub.unsubscribe();
+
+      closedPoll = window.setInterval(() => {
+        if (!popup.closed) return;
+        window.clearInterval(closedPoll);
+        // Wait briefly so postMessage / SIGNED_IN can win over a false "cancelled".
+        // Do not treat an existing session as success - Link accounts already has one.
+        closedTimer = setTimeout(() => {
+          if (sessionStorage.getItem(TOOLIO_SIGN_IN_PENDING_KEY)) {
+            sessionStorage.removeItem(TOOLIO_SIGN_IN_PENDING_KEY);
+            settle({ error: { message: 'Toolio sign-in was cancelled.' } });
+            return;
+          }
+          settle({ error: null });
+        }, 400);
+      }, 400);
+
+      window.addEventListener('message', onMessage);
+    });
   };
 
   const signOut = async () => {

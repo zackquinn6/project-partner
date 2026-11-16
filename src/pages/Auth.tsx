@@ -15,6 +15,7 @@ import { useGuest } from '@/contexts/GuestContext';
 import { useMarketingCopy } from '@/hooks/useMarketingCopy';
 import { useGlobalPublicSettings } from '@/hooks/useGlobalPublicSettings';
 import { ProjectPartnerLogo } from '@/components/ProjectPartnerLogo';
+import { ToolioPopupCallback } from '@/components/ToolioPopupCallback';
 import { toast } from 'sonner';
 
 const ONBOARDING_STORAGE_KEY = 'project_partner_onboarding';
@@ -41,6 +42,15 @@ async function saveOnboardingToProfile(
 }
 
 export default function Auth() {
+  const location = useLocation();
+  // OAuth popup return: keep the allowlisted /auth redirect, render only the closer UI.
+  if (new URLSearchParams(location.search).get('toolio_popup') === '1') {
+    return <ToolioPopupCallback />;
+  }
+  return <AuthPage />;
+}
+
+function AuthPage() {
   const location = useLocation();
   const searchParams = new URLSearchParams(location.search);
   const [isSignUp, setIsSignUp] = useState(searchParams.get('mode') === 'signup');
