@@ -24,7 +24,7 @@ Usage Agreement (Placeholder)
 This is placeholder content for the Project Partner Usage Agreement. It will be replaced with the full legal text.
 
 - Scope of services
-- No guarantee of results
+- Results and the success guarantee
 - Assumption of risk
 - Limitation of liability
 - Professional advice

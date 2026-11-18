@@ -201,7 +201,8 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
       id: `manual-${Date.now()}`,
       name: manualPhaseForm.name,
       description: manualPhaseForm.description,
-      operations: []
+      operations: [],
+      isCustom: true
     };
     
     setSelectedPhases(prev => [...prev, newPhase]);
@@ -231,7 +232,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
     onClose();
   };
 
-  const hasManualPhases = selectedPhases.some(phase => phase.id.startsWith('manual-'));
+  const hasManualPhases = selectedPhases.some(phase => phase.isCustom === true);
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
@@ -311,8 +312,8 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                       <Alert className="border-warning-soft/40 bg-warning-soft/10">
                         <AlertTriangle className="w-4 h-4" />
                         <AlertDescription>
-                          <strong>Warning:</strong> Custom phases are not covered by our success guarantee. 
-                          Use pre-built phases when possible for best results.
+                          <strong>Warning:</strong> Adding a custom phase ends success guarantee
+                          coverage for this run. Pre-built phases from the library keep coverage.
                         </AlertDescription>
                       </Alert>
 
@@ -514,7 +515,7 @@ export const UnplannedWorkWindow: React.FC<UnplannedWorkWindowProps> = ({
                   <Alert className="mt-3 border-warning-soft/40 bg-warning-soft/10 flex-shrink-0">
                     <AlertTriangle className="w-4 h-4" />
                     <AlertDescription>
-                      Your unplanned work includes custom phases. These are not covered by our success guarantee.
+                      Adding these custom phases ends success guarantee coverage for this run.
                     </AlertDescription>
                   </Alert>
                 )}

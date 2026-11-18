@@ -8,21 +8,52 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
 import { toast } from 'sonner';
 
-export type SharedTermEntity = 'tool' | 'material' | 'project' | 'category';
+export type SharedTermEntity =
+  | 'tool'
+  | 'material'
+  | 'project'
+  | 'category'
+  | 'tool_variation'
+  | 'material_variation';
 
 const ENTITY_LABEL: Record<SharedTermEntity, string> = {
   tool: 'tool',
   material: 'material',
   project: 'project',
   category: 'category',
+  tool_variation: 'tool variation',
+  material_variation: 'material variation',
 };
 
 const NO_REPLACEMENT = '__none__';
 
 type Option = { public_key: string; name: string };
 
-/** Replacement candidates: current terms of the same kind, excluding the one being removed. */
-async function loadOptions(entity: SharedTermEntity, publicKey: string): Promise<Option[]> {
+/** Replacement candidates: same kind; variations stay under the same parent core. */
+async function loadOptions(
+  entity: SharedTermEntity,
+  publicKey: string,
+  parentPublicKey?: string | null,
+): Promise<Option[]> {
+  if (entity === 'tool_variation' || entity === 'material_variation') {
+    if (!parentPublicKey) throw new Error('parentPublicKey is required for variation removal');
+    const parentCol = entity === 'tool_variation' ? 'core_item_id' : 'material_id';
+    const parentTable = entity === 'tool_variation' ? 'tools' : 'materials';
+    const childTable = entity === 'tool_variation' ? 'tool_variations' : 'materials_variants';
+    const { data: parent, error: parentError } = await (supabase.from(parentTable as any) as any)
+      .select('id')
+      .eq('public_key', parentPublicKey)
+      .maybeSingle();
+    if (parentError) throw parentError;
+    if (!parent?.id) return [];
+    const { data, error } = await (supabase.from(childTable as any) as any)
+      .select('public_key, name')
+      .eq(parentCol, parent.id)
+      .not('public_key', 'is', null);
+    if (error) throw error;
+    return ((data ?? []) as Option[]).filter((o) => o.public_key && o.public_key !== publicKey);
+  }
+
   const query =
     entity === 'tool'
       ? supabase.from('tools' as any).select('public_key, name')
@@ -42,6 +73,8 @@ interface RequestRemovalDialogProps {
   entity: SharedTermEntity;
   publicKey: string;
   name: string;
+  /** Required when entity is a variation. */
+  parentPublicKey?: string | null;
   onRequested?: () => void;
 }
 
@@ -49,7 +82,15 @@ interface RequestRemovalDialogProps {
  * Shared terms are removed only when Project Partner and Toolio both approve. This starts a
  * request from Project Partner; Toolio staff decide in Toolio admin.
  */
-export function RequestRemovalDialog({ open, onOpenChange, entity, publicKey, name, onRequested }: RequestRemovalDialogProps) {
+export function RequestRemovalDialog({
+  open,
+  onOpenChange,
+  entity,
+  publicKey,
+  name,
+  parentPublicKey,
+  onRequested,
+}: RequestRemovalDialogProps) {
   const { user } = useAuth();
   const [options, setOptions] = useState<Option[]>([]);
   const [replacement, setReplacement] = useState<string>(NO_REPLACEMENT);
@@ -60,13 +101,13 @@ export function RequestRemovalDialog({ open, onOpenChange, entity, publicKey, na
     if (!open) return;
     setReplacement(NO_REPLACEMENT);
     setReason('');
-    loadOptions(entity, publicKey)
+    loadOptions(entity, publicKey, parentPublicKey)
       .then(setOptions)
       .catch((error) => {
         console.error('RequestRemovalDialog options', error);
         toast.error(`Could not load ${ENTITY_LABEL[entity]}s for a replacement`);
       });
-  }, [open, entity, publicKey]);
+  }, [open, entity, publicKey, parentPublicKey]);
 
   const submit = async () => {
     if (!user?.email) {

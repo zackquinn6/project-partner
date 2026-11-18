@@ -6,8 +6,23 @@ SELECT CASE WHEN count(*) = 0 THEN 'PASS every inventory core is linked' ELSE 'F
 FROM public.inventory_items WHERE parent_inventory_item_id IS NULL AND pp_vocab_key IS NULL;
 
 INSERT INTO _check (result)
-SELECT CASE WHEN count(*) = 0 THEN 'PASS variants carry no link' ELSE 'FAIL ' || count(*) || ' variants linked' END
-FROM public.inventory_items WHERE parent_inventory_item_id IS NOT NULL AND pp_vocab_key IS NOT NULL;
+SELECT CASE
+  WHEN count(*) FILTER (WHERE pp_vocab_key IS NOT NULL) > 0
+   AND count(*) FILTER (
+     WHERE pp_vocab_key IS NOT NULL
+       AND NOT EXISTS (
+         SELECT 1 FROM public.pp_vocab_terms t
+         WHERE t.public_key = inventory_items.pp_vocab_key
+           AND t.entity IN ('tool_variation', 'material_variation')
+       )
+   ) = 0
+  THEN 'PASS linked variants use variation terms (' || count(*) FILTER (WHERE pp_vocab_key IS NOT NULL) || ')'
+  WHEN count(*) FILTER (WHERE pp_vocab_key IS NOT NULL) = 0
+   AND count(*) FILTER (WHERE coalesce(pp_vocab_pending, false)) = 0
+  THEN 'PASS no variants linked yet (pre-phase-6 seed)'
+  ELSE 'FAIL variant link shape'
+END
+FROM public.inventory_items WHERE parent_inventory_item_id IS NOT NULL;
 
 INSERT INTO _check (result)
 SELECT CASE WHEN count(*) = 0 THEN 'PASS every project is linked' ELSE 'FAIL ' || count(*) || ' projects unlinked' END

@@ -61,6 +61,19 @@ import {
 import { QualityControlPdfPrinter, type QualityControlPdfRow } from '@/components/QualityControlPdfPrinter';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/contexts/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { SuccessGuaranteePanel } from '@/components/SuccessGuaranteePanel';
+import type { SuccessGuaranteeState } from '@/hooks/useSuccessGuarantee';
+import { meetsGuaranteeQcSettings } from '@/utils/successGuarantee';
 
 type StepInstance = WorkflowStep & {
   phaseName?: string;
@@ -110,6 +123,8 @@ interface QualityCheckWindowProps {
   userDisplayName: string;
   /** When true for an open cycle, the settings accordion starts expanded (e.g. opened from Planning Studio). */
   expandSettingsAccordionWhenOpen?: boolean;
+  guarantee: SuccessGuaranteeState;
+  onStartRecovery?: () => void;
 }
 
 export function QualityCheckWindow({
@@ -126,8 +141,13 @@ export function QualityCheckWindow({
   onRefresh,
   userDisplayName,
   expandSettingsAccordionWhenOpen = false,
+  guarantee,
+  onStartRecovery,
 }: QualityCheckWindowProps) {
   const { user } = useAuth();
+  /** Settings change awaiting confirmation because it would end guarantee coverage. */
+  const [pendingCoverageEndingSettings, setPendingCoverageEndingSettings] =
+    useState<QualityControlSettings | null>(null);
   const [showOnlyIncomplete, setShowOnlyIncomplete] = useState(false);
   const [savingSettings, setSavingSettings] = useState(false);
   const [uploadingDocument, setUploadingDocument] = useState(false);
@@ -227,17 +247,35 @@ export function QualityCheckWindow({
     [projectRun, updateProjectRun, advanceToChecklistAfterSettings]
   );
 
+  const applySettingsChange = (next: QualityControlSettings) => {
+    if (guarantee.coverage.status === 'covered' && !meetsGuaranteeQcSettings(next)) {
+      setPendingCoverageEndingSettings(next);
+      return;
+    }
+    setLocalRequirePhotos(next.require_photos_per_step);
+    setLocalRequireAllOutputs(next.require_all_outputs);
+    void persistSettings(next);
+  };
+
+  const confirmCoverageEndingSettings = async () => {
+    if (!pendingCoverageEndingSettings) return;
+    const next = pendingCoverageEndingSettings;
+    setPendingCoverageEndingSettings(null);
+    setLocalRequirePhotos(next.require_photos_per_step);
+    setLocalRequireAllOutputs(next.require_all_outputs);
+    await persistSettings(next);
+    await guarantee.refresh();
+  };
+
   const onRequirePhotosChange = (checked: boolean) => {
-    setLocalRequirePhotos(checked);
-    void persistSettings({
+    applySettingsChange({
       require_photos_per_step: checked,
       require_all_outputs: localRequireAllOutputs
     });
   };
 
   const onRequireAllOutputsChange = (requireAll: boolean) => {
-    setLocalRequireAllOutputs(requireAll);
-    void persistSettings({
+    applySettingsChange({
       require_photos_per_step: localRequirePhotos,
       require_all_outputs: requireAll
     });
@@ -684,6 +722,22 @@ export function QualityCheckWindow({
                 </AccordionContent>
               </AccordionItem>
 
+              <AccordionItem value="qc-guarantee" className="mb-3 rounded-lg border px-3">
+                <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
+                  Success guarantee
+                </AccordionTrigger>
+                <AccordionContent className="pb-4 pt-0">
+                  {projectRun ? (
+                    <SuccessGuaranteePanel
+                      projectRun={projectRun}
+                      updateProjectRun={updateProjectRun}
+                      guarantee={guarantee}
+                      onStartRecovery={onStartRecovery}
+                    />
+                  ) : null}
+                </AccordionContent>
+              </AccordionItem>
+
               <AccordionItem value="qc-table" className="rounded-lg border px-3">
                 <AccordionTrigger className="text-sm font-semibold py-3 hover:no-underline">
                   Output checklist
@@ -839,6 +893,34 @@ export function QualityCheckWindow({
           </div>
         </div>
       </DialogPortal>
+
+      <AlertDialog
+        open={pendingCoverageEndingSettings !== null}
+        onOpenChange={(next) => {
+          if (!next) setPendingCoverageEndingSettings(null);
+        }}
+      >
+        <AlertDialogContent className="z-[100]">
+          <AlertDialogHeader>
+            <AlertDialogTitle>End guarantee coverage?</AlertDialogTitle>
+            <AlertDialogDescription>
+              The success guarantee needs photos and every output on each step. Turning this off
+              ends coverage for this run, and it cannot be restored.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Keep it on</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => {
+                e.preventDefault();
+                void confirmCoverageEndingSettings();
+              }}
+            >
+              Turn off and end coverage
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Dialog>
   );
 }

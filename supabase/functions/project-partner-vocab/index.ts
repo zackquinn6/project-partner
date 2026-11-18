@@ -129,10 +129,21 @@ serve(async (req) => {
 
       case "propose_term": {
         const entity = requireString(input, "entity");
-        if (!["tool", "material", "project"].includes(entity)) return respond(400, { error: "entity must be tool, material, or project" });
+        if (!["tool", "material", "project", "tool_variation", "material_variation"].includes(entity)) {
+          return respond(400, { error: "entity must be tool, material, project, tool_variation, or material_variation" });
+        }
         const itemKind = requireString(input, "toolio_item_kind");
-        if (!["inventory_core", "project"].includes(itemKind)) return respond(400, { error: "toolio_item_kind must be inventory_core or project" });
-        const { data, error } = await db.rpc("vocab_propose_term", {
+        if (!["inventory_core", "project", "inventory_variant"].includes(itemKind)) {
+          return respond(400, { error: "toolio_item_kind must be inventory_core, project, or inventory_variant" });
+        }
+        const parentKey = optionalString(input, "parent_key");
+        if (itemKind === "inventory_variant" && !parentKey) {
+          return respond(400, { error: "parent_key is required for inventory_variant" });
+        }
+        if (itemKind !== "inventory_variant" && parentKey) {
+          return respond(400, { error: "parent_key is only valid for inventory_variant" });
+        }
+        const rpcArgs: Record<string, unknown> = {
           p_entity: entity,
           p_key: requireString(input, "key"),
           p_name: requireString(input, "name"),
@@ -140,7 +151,9 @@ serve(async (req) => {
           p_item_kind: itemKind,
           p_item_id: requireString(input, "toolio_item_id"),
           p_requested_by: requireString(input, "requested_by"),
-        });
+        };
+        if (parentKey) rpcArgs.p_parent_key = parentKey;
+        const { data, error } = await db.rpc("vocab_propose_term", rpcArgs);
         if (error) return respond(statusForDbError(error.code), { error: error.message });
         return respond(201, data);
       }

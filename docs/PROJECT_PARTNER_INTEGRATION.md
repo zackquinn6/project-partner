@@ -4,9 +4,9 @@ This is the canonical contract. Toolio's `docs/PROJECT_PARTNER_INTEGRATION.md` c
 
 ## Ownership
 
-- **Project Partner** owns the general vocabulary, the upper level for everything: project categories, projects (one entry per revision family), tools, and materials.
+- **Project Partner** owns the general vocabulary, the upper level for everything: project categories, projects (one entry per revision family), tools, materials, and their inventory variations.
 - **Toolio** owns SKUs, pricing, guided sections, customer copy, orders, and accounts.
-- Every Toolio project, catalog grouping, and inventory core links to a Project Partner term; there is no Toolio-only vocabulary. Project Partner may hold terms Toolio does not use.
+- Every Toolio project, catalog grouping, inventory core, and inventory variant links to a Project Partner term; there is no Toolio-only vocabulary. Project Partner may hold terms Toolio does not use.
 - The databases are never shared. Toolio keeps a local mirror of the vocabulary, fed by the change feed below; Toolio's shop and checkout never call Project Partner.
 - Where both apps had a tool or material before the merge, Toolio's wording is canonical and Project Partner's wording is kept as aliases. Project and grouping names are Project Partner's, and Toolio follows them (see [Toolio project rebuild](#toolio-project-rebuild-final-step)).
 
@@ -33,15 +33,16 @@ Same cores and quantities mean the same Day 1 / Day 2+ prices, since pricing rea
 
 ## Keys
 
-- Every term has a `public_key`: lowercase kebab-case, immutable, unique across categories, projects, tools, and materials (one `vocab_keys` table).
-- Terms that came from Toolio use Toolio's key when it is valid kebab-case: the core `sku` for tools and materials, `projects.slug` for projects and groupings. Otherwise review picks a key (flagged `BAD KEY`); Toolio's own SKU or slug is unchanged.
-- Terms that exist only in Project Partner get a key derived from their name. A clash with any existing key is a crosswalk conflict, resolved by a person.
-- Toolio stores the key, not its SKU, on a link, so renaming a Toolio SKU never breaks a link.
-- A removed term leaves its key in `vocab_keys` as a tombstone (`removed_at`, `replaced_by_public_key`), so the key is never reissued and old references can be traced.
+- Every term has a `public_key`: lowercase kebab-case, immutable, unique across categories, projects, tools, materials, and variations (one `vocab_keys` table).
+- Parent cores are `tool` / `material` container terms. Each inventory variation is its own term (`tool_variation` / `material_variation`) with `vocab_keys.parent_public_key` pointing at the live parent core key.
+- Terms that came from Toolio use Toolio's key when it is valid kebab-case: the core or variant `sku` for inventory, `projects.slug` for projects and groupings. Otherwise review picks a key (flagged `BAD KEY`); Toolio's own SKU or slug is unchanged.
+- Terms that exist only in Project Partner get a key derived from their name (variations: parent key + name/SKU). A clash with any existing key is a crosswalk conflict, resolved by a person.
+- Toolio stores the key, not its SKU, on a link, so renaming a Toolio SKU never breaks a link. Cores link only to `tool`/`material`; children link only to `*_variation` whose mirrored `parent_public_key` matches the parent core's `pp_vocab_key`.
+- A removed term leaves its key in `vocab_keys` as a tombstone (`removed_at`, `replaced_by_public_key`), so the key is never reissued and old references can be traced. A core with live keyed variations cannot be removed until those children are removed or remapped.
 
 ## Two-sided removal
 
-A shared term (category, project, tool, or material) is permanently removed only when **both apps approve**. Either app can start the request; the request itself counts as that app's approval.
+A shared term (category, project, tool, material, or variation) is permanently removed only when **both apps approve**. Either app can start the request; the request itself counts as that app's approval.
 
 ```mermaid
 flowchart TD
@@ -63,27 +64,27 @@ flowchart TD
 
 ## New terms from Toolio
 
-Toolio never creates shared terms itself. A new Toolio inventory core or project links to the term with the same normalized name when exactly one exists; otherwise Toolio proposes one.
+Toolio never creates shared terms itself. A new Toolio inventory core, inventory variant, or project links to the term with the same normalized name when exactly one exists under the right parent; otherwise Toolio proposes one.
 
-- **Proposal.** `vocab_propose_term` records the proposed key (the Toolio `sku` or `slug`), name, description, and the waiting Toolio item, and notifies Project Partner admins.
-- **Decision.** In Admin → **Requests**, an admin either adds the proposal as a new term (choosing type, category, and for tools specialty) or maps it to an existing term of a matching kind (a Toolio product to a tool or material, a project to a project family). Toolio links the waiting item when the decision syncs.
+- **Proposal.** `vocab_propose_term` records the proposed key (the Toolio `sku` or `slug`), name, description, the waiting Toolio item, and for variants the parent core's `public_key`, and notifies Project Partner admins. Variant proposals use `entity` `tool_variation` / `material_variation` and `toolio_item_kind` `inventory_variant`.
+- **Decision.** In Admin → **Requests**, an admin either adds the proposal as a new term (choosing type, category, and for tools specialty; variants are created under the proposed parent) or maps it to an existing term of a matching kind (a Toolio product to a tool or material, a variant to a variation under the same parent, a project to a project family). Toolio links the waiting item when the decision syncs.
 - **Withdrawal.** Toolio cancels a proposal when its item is deleted or no longer waits. Cancelling a proposal that was already decided returns the decision unchanged.
 
 ## Project Partner schema (added in phase 3)
 
 | Object | Purpose |
 | --- | --- |
-| `vocab_keys (public_key PK, entity category/project/tool/material, removed_at, replaced_by_public_key)` | Global key registry; removed terms stay as tombstones |
-| `public_key` on `tools`, `materials`, and family roots (`projects.parent_project_id IS NULL`) | FK to `vocab_keys`; immutable by trigger |
+| `vocab_keys (public_key PK, entity category/project/tool/material/tool_variation/material_variation, parent_public_key for variations, removed_at, replaced_by_public_key)` | Global key registry; removed terms stay as tombstones |
+| `public_key` on `tools`, `materials`, `tool_variations`, `materials_variants`, and family roots (`projects.parent_project_id IS NULL`) | FK to `vocab_keys`; immutable by trigger |
 | `project_categories (public_key, name)` | Categories as vocabulary; replaces the free-text `projects.category` array |
 | `project_family_categories (family_key, category_key)` | Which categories a family belongs to |
 | `name_key` on `tools`, `materials` | Unique normalized name (Toolio's `inventory_item_name_comparison_key` rule) |
 | `vocab_removal_requests (id, public_key, item_name, requested_by_app pp/toolio, requested_by_email, reason, replacement_key, replacement_name, pp_decision, pp_decided_by, toolio_decision, toolio_decided_by, status open/approved/rejected/cancelled, timestamps)` | Two-sided removal; the requesting app's decision is `approve` on creation |
 | `vocab_aliases (public_key, alias, alias_key, source)` | Sources: `pp_name`, `pp_revision_name`, `toolio_name`, `alternates` |
 | `project_family_tools (family_key, term_key, role, source)` | `role`: `required` or `substitute`; `source`: `steps` or `toolio_seed` |
-| `vocab_term_proposals (id, entity tool/material/project, proposed_key, proposed_name, description, requested_by, toolio_item_kind, toolio_item_id, status open/approved/mapped/cancelled, result_key, decided_by, timestamps)` | Terms Toolio proposes for its waiting items (phase 5); one open proposal per Toolio item |
+| `vocab_term_proposals (id, entity tool/material/project/tool_variation/material_variation, proposed_key, proposed_name, description, proposed_parent_key, requested_by, toolio_item_kind inventory_core/project/inventory_variant, toolio_item_id, status open/approved/mapped/cancelled, result_key, decided_by, timestamps)` | Terms Toolio proposes for its waiting items (phase 5/6); one open proposal per Toolio item |
 | `vocab_change_events (seq bigserial, entity, public_key, change_kind, payload, created_at)` | Change feed; `change_kind`: `upsert`, `remove` (payload carries `replaced_by_public_key`), `removal_request` and `term_proposal` (payload is the request's or proposal's current row); `payload` is the full current row |
-| Delete guard trigger | Blocks direct deletes of categories, tools, materials, and family roots; only completing an approved removal request deletes them |
+| Delete guard trigger | Blocks direct deletes of categories, tools, materials, variations, and family roots; only completing an approved removal request deletes them |
 
 - The events table has no client access. Aliases and family tool lists are readable as the app needs them and writable by admins only. Removal requests are readable and decidable by admins only.
 - **Admin screens.** Delete on a tool, material, project family, or category becomes **Request removal** (optional replacement, reason). Admin → **Requests** lists open removal requests from Toolio (Approve or Reject) and new terms from Toolio (add or map); each new one creates an admin notification.
@@ -128,7 +129,7 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 | --- | --- | --- |
 | `snapshot` | none | Every term, project, family tool list, alias, and open term proposal, plus `as_of_seq` |
 | `changes_since` | `after_seq`, `limit` | Events with `seq > after_seq` that are older than a 5-minute settle window, in `seq` order |
-| `propose_term` | `entity` (`tool`, `material`, `project`), `key`, `name`, `description?`, `toolio_item_kind` (`inventory_core` or `project`), `toolio_item_id`, `requested_by` | 201 with the proposal. Fails when the item already has an open proposal. A taken key or name is caught when an admin adds the proposal, who then maps it instead. |
+| `propose_term` | `entity` (`tool`, `material`, `project`, `tool_variation`, `material_variation`), `key`, `name`, `description?`, `toolio_item_kind` (`inventory_core`, `project`, or `inventory_variant`), `toolio_item_id`, `requested_by`, `parent_key?` (required for `inventory_variant`) | 201 with the proposal. Fails when the item already has an open proposal. A taken key or name is caught when an admin adds the proposal, who then maps it instead. |
 | `cancel_proposal` | `proposal_id`, `requested_by` | 200 with the proposal: cancelled when it was open, unchanged when already decided. |
 | `request_removal` | `key`, `reason`, `replacement_key?`, `requested_by_email` | 201 with the request (Toolio's decision `approve`). 409 when an open request for the key exists. |
 | `decide_removal` | `request_id`, `decision` (`approve` or `reject`), `decided_by_email` | 200 with the request. On approval of a Project Partner request, completes the removal in the same transaction; 409 with the blocking references when the term has references and no replacement. |
@@ -140,7 +141,7 @@ Library rows are `tools` (with `tool_variations.core_item_id`) and `materials` (
 ## Toolio side (summary)
 
 - Mirror tables `pp_vocab_terms`, `pp_vocab_projects` (families and categories, by `kind`), `pp_vocab_project_terms`, `pp_vocab_aliases`, `pp_vocab_removal_requests`, `pp_vocab_term_proposals`, `pp_vocab_sync_state`.
-- Link column `pp_vocab_key` on `projects` (guided projects link to families, groupings to categories) and on `inventory_items` cores; `pp_vocab_pending` marks items waiting for a proposed term. Every core and project is linked or waiting.
+- Link column `pp_vocab_key` on `projects` (guided projects link to families, groupings to categories) and on `inventory_items` cores and children; `pp_vocab_pending` marks items waiting for a proposed term. Every core, variant, and project is linked or waiting. Variation rows in `pp_vocab_terms` carry `parent_public_key`.
 - Edge function `project-partner-link` with actions `sync`, `refresh_proposals`, `release_term`, `decide_removal`, `cancel_removal`, `snapshot_reload`.
 - Details: Toolio `docs/PROJECT_PARTNER_INTEGRATION.md`.
 
@@ -150,7 +151,7 @@ Toolio is the identity provider for Project Partner; each app keeps its own prof
 
 - **Provider:** Supabase custom OIDC provider `custom:toolio` (Auth → Providers), with the issuer `https://yscicarelzxjidhlxstv.supabase.co/auth/v1` and the client ID and secret from Toolio's OAuth server. supabase-js 2.55's `Provider` type predates `custom:` identifiers, so `AuthContext` asserts the type; the client passes the name through to `/authorize` unchanged.
 - **Linking:** Supabase links a Toolio sign-in to the existing user with the same confirmed email, keeping the user id and with it projects, runs, and membership. Unconfirmed users are not linked by sign-in; an admin can still link them. A Toolio-only person gets a new user through `handle_new_user_trial`.
-- **Sign-in page:** **Continue with Toolio** calls `signInWithToolio`, which opens Toolio's login in a small popup (`skipBrowserRedirect` + `window.open`). Toolio's `/auth` and OAuth consent pages omit site chrome so the popup is login-only. The popup returns to `/auth?toolio_popup=1`, exchanges the code, posts success to the opener, and closes. The main window stays on its route; `AuthContext` logs `toolio_oauth` (success or failure), records the session in `user_sessions`, and moves guest projects into the account. The sign-in page saves onboarding answers before opening the popup.
+- **Sign-in page:** **Continue with Toolio** calls `signInWithToolio`, which opens Toolio's login in a small popup (`skipBrowserRedirect` + `window.open`). Toolio serves that flow on `/auth?oauth=1` and OAuth consent without site chrome (branded login card only); storefront `/auth` keeps the full site header. The popup returns to `/auth?toolio_popup=1`, exchanges the code, posts success to the opener, and closes. The main window stays on its route; `AuthContext` logs `toolio_oauth` (success or failure), records the session in `user_sessions`, and moves guest projects into the account. The sign-in page saves onboarding answers before opening the popup.
 - **Sign-in page:** Continue with Toolio sits in the same row and style as Continue with Google, with the Toolio mark (`public/brand/toolio-mark.png`).
 - **Link prompt:** after a sign-in that did not use Toolio, `ToolioLinkPrompt` asks edge function `toolio-account` (`action: "status"`, the user's own session) whether a Toolio account exists for the user's confirmed email. The function asks Toolio's `project-partner-link` `account_exists` with header `x-project-partner-sync-token` (secret `TOOLIO_SYNC_TOKEN`, URL secret `TOOLIO_LINK_URL`). If one exists and is not linked, the prompt offers **Link accounts**, which runs Continue with Toolio and links by email. **Not now** is remembered per user in this browser.
 - **Admin linking:** admins link or unlink accounts in either app, including accounts whose emails differ.
@@ -179,6 +180,10 @@ Both apps work the same way: nothing in this integration connects to a database 
 | `sql/pp-1-library.sql` | 0: tools, materials, variations | Project Partner SQL editor (Supabase) |
 | `sql/pp-2-projects.sql` | 0: projects and each family's current revision | Project Partner SQL editor (Supabase) |
 | `sql/pp-3-references.sql` | 0: every tool and material reference, grouped with counts | Project Partner SQL editor (Supabase) |
+| `sql/pp-phase6-variant-keys.sql` | 6: shared keys for variations + proposal/removal RPC updates | Project Partner SQL editor (Supabase) |
+| `sql/toolio-phase6-variant-keys.sql` | 6: mirror variations, child links, soft-match reconcile | Toolio SQL editor (after PP phase 6 + snapshot reload) |
+| `sql/toolio-phase6-propose-unmatched.sql` | 6: list waiting variants for `propose_term` | Toolio SQL editor |
+| `sql/pp-phase6-linkage-report.sql` | 6: variant key coverage status | Project Partner (and commented Toolio query) |
 | `validate-export.mjs` | 0: checks the saved results, writes `manifest.json` | Terminal |
 | `extract.mjs` | 1: matching views in `extract/*.json`; generates `toolio-3-name-keys.sql` | Terminal |
 | `match.mjs` | 2: `vocab-crosswalk.csv` and `match_summary.json` | Terminal |

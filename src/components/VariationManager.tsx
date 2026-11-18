@@ -17,6 +17,7 @@ import {
   persistAttributeDefinitionsForCoreItem,
 } from '@/utils/variationAttributeDefinitions';
 import { VariationEditor } from './VariationEditor';
+import { RequestRemovalDialog } from '@/components/RequestRemovalDialog';
 import {
   Dialog,
   DialogContent,
@@ -63,6 +64,7 @@ interface VariationInstance {
   description?: string;
   sku?: string;
   photo_url?: string;
+  public_key?: string | null;
   attributes: Record<string, string>;
   estimated_weight_lbs?: number;
   estimated_rental_lifespan_days?: number;
@@ -93,6 +95,8 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
   const [showAttributeDialog, setShowAttributeDialog] = useState(false);
   const [showValueDialog, setShowValueDialog] = useState(false);
   const [showVariationDialog, setShowVariationDialog] = useState(false);
+  const [removalTarget, setRemovalTarget] = useState<VariationInstance | null>(null);
+  const [parentPublicKey, setParentPublicKey] = useState<string | null>(null);
   
   // Common attributes that can be selected
   const [commonAttributes] = useState([
@@ -122,6 +126,10 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
   useEffect(() => {
     fetchAttributes();
     fetchVariations();
+    void (async () => {
+      const { data } = await supabase.from('tools' as any).select('public_key').eq('id', coreItemId).maybeSingle();
+      setParentPublicKey((data as { public_key?: string } | null)?.public_key ?? null);
+    })();
   }, [coreItemId]);
 
   // Reset selected attribute if it no longer exists in the updated attributes list
@@ -377,18 +385,21 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
     }
   };
 
-  const handleDeleteVariation = async (variationId: string) => {
+  const handleDeleteVariation = async (variation: VariationInstance) => {
+    if (variation.public_key) {
+      setRemovalTarget(variation);
+      return;
+    }
     if (!confirm('Are you sure you want to delete this variation?')) return;
 
     try {
       const { error } = await supabase
         .from('tool_variations')
         .delete()
-        .eq('id', variationId);
+        .eq('id', variation.id);
 
       if (error) throw error;
 
-      
       fetchVariations();
       onVariationUpdate?.();
     } catch (error) {
@@ -973,7 +984,7 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteVariation(variation.id)}
+                      onClick={() => handleDeleteVariation(variation)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -1004,6 +1015,22 @@ export function VariationManager({ coreItemId, coreItemName, onVariationUpdate }
           }}
         />
       )}
+
+      {removalTarget?.public_key ? (
+        <RequestRemovalDialog
+          open={!!removalTarget}
+          onOpenChange={(open) => !open && setRemovalTarget(null)}
+          entity="tool_variation"
+          publicKey={removalTarget.public_key}
+          name={removalTarget.name}
+          parentPublicKey={parentPublicKey}
+          onRequested={() => {
+            setRemovalTarget(null);
+            fetchVariations();
+            onVariationUpdate?.();
+          }}
+        />
+      ) : null}
     </div>
   );
 }

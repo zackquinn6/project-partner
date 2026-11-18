@@ -27,8 +27,10 @@ import {
   GraduationCap,
   Loader2,
   Trash2,
+  ShieldCheck,
   type LucideIcon,
 } from 'lucide-react';
+import { GuaranteeClaimsAdminWindow } from '@/components/GuaranteeClaimsAdminWindow';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { StructureManager } from './StructureManager';
@@ -211,6 +213,7 @@ export const AdminView: React.FC = () => {
   const [actionCenterOpen, setActionCenterOpen] = useState(false);
   const [appManagerOpen, setAppManagerOpen] = useState(false);
   const [projectSkillAssessmentsOpen, setProjectSkillAssessmentsOpen] = useState(false);
+  const [guaranteeClaimsOpen, setGuaranteeClaimsOpen] = useState(false);
   const [currentView, setCurrentView] = useState<'admin' | 'process-map'>('admin');
 
   useEffect(() => {
@@ -333,6 +336,15 @@ export const AdminView: React.FC = () => {
       actionLabel: 'Open',
       icon: GraduationCap,
       onOpen: () => setProjectSkillAssessmentsOpen(true),
+    },
+    {
+      id: 'guarantee-claims',
+      requireFullAdmin: true,
+      title: 'Guarantee Claims',
+      description: 'Decide success guarantee refund and credit requests against the run evidence record',
+      actionLabel: 'Open Claims',
+      icon: ShieldCheck,
+      onOpen: () => setGuaranteeClaimsOpen(true),
     },
   ];
 
@@ -470,6 +482,7 @@ export const AdminView: React.FC = () => {
         <ProjectAnalyticsWindow open={analyticsOpen} onOpenChange={setAnalyticsOpen} />
         
         <UsersSecurityWindow open={usersSecurityOpen} onOpenChange={setUsersSecurityOpen} />
+        <GuaranteeClaimsAdminWindow open={guaranteeClaimsOpen} onOpenChange={setGuaranteeClaimsOpen} />
         
         <ToolsMaterialsWindow open={toolsMaterialsOpen} onOpenChange={setToolsMaterialsOpen} />
         <RemovalRequestsWindow open={removalRequestsOpen} onOpenChange={setRemovalRequestsOpen} />

@@ -149,7 +149,8 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
       id: `custom-unplanned-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
       name: phaseName,
       description: phaseDescription,
-      operations
+      operations,
+      isCustom: true
     };
 
     onCreateCustomWork(customPhase);
@@ -187,7 +188,8 @@ export const SimplifiedCustomWorkManager: React.FC<SimplifiedCustomWorkManagerPr
             <Alert className="border-info/40 bg-info/10">
               <Info className="h-4 w-4 text-info" />
               <AlertDescription className="text-info text-xs leading-relaxed">
-                Custom work won&apos;t have the workflow as created for other projects.
+                Custom work has no pre-built steps, checks, or rework paths. Adding it ends success
+                guarantee coverage for this run.
               </AlertDescription>
             </Alert>
 

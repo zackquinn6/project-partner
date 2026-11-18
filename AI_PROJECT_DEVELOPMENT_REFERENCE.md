@@ -52,8 +52,9 @@ Read the current state first, then author. Produce a per-step matrix over **all*
 | Failure modes where relevant | `pfmea_requirements` → `pfmea_failure_modes` → effects / causes / controls | 9 |
 | Quality goal levels (3 rows) | `project_quality_levels` | 11 |
 | Quality-gated steps | `operation_steps.min_quality_goal` | 11 |
+| Rework path for each failure mode a user can cause | `rework_operation_triggers` → `flow_type = 'rework'` operation | 13 |
 
-Project-level components audited once: `project_risks` (Step 4, including component and scores on every row), `projects.description` / `project_challenges` (Step 10), `project_quality_levels` (Step 11, all three levels), `scheduling_prerequisites` (§E), catalog header (§D).
+Project-level components audited once: `project_risks` (Step 4, including component and scores on every row), `projects.description` / `project_challenges` (Step 10), `project_quality_levels` (Step 11, all three levels), `project_assumptions` (Step 12), guarantee readiness (Step 13), `scheduling_prerequisites` (§E), catalog header (§D).
 
 **Check the JSON shape against the component that reads it, not against what is already stored.** Step JSON written by an older authoring surface can be structurally stale (for example tool rows keyed on `coreItemId` render with no name in `CompactToolsTable`). A populated column is not the same as a working one.
 
@@ -68,7 +69,8 @@ Project-level components audited once: `project_risks` (Step 4, including compon
 5. **Process variables** (Step 7), then **time estimates** (Step 8).
 6. **Project risks** (Step 4), then **PFMEA** (Step 9).
 7. **Quality goals** (Step 11): `project_quality_levels` + `min_quality_goal` on owned steps that differ by level.
-8. **Catalog copy** (Step 10) and schedule prerequisites (§E) last, once scope is settled.
+8. **Rework paths** (Step 13) once PFMEA exists, then **assumptions** (Step 12), whose branches point at operations that must already exist.
+9. **Catalog copy** (Step 10) and schedule prerequisites (§E) last, once scope is settled.
 
 ### H.4 General library bootstrap is expected
 
@@ -99,7 +101,7 @@ Adding rows to the shared `public.tools` and `public.materials` catalogs is **no
 <!-- PLANNING_STANDARD:BEGIN -->
 ## Shared product planning standard (generated)
 
-**Version:** `1.5.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
+**Version:** `1.6.0` - **Source of truth:** `src/utils/projectPlanningStandard.ts`
 
 Do not hand-edit this block. Change the TypeScript module, then run `npm run sync:planning-standard`. Authoring/SQL field catalogs remain in §A / §B below.
 
@@ -128,7 +130,7 @@ Do not hand-edit this block. Change the TypeScript module, then run `npm run syn
 | ---- | ------ | ------ |
 | **Instruction detail** (`instruction`) | beginner / intermediate / advanced | Same steps; different prose depth (and media) via step_instructions rows. |
 | **Quality goal** (`quality`) | good / great / professional | Different process path: include or exclude steps and operations via min_quality_goal; outcome/process narrative via project_quality_levels (snapshotted onto the run). |
-| **Customization** (`customization`) | prime / alternate / if-necessary (+ micro-decisions) | Branching choices. Do not overload if-necessary for quality ladder gating. |
+| **Customization** (`customization`) | prime / alternate / if-necessary / rework (+ micro-decisions) | Branching choices. Rework operations stay out of the plan until a failure triggers them. Do not overload if-necessary for quality ladder gating or for rework. |
 
 - Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.
 - Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.
@@ -267,6 +269,8 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 | `error-correction` | **Error Correction** - Guidance for common errors and how to correct them (Error-Recovery instruction sections). | 2 |
 | `safety` | **Safety** - Safety guidance upfront and at relevant steps; reasons explained. | 2 |
 | `quality-goals` | **Quality goals** - Good / Great / Professional outcome and process content, plus min_quality_goal on steps that differ by level. | 11 |
+| `assumptions` | **Assumptions** - Every condition the plan depends on is listed as a project assumption: checked by a step output, branched to an operation that handles it, or accepted as outside the plan. | 12 |
+| `rework-paths` | **Rework paths** - Every failure mode a user can cause has a pre-built rework operation (new steps plus loop-backs to existing steps) linked to it, with its own outputs, time, and PFMEA. | 13 |
 
 ### Cross-cutting product rules
 
@@ -282,6 +286,8 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Quality goals (Good / Great / Professional)** (`quality-goals`): Good, Great, and Professional are both outcome and process. Author three project_quality_levels rows per owning template, including kickoff_summary for the kickoff Goals one-liner. Gate extra process with operation_steps.min_quality_goal and phase_operations.min_quality_goal when a whole operation is quality-gated (null = all levels; great = Great+Professional; professional = Professional only). Do not overload if-necessary for quality gating. Adopted phases keep quality-impact content on the source project; runs snapshot contributing rows into project_run_quality_levels at create. Mid-run goal changes reshape incomplete forward steps and ops only; completed steps stay complete; Quality Control uses the current goal as the expected level.
 - **Content axes (instruction, quality, customization)** (`content-axes`): Axes are orthogonal. A beginner can run a Professional quality path (harder process with more scaffolding). Write all three instruction levels on quality-gated steps too.
 - **Professional naming (quality vs skill)** (`professional-naming`): Do not confuse quality goal Professional (finish / process ladder) with catalog or step skill_level Professional (who the work is sized for). Use clear labels: Quality goal vs Skill level.
+- **Assumptions (coverage boundary)** (`assumptions`): List every condition the plan depends on in project_assumptions. Cross-project conditions (structure sound, no natural disaster, utilities available) live once on the Standard Project Foundation; project conditions live on the owning template. Handle each one as checked (a step output verifies it and a branch operation handles a failure), branched (a branch operation already in the template handles it), or accepted (the plan has no response; violation ends success guarantee coverage). Accepted is the honest gap list: convert accepted assumptions into branched ones as the plan grows, rather than deleting them.
+- **Rework paths are planned operations** (`rework-paths`): Rework is never free text. Author it as a phase_operations row with flow_type rework in the phase where the failure is found, containing new steps (for example, remove failed tile) and loop-back steps that re-run existing steps by reference (operation_steps.repeats_operation_step_id) so their content, controls, and durations are reused. New rework steps meet the same step requirements as any step. Link each rework operation to the failure modes and outputs it recovers (rework_operation_triggers); failure modes on the rework steps link back to their own rework operation. A template is guarantee-ready only when every failure mode with a human-variable, non-mistake-proofed cause has a rework path.
 <!-- PLANNING_STANDARD:END -->
 
 ---
@@ -293,7 +299,7 @@ Phases & operations = project management. Steps = instructions. Actions = micro 
 - **Phases JSON cache** after normalized workflow changes:  
 `UPDATE public.projects SET phases = public.rebuild_phases_json_from_project_phases_internal(<project_id>) WHERE id = <project_id>;`  
 Call the **`_internal`** function from migrations. The un-suffixed `rebuild_phases_json_from_project_phases` is an auth-gated wrapper that checks `can_caller_edit_project` and raises `Not authorized` for a migration, SQL-editor, or service-role caller. If rebuild fails, fix the cause - do not invent cache values.
-- **The rebuild emits only** `id`, `name`, `description`, `flowType`, `steps`, `isStandard` per operation. Decision copy (`userPrompt`, `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription`) lives in `projects.scheduling_prerequisites.__decision_tree_config__` and is merged onto operations at read time, so a rebuild dropping those keys from the cache is expected and not data loss.
+- **The rebuild emits only** `id`, `name`, `description`, `flowType`, `minQualityGoal`, `steps`, `isStandard` per operation, and skips `flow_type = 'rework'` operations (fetched on demand by `get_rework_operation_json`). Decision copy (`userPrompt`, `decisionDetailedSummary`, `optionImageUrl`, `optionDetailedDescription`) lives in `projects.scheduling_prerequisites.__decision_tree_config__` and is merged onto operations at read time, so a rebuild dropping those keys from the cache is expected and not data loss.
 - **Migration SQL:** Runnable as-is; **RAISE** when prerequisites missing; **idempotent** stable UUIDs + `ON CONFLICT` where appropriate (e.g. `(step_id, instruction_level)` for `step_instructions`).
 - **UUID literals:** Last group after final hyphen = **exactly 12 hex digits** or PostgreSQL raises `22P02`.
 - **Draft vs ship (§H.5):** During authoring, one SQL file per guide step per project slug so steps can be applied and fixed independently. Before commit, concatenate those files in H.3 order into **one** `<slug>_<scope>_bundle.sql` and remove the per-step drafts from `supabase/migrations/`. Never leave two competing Step N ship files for the same slug/scope; extra templates in one build-out → another `DO $$ … $$` block in the **same** bundle. Filename: `YYYYMMDDHHMMSS_<slug>_…` - **no** `project_id` in the name.
@@ -464,7 +470,7 @@ See shared rule `quality-control-placement` and the methods table in the generat
 | `operation_description` | string \| null | One-line scope |
 | `display_order` | number | Coherent within phase |
 | `estimated_time` | string \| null | Optional rollup hint |
-| `flow_type` | string \| null | `prime` / `alternate` / `if-necessary` |
+| `flow_type` | string \| null | `prime` / `alternate` / `if-necessary` / `rework` (Step 13; excluded from the phases cache) |
 | `min_quality_goal` | string \| null | Optional; `great` / `professional` when the whole operation is quality-gated (Step 11) |
 
 #### `operation_steps` fields (structure + later enrichments)
@@ -482,8 +488,9 @@ See shared rule `quality-control-placement` and the methods table in the generat
 | `number_of_workers` | number \| null | Workers needed |
 | `skill_level` | string \| null | Beginner / Intermediate / Advanced / Professional |
 | `allow_content_edit` | bool \| null | Allow edit even in standard phases when true |
-| `outputs`, `tools`, `materials`, `process_variables`, `apps` | Json \| null | Steps 3, 5–7 (and apps if directed) |
+| `outputs`, `tools`, `materials`, `process_variables`, `apps` | Json \| null | Steps 3, 5-7 (and apps if directed) |
 | `time_estimate_low`, `time_estimate_med`, `time_estimate_high` | number \| null | Step 8 (hours; see step_type) |
+| `repeats_operation_step_id` | uuid \| null | Loop-back step inside a `rework` operation only (Step 13); content comes from the referenced step |
 
 After structure changes: rebuild `projects.phases` cache (§A).
 
@@ -747,6 +754,52 @@ If the user is uncomfortable with the listed challenges, they may choose not to 
 
 **Audit:** three level rows present; every non-null `min_quality_goal` is a valid value; gated steps have titles that still exist on owned phases.
 
+### Step 12 - Assumptions (`project_assumptions`)
+
+**Shared checklist:** `assumptions` · see cross-cutting `assumptions` and `docs/SUCCESS_GUARANTEE.md`.
+
+Assumptions are the conditions the plan depends on and the boundary of success guarantee coverage. Runs snapshot foundation + host template + adopted source rows into `project_run_assumptions` at create; users acknowledge them before the plan locks.
+
+- **Foundation vs template.** Conditions true of any DIY project (structure sound, no natural disaster, utilities available, permits in place) live once on the Standard Project Foundation root. Project conditions (flatness limit for tile size, cure temperature range) live on the owning template root.
+- **Handling decides the plan response.** Prefer `checked` or `branched`; `accepted` is for conditions no plan can handle. Every accepted row is an admission the plan does not cover it, so do not hide gaps by leaving a condition out.
+- **Branches must already exist.** `branch_operation_id` points at an operation the template (or an adopted phase on it) already contains. Author the branch first (Step 1), then the assumption.
+
+| Field | Type / enums | Authoring rule |
+| ----- | ------------ | -------------- |
+| `id` | uuid | Stable |
+| `project_id` | uuid | Template root, or the Standard Project Foundation root for cross-project rows |
+| `statement` | text | One sentence a homeowner can confirm or deny on site; quantify limits |
+| `category` | `structure` / `environment` / `utilities` / `materials` / `user` / `external_events` | Required |
+| `protected_goals` | text[] ⊆ `quality`, `schedule` | Which guarantee goals the condition protects |
+| `handling` | `checked` / `branched` / `accepted` | `checked` needs check step + output + branch; `branched` needs branch only; `accepted` has none (CHECK constraint) |
+| `check_operation_step_id`, `check_output_id` | uuid / text | Step output that verifies the condition; output id must exist in that step's `outputs` (trigger-validated) |
+| `branch_operation_id` | uuid | Operation that handles a violation; must be reachable from `project_id` (owned or adopted phase) |
+| `display_order` | int | UNIQUE per project |
+
+**Audit:** at least one row on the template and on the foundation; every `checked` output id resolves; every branch operation is in the template's phase graph.
+
+### Step 13 - Rework paths (`flow_type = 'rework'` + `rework_operation_triggers`)
+
+**Shared checklist:** `rework-paths` · see cross-cutting `rework-paths` and `docs/SUCCESS_GUARANTEE.md`.
+
+Rework is planned work. A rework path is a `phase_operations` row with `flow_type = 'rework'` in the phase where the failure is found. The phases cache excludes it (`rebuild_phases_json_from_project_phases_internal`); Something Wrong places it right after the failing step's operation when the user reports a quality failure, and the risk engine applies its PFMEA only once it is in the run.
+
+- **Steps.** New steps (for example, remove failed tile, rake out grout) meet every step requirement: 3 instruction levels, outputs with `qualityChecks`, tools and materials resolved from the library, process variables, time estimates, PFMEA. Use `step_type = prime` with absolute hours for localized repair work.
+- **Loop-backs.** Re-run an existing step with a row whose `repeats_operation_step_id` points at the original step. Leave its tools, materials, outputs, process variables, time, and instructions empty: the steps JSON and run instruction snapshot take them from the referenced step. A loop-back may point at a step in an adopted phase (for example, Subfloor Replacement steps from Tile), never at another loop-back, and may only live in a rework operation (trigger-validated).
+- **Triggers.** One `rework_operation_triggers` row per failure mode the path recovers (`failure_mode_id`, with `trigger_operation_step_id` = that failure mode's step), or per output (`output_id`) when no failure mode exists. Failure modes on rework steps trigger their own rework operation, so a repeat failure reopens the same planned work.
+- **No register risks on rework steps.** The run sync copies every template register row onto every run; rework steps are not in the plan until triggered. Put schedule exposure in the rework step durations and quality controls in PFMEA.
+
+| `rework_operation_triggers` field | Authoring rule |
+| --------------------------------- | -------------- |
+| `rework_operation_id` | A `flow_type = 'rework'` operation (trigger-validated) |
+| `trigger_operation_step_id` | The step the failure is reported on; equals the failure mode's `operation_step_id` |
+| `failure_mode_id` | PFMEA failure mode recovered; NULL only for output-only triggers |
+| `output_id` | Output on the trigger step; required when `failure_mode_id` is NULL |
+
+**Readiness:** `get_project_guarantee_readiness(project_id)` lists failure modes with a human-variable, non-mistake-proofed cause that still lack a rework path. A template is guarantee-ready when that list is empty and both the template and the foundation carry assumptions.
+
+**Audit:** every new rework step complete per H.2; every loop-back resolves; readiness reports no uncovered failure modes.
+
 ---
 
 ## E) Schedule data (template authoring)
@@ -794,6 +847,8 @@ Never invent related-project relationships. Resolve catalog names carefully (§A
 | 9 | PFMEA tables |
 | 10 | `projects.description`, `projects.project_challenges` |
 | 11 | `project_quality_levels` + `operation_steps.min_quality_goal` |
+| 12 | `project_assumptions` (template + foundation) |
+| 13 | Rework operations (`flow_type = 'rework'`), loop-back steps, `rework_operation_triggers` |
 
 Also: **§H build out a project end to end**, §D catalog header, §E schedule prereqs, §F related projects / revisions, **§G home maintenance templates**.
 
@@ -883,6 +938,7 @@ Living changelog for **guide and planning-standard rule changes only**. Append a
 
 | Date | Change | Why |
 | ---- | ------ | --- |
+| 2026-11-13 | Planning standard v1.6.0: Step 12 assumptions (`project_assumptions`, checked / branched / accepted, foundation vs template) and Step 13 rework paths (`flow_type = 'rework'` operations, loop-back steps via `repeats_operation_step_id`, `rework_operation_triggers`, no register risks on rework steps); readiness via `get_project_guarantee_readiness`; rework operations excluded from the phases cache | Success guarantee: rework must be planned work with its own controls and durations, and assumptions bound coverage |
 | 2026-11-11 | §H.4: tools, materials, project families, and categories are shared items with Toolio (match by `vocab_name_key`, never set `public_key`, never `DELETE`; removal is a two-sided request). Step 5/6 entries carry `library_id` | Project Partner and Toolio link: shared keys, delete guard, and the step entry shape from the phase 3 load |
 | 2026-09-24 | Revision history + `.cursor/rules/ai-project-dev-guide.mdc` continuous improvement: update the guide only when durable rules/fields change; do not append history for ordinary catalog content or project build-out migrations | Using the guide to create content was incorrectly treated as a guide update |
 | 2026-09-24 | Planning standard v1.5.0: quality-control-placement rule + Quality Control Methods catalog; Step 1/3 authoring: nest in-process QC in value-add ops; distinct QC ops/phases only for scheduled hold/soak/flood/pressure gates; `outputs.qualityChecks` must name the method on QC steps | Admin guidance: tile Prep/Install checks stay in-process; shower flood test is a rare distinct control |

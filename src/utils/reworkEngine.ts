@@ -1,4 +1,3 @@
-import { Phase, Operation, WorkflowStep } from '@/interfaces/Project';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { TemplateFamily } from '@/utils/templateFamilies';
 import type { RiskDimension } from '@/utils/riskDimensions';
@@ -20,7 +19,7 @@ export type ReworkSeverity = 'minor' | 'critical' | 'delay' | 'stop';
 
 export type RecoveryAction =
   | 'reopen_step'
-  | 'insert_rework_op'
+  | 'run_rework_path'
   | 'open_shopping'
   | 'open_unplanned_work'
   | 'open_tool_rentals'
@@ -158,11 +157,11 @@ export function buildRecoveryPlan(triageType: TriageType): RecoveryPlan {
       return {
         summary: 'Do not use defective materials. Replace them and redo affected work.',
         severity: 'critical',
-        actions: ['insert_rework_op', 'open_shopping', 'reopen_step', 'schedule_slip'],
+        actions: ['run_rework_path', 'open_shopping', 'reopen_step', 'schedule_slip'],
         userSteps: [
           'Set aside defective materials',
           'Order replacements',
-          'Follow the inserted Rework operation before moving on',
+          'Complete the rework operation added after this step before moving on',
         ],
       };
     case 'unplanned_work':
@@ -179,11 +178,11 @@ export function buildRecoveryPlan(triageType: TriageType): RecoveryPlan {
     case 'mistake':
     case 'qc_fail':
       return {
-        summary: 'Insert a Rework operation with fix steps, then re-check this step before continuing.',
+        summary: 'Run the pre-built rework path for this failure, then re-check this step before continuing.',
         severity: 'critical',
-        actions: ['insert_rework_op', 'reopen_step', 'schedule_slip'],
+        actions: ['run_rework_path', 'reopen_step', 'schedule_slip'],
         userSteps: [
-          'Complete the Rework operation (remove / redo / re-check)',
+          'Complete the rework operation added after this step',
           'Re-photo or re-check quality outputs on this step',
           'Mark the original step complete only after checks pass',
         ],
@@ -211,78 +210,6 @@ export function buildRecoveryPlan(triageType: TriageType): RecoveryPlan {
       };
     }
   }
-}
-
-function newId(prefix: string): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
-
-/** Critical fails insert a visible Rework operation before the current operation. */
-export function insertReworkOperation(
-  phases: Phase[],
-  phaseId: string | undefined,
-  stepId: string | undefined,
-  triageType: TriageType,
-  comments: string
-): { phases: Phase[]; reworkOperationId: string | null; reworkStepId: string | null } {
-  if (!phaseId || !stepId) {
-    return { phases, reworkOperationId: null, reworkStepId: null };
-  }
-
-  const plan = buildRecoveryPlan(triageType);
-  const cloned: Phase[] = JSON.parse(JSON.stringify(phases));
-  const phase = cloned.find((p) => p.id === phaseId);
-  if (!phase?.operations?.length) {
-    return { phases, reworkOperationId: null, reworkStepId: null };
-  }
-
-  let opIndex = phase.operations.findIndex((op) =>
-    (op.steps || []).some((s) => s.id === stepId)
-  );
-  if (opIndex < 0) opIndex = 0;
-
-  const reworkOperationId = newId('rework-op');
-  const reworkStepId = newId('rework-step');
-  const contentLines = [
-    plan.summary,
-    '',
-    ...plan.userSteps.map((s, i) => `${i + 1}. ${s}`),
-    comments.trim() ? `\nNotes: ${comments.trim()}` : '',
-  ]
-    .filter(Boolean)
-    .join('\n');
-
-  const reworkStep: WorkflowStep = {
-    id: reworkStepId,
-    step: 'Rework — fix before continuing',
-    description: plan.summary,
-    contentType: 'text',
-    content: contentLines,
-    materials: [],
-    tools: [],
-    outputs: [
-      {
-        id: newId('rework-out'),
-        name: 'Rework verified',
-        description: 'Confirm the failure is corrected before resuming the original step.',
-        type: 'performance-durability',
-        qualityChecks: 'Visual / functional check matches the step’s quality criteria.',
-      },
-    ],
-  };
-
-  const reworkOp: Operation = {
-    id: reworkOperationId,
-    name: 'Rework',
-    description: `Recovery for: ${TRIAGE_OPTIONS.find((t) => t.type === triageType)?.label || triageType}`,
-    steps: [reworkStep],
-  };
-
-  phase.operations.splice(opIndex, 0, reworkOp);
-  return { phases: cloned, reworkOperationId, reworkStepId };
 }
 
 export function reopenStepCompletion(

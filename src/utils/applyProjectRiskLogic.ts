@@ -38,6 +38,7 @@ import {
   type RiskLogicItem,
 } from '@/utils/projectRiskLogic';
 import { resolveRiskSignals } from '@/utils/riskSignals';
+import { parsePhasesJson } from '@/utils/workflowDecisionDetails';
 import {
   RISK_DIMENSIONS,
   isRegisterRiskDimension,
@@ -136,9 +137,58 @@ function worstOccurrence(causes: readonly { occurrence_score: number | null }[])
   return scored.length > 0 ? Math.max(...scored) : null;
 }
 
+/** Step ids in the run's plan, including rework paths that Something Wrong placed there. */
+function runPlanStepIds(rawPhases: Json | null): Set<string> {
+  const ids = new Set<string>();
+  for (const phase of parsePhasesJson(rawPhases)) {
+    for (const op of phase.operations || []) {
+      for (const step of op.steps || []) ids.add(step.id);
+    }
+  }
+  return ids;
+}
+
+/**
+ * Rework steps carry their own PFMEA, but they are not part of the plan until a failure places
+ * their rework operation in the run, so their items are left out until then.
+ */
+async function inactiveReworkStepIds(
+  stepIds: readonly string[],
+  planStepIds: ReadonlySet<string>
+): Promise<Set<string>> {
+  const inactive = new Set<string>();
+  if (stepIds.length === 0) return inactive;
+  const { data: steps, error: stepsError } = await supabase
+    .from('operation_steps')
+    .select('id, operation_id')
+    .in('id', [...stepIds]);
+  if (stepsError) {
+    throw new Error(`Applied risk list could not read operation_steps: ${stepsError.message}`);
+  }
+  const operationIds = [...new Set((steps ?? []).map((step) => step.operation_id))];
+  if (operationIds.length === 0) return inactive;
+  const { data: operations, error: operationsError } = await supabase
+    .from('phase_operations')
+    .select('id, flow_type')
+    .in('id', operationIds);
+  if (operationsError) {
+    throw new Error(`Applied risk list could not read phase_operations: ${operationsError.message}`);
+  }
+  const reworkOperationIds = new Set(
+    (operations ?? []).filter((op) => op.flow_type === 'rework').map((op) => op.id)
+  );
+  for (const step of steps ?? []) {
+    if (reworkOperationIds.has(step.operation_id) && !planStepIds.has(step.id)) {
+      inactive.add(step.id);
+    }
+  }
+  return inactive;
+}
+
 async function loadStage1(
   pfmeaProjectId: string,
-  templateRootIdForRisks: string
+  templateRootIdForRisks: string,
+  planStepIds: ReadonlySet<string>
 ): Promise<Stage1Load> {
   const [failureModeResult, requirementResult, registerResult] = await Promise.all([
     supabase
@@ -169,19 +219,26 @@ async function loadStage1(
     }
   }
 
-  const failureModes = failureModeResult.data ?? [];
   const requirementTextById = new Map(
     (requirementResult.data ?? []).map((row) => [row.id, row.requirement_text])
   );
 
-  const stepIds = Array.from(
+  const authoredStepIds = Array.from(
     new Set([
-      ...failureModes.map((fm) => fm.operation_step_id),
+      ...(failureModeResult.data ?? []).map((fm) => fm.operation_step_id),
       ...(registerResult.data ?? [])
         .map((risk) => risk.operation_step_id)
         .filter((id): id is string => typeof id === 'string'),
     ])
   );
+  const inactiveRework = await inactiveReworkStepIds(authoredStepIds, planStepIds);
+  const failureModes = (failureModeResult.data ?? []).filter(
+    (fm) => !inactiveRework.has(fm.operation_step_id)
+  );
+  const registerRisks = (registerResult.data ?? []).filter(
+    (risk) => risk.operation_step_id === null || !inactiveRework.has(risk.operation_step_id)
+  );
+  const stepIds = authoredStepIds.filter((id) => !inactiveRework.has(id));
 
   const stepTitleById = new Map<string, string>();
   if (stepIds.length > 0) {
@@ -278,7 +335,7 @@ async function loadStage1(
   }
 
   const registerTitleById = new Map<string, string>();
-  for (const risk of registerResult.data ?? []) {
+  for (const risk of registerRisks) {
     // A register risk with no component was authored before the four components existed. It
     // still reaches the run through the existing sync; it just has no priority to apply.
     if (!isRegisterRiskDimension(risk.risk_dimension)) continue;
@@ -374,7 +431,7 @@ export async function applyProjectRiskLogicToRun(
 ): Promise<void> {
   const { data: run, error: runError } = await supabase
     .from('project_runs')
-    .select('id, user_id, project_id')
+    .select('id, user_id, project_id, phases')
     .eq('id', projectRunId)
     .maybeSingle();
 
@@ -388,7 +445,11 @@ export async function applyProjectRiskLogicToRun(
     throw new Error(`Project run ${projectRunId} has no template, so its risk cannot be applied.`);
   }
 
-  const stage1 = await loadStage1(run.project_id, templateRootIdForRisks);
+  const stage1 = await loadStage1(
+    run.project_id,
+    templateRootIdForRisks,
+    runPlanStepIds(run.phases)
+  );
   if (stage1.items.length === 0) {
     // Nothing scored anywhere in this template. The profile and the KC register still get
     // rebuilt so a stale result from an earlier evaluation cannot linger.

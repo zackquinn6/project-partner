@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -16,11 +16,16 @@ import {
   TRIAGE_OPTIONS,
   TriageType,
   buildRecoveryPlan,
-  insertReworkOperation,
   reopenStepCompletion,
   legacyIssueFlagsFromTriage,
   RecoveryAction,
 } from '@/utils/reworkEngine';
+import {
+  fetchReworkPathsForStep,
+  placeReworkPathInRun,
+  type ReworkPath,
+} from '@/utils/reworkPaths';
+import { recordGuaranteeEvent } from '@/utils/successGuarantee';
 import { resolveTemplateFamily } from '@/utils/templateFamilies';
 import { ProjectRun } from '@/interfaces/ProjectRun';
 import { Phase } from '@/interfaces/Project';
@@ -39,16 +44,21 @@ export interface SomethingWrongDialogProps {
   phaseName?: string;
   stepId?: string;
   stepTitle?: string;
+  /** Template step whose rework paths apply (a loop-back step maps to the step it repeats). */
+  reworkTriggerStepId?: string;
   spaceId?: string | null;
   completedSteps: string[];
   updateProjectRun: (run: ProjectRun) => Promise<void> | void;
   setCompletedSteps: (steps: Set<string>) => void;
+  /** True while the run is covered by the success guarantee. */
+  guaranteeCovered: boolean;
+  onGuaranteeChanged?: () => Promise<void> | void;
   onOpenUnplannedWork?: () => void;
   onOpenShopping?: () => void;
   onOpenToolRentals?: () => void;
   onOpenExpertHelp?: () => void;
   onAskAi?: () => void;
-  /** Called when recovery includes schedule_slip — parent applies regen + shows delta */
+  /** Called when recovery includes schedule_slip - parent applies regen + shows delta */
   onScheduleSlip?: () => Promise<void> | void;
 }
 
@@ -56,8 +66,8 @@ function actionLabel(action: RecoveryAction): string {
   switch (action) {
     case 'reopen_step':
       return 'Reopen this step';
-    case 'insert_rework_op':
-      return 'Insert Rework operation';
+    case 'run_rework_path':
+      return 'Run pre-built rework path';
     case 'open_shopping':
       return 'Update shopping list';
     case 'open_unplanned_work':
@@ -68,10 +78,12 @@ function actionLabel(action: RecoveryAction): string {
       return 'Slip schedule';
     case 'stop_and_seek_help':
       return 'Stop for safety';
-      case 'ask_ai':
+    case 'ask_ai':
       return 'Ask AI';
-    default:
-      return action;
+    default: {
+      const exhaustive: never = action;
+      return exhaustive;
+    }
   }
 }
 
@@ -86,10 +98,13 @@ export function SomethingWrongDialog({
   phaseName,
   stepId,
   stepTitle,
+  reworkTriggerStepId,
   spaceId,
   completedSteps,
   updateProjectRun,
   setCompletedSteps,
+  guaranteeCovered,
+  onGuaranteeChanged,
   onOpenUnplannedWork,
   onOpenShopping,
   onOpenToolRentals,
@@ -100,22 +115,62 @@ export function SomethingWrongDialog({
   const [triageType, setTriageType] = useState<TriageType | null>(null);
   const [comments, setComments] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [reworkPaths, setReworkPaths] = useState<ReworkPath[] | null>(null);
+  const [reworkPathsError, setReworkPathsError] = useState<string | null>(null);
+  const [selectedReworkPathId, setSelectedReworkPathId] = useState<string | null>(null);
 
   const recoveryPlan = useMemo(
     () => (triageType ? buildRecoveryPlan(triageType) : null),
     [triageType]
   );
+  const needsReworkPath = Boolean(recoveryPlan?.actions.includes('run_rework_path'));
+
+  useEffect(() => {
+    if (!open || !needsReworkPath || !reworkTriggerStepId) return;
+    let cancelled = false;
+    setReworkPaths(null);
+    setReworkPathsError(null);
+    void fetchReworkPathsForStep(reworkTriggerStepId)
+      .then((paths) => {
+        if (cancelled) return;
+        setReworkPaths(paths);
+        setSelectedReworkPathId(paths.length === 1 ? paths[0].operationId : null);
+      })
+      .catch((e: unknown) => {
+        if (cancelled) return;
+        setReworkPathsError(e instanceof Error ? e.message : String(e));
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [open, needsReworkPath, reworkTriggerStepId]);
+
+  const selectedReworkPath =
+    reworkPaths?.find((path) => path.operationId === selectedReworkPathId) ?? null;
+  const noReworkPath = needsReworkPath && reworkPaths !== null && reworkPaths.length === 0;
 
   const reset = () => {
     setTriageType(null);
     setComments('');
     setSubmitting(false);
+    setReworkPaths(null);
+    setReworkPathsError(null);
+    setSelectedReworkPathId(null);
   };
 
   const handleOpenChange = (next: boolean) => {
     if (!next) reset();
     onOpenChange(next);
   };
+
+  const applyDisabled =
+    !triageType ||
+    submitting ||
+    !userId ||
+    (needsReworkPath &&
+      (!reworkTriggerStepId ||
+        reworkPaths === null ||
+        (reworkPaths.length > 0 && !selectedReworkPath)));
 
   const handleApply = async () => {
     if (!triageType || !recoveryPlan || !projectRun || !userId) {
@@ -127,27 +182,40 @@ export function SomethingWrongDialog({
     try {
       const family = resolveTemplateFamily(templateName, templateCategories);
       let nextPhases: Phase[] = projectRun.phases || [];
+      let nextCompleted = [...completedSteps];
       let reworkOperationId: string | null = null;
-      let reworkStepId: string | null = null;
+      let failureModeIds: string[] = [];
+      let reworkReopened = false;
+      let reworkMissing = false;
 
-      if (recoveryPlan.actions.includes('insert_rework_op')) {
-        const inserted = insertReworkOperation(
-          nextPhases,
-          phaseId,
-          stepId,
-          triageType,
-          comments
-        );
-        nextPhases = inserted.phases;
-        reworkOperationId = inserted.reworkOperationId;
-        reworkStepId = inserted.reworkStepId;
+      if (needsReworkPath) {
+        if (!stepId || !reworkTriggerStepId || reworkPaths === null) {
+          throw new Error('Rework paths are not loaded for this step.');
+        }
+        if (reworkPaths.length === 0) {
+          reworkMissing = true;
+        } else {
+          if (!selectedReworkPath) throw new Error('Choose the rework path that matches the failure.');
+          failureModeIds = selectedReworkPath.failureModes.map((fm) => fm.id);
+          const placed = await placeReworkPathInRun({
+            projectRunId: projectRun.id,
+            runPhases: nextPhases,
+            completedSteps: nextCompleted,
+            operationId: selectedReworkPath.operationId,
+            triggerStepId: reworkTriggerStepId,
+            failureModeIds,
+          });
+          nextPhases = placed.phases;
+          nextCompleted = placed.completedSteps;
+          reworkOperationId = selectedReworkPath.operationId;
+          reworkReopened = placed.reopened;
+        }
       }
 
-      let nextCompleted = [...completedSteps];
       if (recoveryPlan.actions.includes('reopen_step')) {
         nextCompleted = reopenStepCompletion(nextCompleted, stepId, spaceId);
-        setCompletedSteps(new Set(nextCompleted));
       }
+      setCompletedSteps(new Set(nextCompleted));
 
       const issueReportData = {
         stepId,
@@ -171,10 +239,21 @@ export function SomethingWrongDialog({
 
       await updateProjectRun(updatedRun);
 
+      if (reworkMissing && guaranteeCovered) {
+        await recordGuaranteeEvent(
+          projectRun.id,
+          'rework_path_missing',
+          stepId ?? null,
+          comments.trim() === '' ? null : comments.trim()
+        );
+        await onGuaranteeChanged?.();
+      }
+
       const recoveryPayload = {
         ...recoveryPlan,
         reworkOperationId,
-        reworkStepId,
+        failureModeIds,
+        reworkPathMissing: reworkMissing,
       };
 
       // Tables from 2026_09_09_migration_rework_and_stuck_events.sql (apply in Supabase)
@@ -223,7 +302,7 @@ export function SomethingWrongDialog({
         }
       }
 
-      if (recoveryPlan.actions.includes('open_unplanned_work')) {
+      if (recoveryPlan.actions.includes('open_unplanned_work') || reworkMissing) {
         onOpenUnplannedWork?.();
       }
       if (recoveryPlan.actions.includes('open_shopping')) {
@@ -246,9 +325,15 @@ export function SomethingWrongDialog({
         toast.message('Safety stop recorded', {
           description: 'Do not continue until it is safe. Premium pro chat is available if you need a human.',
         });
-      } else if (reworkStepId) {
-        toast.success('Rework plan applied', {
-          description: 'A Rework operation was added. Complete it before finishing the original step.',
+      } else if (reworkOperationId && selectedReworkPath) {
+        toast.success(reworkReopened ? 'Rework path reopened' : 'Rework path added', {
+          description: reworkReopened
+            ? `${selectedReworkPath.operationName} steps are open again.`
+            : `${selectedReworkPath.operationName} now follows this step in your plan.`,
+        });
+      } else if (reworkMissing) {
+        toast.message('No pre-built rework path for this step', {
+          description: 'Add the fix in Course Correct.',
         });
       } else {
         toast.success('Recovery plan applied', {
@@ -259,7 +344,7 @@ export function SomethingWrongDialog({
       handleOpenChange(false);
     } catch (err) {
       console.error('SomethingWrong apply failed:', err);
-      toast.error('Could not apply the recovery plan.');
+      toast.error(err instanceof Error ? err.message : 'Could not apply the recovery plan.');
     } finally {
       setSubmitting(false);
     }
@@ -274,7 +359,8 @@ export function SomethingWrongDialog({
             Something wrong?
           </DialogTitle>
           <DialogDescription>
-            Tell us what happened. We will build a recovery path — reopen the step, insert rework, or update shopping and schedule.
+            Quality failures run the pre-built rework path for this step, with its own steps,
+            checks, and time in your schedule.
           </DialogDescription>
         </DialogHeader>
 
@@ -337,6 +423,59 @@ export function SomethingWrongDialog({
             </Alert>
           ) : null}
 
+          {needsReworkPath ? (
+            <div className="space-y-2">
+              <Label>Rework path</Label>
+              {!reworkTriggerStepId ? (
+                <p className="text-sm text-destructive">Open a workflow step to choose its rework path.</p>
+              ) : reworkPathsError ? (
+                <p className="text-sm text-destructive">{reworkPathsError}</p>
+              ) : reworkPaths === null ? (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Loading rework paths
+                </div>
+              ) : noReworkPath ? (
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertDescription>
+                    This step has no pre-built rework path, so the fix goes to Course Correct.
+                    {guaranteeCovered ? ' Applying ends success guarantee coverage for this run.' : ''}
+                  </AlertDescription>
+                </Alert>
+              ) : (
+                <div className="grid gap-2">
+                  {reworkPaths.map((path) => {
+                    const selected = path.operationId === selectedReworkPathId;
+                    return (
+                      <button
+                        key={path.operationId}
+                        type="button"
+                        onClick={() => setSelectedReworkPathId(path.operationId)}
+                        className={cn(
+                          'text-left rounded-lg border px-3 py-2 transition-colors',
+                          selected ? 'border-primary bg-primary/5' : 'border-border hover:bg-muted/50'
+                        )}
+                      >
+                        <span className="text-sm font-medium text-foreground">{path.operationName}</span>
+                        {path.operationDescription ? (
+                          <p className="text-xs text-muted-foreground mt-0.5">{path.operationDescription}</p>
+                        ) : null}
+                        {path.failureModes.length > 0 ? (
+                          <ul className="mt-1 list-disc pl-4 text-xs text-muted-foreground space-y-0.5">
+                            {path.failureModes.map((fm) => (
+                              <li key={fm.id}>{fm.failureMode}</li>
+                            ))}
+                          </ul>
+                        ) : null}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          ) : null}
+
           <div className="space-y-2">
             <Label htmlFor="something-wrong-comments">Details (optional)</Label>
             <Textarea
@@ -353,7 +492,7 @@ export function SomethingWrongDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)} disabled={submitting}>
             Cancel
           </Button>
-          <Button onClick={handleApply} disabled={!triageType || submitting || !userId}>
+          <Button onClick={handleApply} disabled={applyDisabled}>
             {submitting ? (
               <>
                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />

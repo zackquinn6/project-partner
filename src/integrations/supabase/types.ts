@@ -1937,6 +1937,7 @@ export type Database = {
           material_id: string
           name: string
           photo_url: string | null
+          public_key: string | null
           sku: string | null
           updated_at: string
         }
@@ -1949,6 +1950,7 @@ export type Database = {
           material_id: string
           name: string
           photo_url?: string | null
+          public_key?: string | null
           sku?: string | null
           updated_at?: string
         }
@@ -1961,6 +1963,7 @@ export type Database = {
           material_id?: string
           name?: string
           photo_url?: string | null
+          public_key?: string | null
           sku?: string | null
           updated_at?: string
         }
@@ -2114,6 +2117,7 @@ export type Database = {
           operation_id: string
           outputs: Json | null
           process_variables: Json | null
+          repeats_operation_step_id: string | null
           skill_level: string | null
           step_title: string
           step_type: string | null
@@ -2137,6 +2141,7 @@ export type Database = {
           operation_id: string
           outputs?: Json | null
           process_variables?: Json | null
+          repeats_operation_step_id?: string | null
           skill_level?: string | null
           step_title: string
           step_type?: string | null
@@ -2160,6 +2165,7 @@ export type Database = {
           operation_id?: string
           outputs?: Json | null
           process_variables?: Json | null
+          repeats_operation_step_id?: string | null
           skill_level?: string | null
           step_title?: string
           step_type?: string | null
@@ -3020,6 +3026,59 @@ export type Database = {
         }
         Relationships: []
       }
+      project_assumptions: {
+        Row: {
+          branch_operation_id: string | null
+          category: string
+          check_operation_step_id: string | null
+          check_output_id: string | null
+          created_at: string
+          display_order: number
+          handling: string
+          id: string
+          project_id: string
+          protected_goals: string[]
+          statement: string
+          updated_at: string
+        }
+        Insert: {
+          branch_operation_id?: string | null
+          category: string
+          check_operation_step_id?: string | null
+          check_output_id?: string | null
+          created_at?: string
+          display_order: number
+          handling: string
+          id?: string
+          project_id: string
+          protected_goals: string[]
+          statement: string
+          updated_at?: string
+        }
+        Update: {
+          branch_operation_id?: string | null
+          category?: string
+          check_operation_step_id?: string | null
+          check_output_id?: string | null
+          created_at?: string
+          display_order?: number
+          handling?: string
+          id?: string
+          project_id?: string
+          protected_goals?: string[]
+          statement?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_assumptions_project_id_fkey"
+            columns: ["project_id"]
+            isOneToOne: false
+            referencedRelation: "projects"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       project_quality_levels: {
         Row: {
           created_at: string
@@ -3318,6 +3377,187 @@ export type Database = {
             columns: ["project_run_risk_id"]
             isOneToOne: false
             referencedRelation: "project_run_risks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_assumptions: {
+        Row: {
+          acknowledged_at: string | null
+          branch_operation_id: string | null
+          category: string
+          check_operation_step_id: string | null
+          check_output_id: string | null
+          created_at: string
+          display_order: number
+          handling: string
+          id: string
+          project_run_id: string
+          protected_goals: string[]
+          source_assumption_id: string
+          source_level: string
+          source_project_id: string
+          statement: string
+          violated_at: string | null
+          violation_note: string | null
+        }
+        Insert: {
+          acknowledged_at?: string | null
+          branch_operation_id?: string | null
+          category: string
+          check_operation_step_id?: string | null
+          check_output_id?: string | null
+          created_at?: string
+          display_order: number
+          handling: string
+          id?: string
+          project_run_id: string
+          protected_goals: string[]
+          source_assumption_id: string
+          source_level: string
+          source_project_id: string
+          statement: string
+          violated_at?: string | null
+          violation_note?: string | null
+        }
+        Update: {
+          acknowledged_at?: string | null
+          branch_operation_id?: string | null
+          category?: string
+          check_operation_step_id?: string | null
+          check_output_id?: string | null
+          created_at?: string
+          display_order?: number
+          handling?: string
+          id?: string
+          project_run_id?: string
+          protected_goals?: string[]
+          source_assumption_id?: string
+          source_level?: string
+          source_project_id?: string
+          statement?: string
+          violated_at?: string | null
+          violation_note?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_assumptions_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_guarantee_claims: {
+        Row: {
+          decided_at: string | null
+          decided_by: string | null
+          decision_amount_cents: number | null
+          decision_note: string | null
+          description: string
+          evidence: Json | null
+          goal: string
+          id: string
+          opened_at: string
+          project_run_id: string
+          recovery_closed_at: string | null
+          refund_requested_at: string | null
+          status: string
+          subscription_cap_cents: number | null
+          user_id: string
+        }
+        Insert: {
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_amount_cents?: number | null
+          decision_note?: string | null
+          description: string
+          evidence?: Json | null
+          goal: string
+          id?: string
+          opened_at?: string
+          project_run_id: string
+          recovery_closed_at?: string | null
+          refund_requested_at?: string | null
+          status: string
+          subscription_cap_cents?: number | null
+          user_id: string
+        }
+        Update: {
+          decided_at?: string | null
+          decided_by?: string | null
+          decision_amount_cents?: number | null
+          decision_note?: string | null
+          description?: string
+          evidence?: Json | null
+          goal?: string
+          id?: string
+          opened_at?: string
+          project_run_id?: string
+          recovery_closed_at?: string | null
+          refund_requested_at?: string | null
+          status?: string
+          subscription_cap_cents?: number | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_guarantee_claims_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      project_run_guarantee_events: {
+        Row: {
+          created_at: string
+          ends_coverage: boolean
+          event_type: string
+          id: string
+          note: string | null
+          project_run_id: string
+          run_assumption_id: string | null
+          step_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          ends_coverage: boolean
+          event_type: string
+          id?: string
+          note?: string | null
+          project_run_id: string
+          run_assumption_id?: string | null
+          step_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          ends_coverage?: boolean
+          event_type?: string
+          id?: string
+          note?: string | null
+          project_run_id?: string
+          run_assumption_id?: string | null
+          step_id?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "project_run_guarantee_events_project_run_id_fkey"
+            columns: ["project_run_id"]
+            isOneToOne: false
+            referencedRelation: "project_runs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "project_run_guarantee_events_run_assumption_id_fkey"
+            columns: ["run_assumption_id"]
+            isOneToOne: false
+            referencedRelation: "project_run_assumptions"
             referencedColumns: ["id"]
           },
         ]
@@ -4262,6 +4502,55 @@ export type Database = {
         }
         Relationships: []
       }
+      rework_operation_triggers: {
+        Row: {
+          created_at: string
+          failure_mode_id: string | null
+          id: string
+          output_id: string | null
+          rework_operation_id: string
+          trigger_operation_step_id: string
+        }
+        Insert: {
+          created_at?: string
+          failure_mode_id?: string | null
+          id?: string
+          output_id?: string | null
+          rework_operation_id: string
+          trigger_operation_step_id: string
+        }
+        Update: {
+          created_at?: string
+          failure_mode_id?: string | null
+          id?: string
+          output_id?: string | null
+          rework_operation_id?: string
+          trigger_operation_step_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "rework_operation_triggers_failure_mode_id_fkey"
+            columns: ["failure_mode_id"]
+            isOneToOne: false
+            referencedRelation: "pfmea_failure_modes"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rework_operation_triggers_rework_operation_id_fkey"
+            columns: ["rework_operation_id"]
+            isOneToOne: false
+            referencedRelation: "phase_operations"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "rework_operation_triggers_trigger_operation_step_id_fkey"
+            columns: ["trigger_operation_step_id"]
+            isOneToOne: false
+            referencedRelation: "operation_steps"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       risk_occurrence_drivers: {
         Row: {
           created_at: string
@@ -4635,6 +4924,7 @@ export type Database = {
           name: string
           photo_url: string | null
           pricing: Json | null
+          public_key: string | null
           quick_add: boolean | null
           sku: string | null
           updated_at: string | null
@@ -4653,6 +4943,7 @@ export type Database = {
           name: string
           photo_url?: string | null
           pricing?: Json | null
+          public_key?: string | null
           quick_add?: boolean | null
           sku?: string | null
           updated_at?: string | null
@@ -4671,6 +4962,7 @@ export type Database = {
           name?: string
           photo_url?: string | null
           pricing?: Json | null
+          public_key?: string | null
           quick_add?: boolean | null
           sku?: string | null
           updated_at?: string | null
@@ -5440,6 +5732,7 @@ export type Database = {
         Row: {
           created_at: string
           entity: string
+          parent_public_key: string | null
           public_key: string
           removed_at: string | null
           replaced_by_public_key: string | null
@@ -5447,6 +5740,7 @@ export type Database = {
         Insert: {
           created_at?: string
           entity: string
+          parent_public_key?: string | null
           public_key: string
           removed_at?: string | null
           replaced_by_public_key?: string | null
@@ -5454,6 +5748,7 @@ export type Database = {
         Update: {
           created_at?: string
           entity?: string
+          parent_public_key?: string | null
           public_key?: string
           removed_at?: string | null
           replaced_by_public_key?: string | null
@@ -5547,6 +5842,7 @@ export type Database = {
           id: string
           proposed_key: string
           proposed_name: string
+          proposed_parent_key: string | null
           requested_by: string
           result_key: string | null
           status: string
@@ -5563,6 +5859,7 @@ export type Database = {
           id?: string
           proposed_key: string
           proposed_name: string
+          proposed_parent_key?: string | null
           requested_by: string
           result_key?: string | null
           status?: string
@@ -5579,6 +5876,7 @@ export type Database = {
           id?: string
           proposed_key?: string
           proposed_name?: string
+          proposed_parent_key?: string | null
           requested_by?: string
           result_key?: string | null
           status?: string
@@ -5656,6 +5954,77 @@ export type Database = {
       accept_project_owner_invitation: {
         Args: { p_invitation_id: string }
         Returns: Json
+      }
+      acknowledge_project_run_assumptions: {
+        Args: { p_run_id: string }
+        Returns: number
+      }
+      close_project_run_guarantee_claim_recovered: {
+        Args: { p_claim_id: string }
+        Returns: undefined
+      }
+      copy_project_assumptions_to_run: {
+        Args: { p_run_id: string }
+        Returns: number
+      }
+      decide_project_run_guarantee_claim: {
+        Args: {
+          p_amount_cents: number | null
+          p_claim_id: string
+          p_decision: string
+          p_note: string
+          p_subscription_cap_cents: number | null
+        }
+        Returns: undefined
+      }
+      get_project_guarantee_readiness: {
+        Args: { p_project_id: string }
+        Returns: Json
+      }
+      get_project_run_guarantee_evidence: {
+        Args: { p_run_id: string }
+        Returns: Json
+      }
+      get_rework_operation_json: {
+        Args: { p_operation_id: string }
+        Returns: Json
+      }
+      get_rework_paths_for_step: {
+        Args: { p_step_id: string }
+        Returns: Json
+      }
+      mark_project_run_assumption_violated: {
+        Args: { p_note: string; p_run_assumption_id: string }
+        Returns: Json
+      }
+      open_project_run_guarantee_claim: {
+        Args: { p_description: string; p_goal: string; p_run_id: string }
+        Returns: string
+      }
+      opt_in_project_run_guarantee: {
+        Args: { p_run_id: string }
+        Returns: string
+      }
+      project_run_is_covered: {
+        Args: { p_run_id: string }
+        Returns: boolean
+      }
+      record_project_run_guarantee_event: {
+        Args: {
+          p_event_type: string
+          p_note: string | null
+          p_run_id: string
+          p_step_id: string | null
+        }
+        Returns: string
+      }
+      request_project_run_guarantee_refund: {
+        Args: { p_claim_id: string }
+        Returns: undefined
+      }
+      snapshot_operation_instructions_to_run: {
+        Args: { p_operation_id: string; p_run_id: string }
+        Returns: number
       }
       apply_decision_details_to_phases_json: {
         Args: { p_decision_tree_config: Json; p_phases: Json }
@@ -6173,6 +6542,7 @@ export type Database = {
           p_item_kind: string
           p_key: string
           p_name: string
+          p_parent_key?: string
           p_requested_by: string
         }
         Returns: {

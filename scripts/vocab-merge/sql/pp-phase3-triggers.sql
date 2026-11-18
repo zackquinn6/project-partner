@@ -205,3 +205,6 @@ CREATE TRIGGER vocab_categories_delete_guard BEFORE DELETE ON public.project_cat
 DROP TRIGGER IF EXISTS vocab_aliases_after_write ON public.vocab_aliases;
 CREATE TRIGGER vocab_aliases_after_write AFTER INSERT OR UPDATE OR DELETE ON public.vocab_aliases
   FOR EACH ROW EXECUTE FUNCTION public.vocab_aliases_after_write();
+
+-- Variation key write/delete guards are installed by pp-phase6-variant-keys.sql
+-- (tool_variations / materials_variants public_key + parent_public_key).
