@@ -9,18 +9,14 @@ import { TOOLS_LIBRARY_CATEGORIES } from '@/utils/toolCatalogCategory';
 import { SHARED_ITEM_TYPE_LABEL } from '@/components/RemovalRequestsWindow';
 import { toast } from 'sonner';
 
-type ProposalEntity = 'tool' | 'material' | 'project' | 'tool_variation' | 'material_variation';
-type ProposalKind = 'inventory_core' | 'project' | 'inventory_variant';
-
 type Proposal = {
   id: string;
-  entity: ProposalEntity;
+  entity: 'tool' | 'material' | 'project';
   proposed_key: string;
   proposed_name: string;
   description: string | null;
-  proposed_parent_key: string | null;
   requested_by: string;
-  toolio_item_kind: ProposalKind;
+  toolio_item_kind: 'inventory_core' | 'project';
   status: string;
   created_at: string;
 };
@@ -36,29 +32,9 @@ async function loadMaterialCategories(): Promise<string[]> {
   return [...new Set(((data ?? []) as { category: string | null }[]).map((r) => r.category).filter((c): c is string => !!c))].sort();
 }
 
-async function loadExistingTerms(proposal: Proposal): Promise<TermOption[]> {
-  if (proposal.toolio_item_kind === 'inventory_variant') {
-    if (!proposal.proposed_parent_key) return [];
-    const isTool = proposal.entity === 'tool_variation';
-    const parentTable = isTool ? 'tools' : 'materials';
-    const childTable = isTool ? 'tool_variations' : 'materials_variants';
-    const parentCol = isTool ? 'core_item_id' : 'material_id';
-    const { data: parent, error: parentError } = await (supabase.from(parentTable as any) as any)
-      .select('id')
-      .eq('public_key', proposal.proposed_parent_key)
-      .maybeSingle();
-    if (parentError) throw parentError;
-    if (!parent?.id) return [];
-    const { data, error } = await (supabase.from(childTable as any) as any)
-      .select('public_key, name')
-      .eq(parentCol, parent.id)
-      .not('public_key', 'is', null);
-    if (error) throw error;
-    return ((data ?? []) as TermOption[]).sort((a, b) => a.name.localeCompare(b.name));
-  }
-
+async function loadExistingTerms(kind: Proposal['toolio_item_kind']): Promise<TermOption[]> {
   const queries =
-    proposal.toolio_item_kind === 'inventory_core'
+    kind === 'inventory_core'
       ? [supabase.from('tools' as any).select('public_key, name'), supabase.from('materials' as any).select('public_key, name')]
       : [
           supabase.from('projects' as any).select('public_key, name').is('parent_project_id', null),
@@ -109,12 +85,12 @@ export function TermProposalsSection() {
   const open = async (proposal: Proposal) => {
     setActive(proposal);
     setMode('approve');
-    setEntity(proposal.entity === 'material' || proposal.entity === 'material_variation' ? 'material' : 'tool');
+    setEntity(proposal.entity === 'material' ? 'material' : 'tool');
     setCategory('');
     setSpecialty('');
     setExistingKey('');
     try {
-      const [terms, materials] = await Promise.all([loadExistingTerms(proposal), loadMaterialCategories()]);
+      const [terms, materials] = await Promise.all([loadExistingTerms(proposal.toolio_item_kind), loadMaterialCategories()]);
       setExistingTerms(terms);
       setMaterialCategories(materials);
     } catch (error) {
@@ -125,7 +101,6 @@ export function TermProposalsSection() {
   const decide = async () => {
     if (!active || !user?.email) return;
     const isProduct = active.toolio_item_kind === 'inventory_core';
-    const isVariant = active.toolio_item_kind === 'inventory_variant';
     if (mode === 'map' && !existingKey) return toast.error('Choose an existing item');
     if (mode === 'approve' && isProduct && !category) return toast.error('Choose a category');
     if (mode === 'approve' && isProduct && entity === 'tool' && !specialty) return toast.error('Choose a specialty scale');
@@ -147,9 +122,7 @@ export function TermProposalsSection() {
   };
 
   const isProduct = active?.toolio_item_kind === 'inventory_core';
-  const isVariant = active?.toolio_item_kind === 'inventory_variant';
   const categories = entity === 'tool' ? [...TOOLS_LIBRARY_CATEGORIES] : materialCategories;
-  const kindLabel = isVariant ? 'variation' : isProduct ? 'product' : 'project';
 
   return (
     <div className="space-y-2">
@@ -163,10 +136,7 @@ export function TermProposalsSection() {
               <div className="min-w-0">
                 <div className="font-medium">{p.proposed_name}</div>
                 <div className="text-xs text-muted-foreground">
-                  {SHARED_ITEM_TYPE_LABEL[p.entity] ?? p.entity}
-                  {p.proposed_parent_key ? ` · parent ${p.proposed_parent_key}` : ''}
-                  {' · '}
-                  {p.requested_by}
+                  {SHARED_ITEM_TYPE_LABEL[p.entity]} · {p.requested_by}
                 </div>
               </div>
               <Button size="sm" variant="outline" onClick={() => open(p)}>
@@ -182,8 +152,7 @@ export function TermProposalsSection() {
           <DialogHeader>
             <DialogTitle>{active?.proposed_name}</DialogTitle>
             <DialogDescription>
-              Toolio added this {kindLabel} and found no shared item with the same name
-              {active?.proposed_parent_key ? ` under ${active.proposed_parent_key}` : ''}.
+              Toolio added this {isProduct ? 'product' : 'project'} and found no shared item with the same name.
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
@@ -232,11 +201,6 @@ export function TermProposalsSection() {
                   </div>
                 ) : null}
               </>
-            ) : null}
-            {mode === 'approve' && isVariant ? (
-              <p className="text-sm text-muted-foreground">
-                Creates a variation under parent key {active?.proposed_parent_key}.
-              </p>
             ) : null}
             {mode === 'map' ? (
               <div className="space-y-2">

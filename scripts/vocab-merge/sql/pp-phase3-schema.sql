@@ -4,18 +4,11 @@
 
 CREATE TABLE IF NOT EXISTS public.vocab_keys (
   public_key text PRIMARY KEY CHECK (public_key ~ '^[a-z0-9]+(-[a-z0-9]+)*$'),
-  entity text NOT NULL CHECK (entity IN (
-    'category', 'project', 'tool', 'material', 'tool_variation', 'material_variation'
-  )),
-  parent_public_key text REFERENCES public.vocab_keys (public_key),
+  entity text NOT NULL CHECK (entity IN ('category', 'project', 'tool', 'material')),
   created_at timestamptz NOT NULL DEFAULT now(),
   removed_at timestamptz,
   replaced_by_public_key text REFERENCES public.vocab_keys (public_key),
-  CHECK (replaced_by_public_key IS NULL OR removed_at IS NOT NULL),
-  CHECK (
-    (entity IN ('tool_variation', 'material_variation') AND parent_public_key IS NOT NULL)
-    OR (entity NOT IN ('tool_variation', 'material_variation') AND parent_public_key IS NULL)
-  )
+  CHECK (replaced_by_public_key IS NULL OR removed_at IS NOT NULL)
 );
 
 ALTER TABLE public.tools ADD COLUMN IF NOT EXISTS public_key text REFERENCES public.vocab_keys (public_key);
@@ -23,8 +16,6 @@ ALTER TABLE public.tools ADD COLUMN IF NOT EXISTS name_key text;
 ALTER TABLE public.materials ADD COLUMN IF NOT EXISTS public_key text REFERENCES public.vocab_keys (public_key);
 ALTER TABLE public.materials ADD COLUMN IF NOT EXISTS name_key text;
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS public_key text REFERENCES public.vocab_keys (public_key);
-ALTER TABLE public.tool_variations ADD COLUMN IF NOT EXISTS public_key text REFERENCES public.vocab_keys (public_key);
-ALTER TABLE public.materials_variants ADD COLUMN IF NOT EXISTS public_key text REFERENCES public.vocab_keys (public_key);
 
 ALTER TABLE public.projects DROP CONSTRAINT IF EXISTS projects_public_key_root_only;
 ALTER TABLE public.projects

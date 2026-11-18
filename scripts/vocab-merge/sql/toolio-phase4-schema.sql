@@ -4,17 +4,12 @@
 
 CREATE TABLE IF NOT EXISTS public.pp_vocab_terms (
   public_key text PRIMARY KEY,
-  entity text NOT NULL CHECK (entity IN ('tool', 'material', 'tool_variation', 'material_variation')),
+  entity text NOT NULL CHECK (entity IN ('tool', 'material')),
   pp_id uuid NOT NULL,
   name text NOT NULL,
   category text,
   description text,
-  parent_public_key text,
-  updated_seq bigint NOT NULL,
-  CHECK (
-    (entity IN ('tool_variation', 'material_variation') AND parent_public_key IS NOT NULL)
-    OR (entity IN ('tool', 'material') AND parent_public_key IS NULL)
-  )
+  updated_seq bigint NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS public.pp_vocab_projects (
@@ -72,8 +67,9 @@ CREATE TABLE IF NOT EXISTS public.pp_vocab_sync_state (
 
 ALTER TABLE public.inventory_items ADD COLUMN IF NOT EXISTS pp_vocab_key text REFERENCES public.pp_vocab_terms (public_key);
 ALTER TABLE public.projects ADD COLUMN IF NOT EXISTS pp_vocab_key text REFERENCES public.pp_vocab_projects (public_key);
--- Phase 6 replaces the "children never link" rule with inventory_pp_vocab_link_ok (cores ↔ tool/material, children ↔ *_variation).
 ALTER TABLE public.inventory_items DROP CONSTRAINT IF EXISTS inventory_items_pp_vocab_key_core_only;
+ALTER TABLE public.inventory_items
+  ADD CONSTRAINT inventory_items_pp_vocab_key_core_only CHECK (parent_inventory_item_id IS NULL OR pp_vocab_key IS NULL);
 CREATE INDEX IF NOT EXISTS inventory_items_pp_vocab_key_idx ON public.inventory_items (pp_vocab_key);
 CREATE INDEX IF NOT EXISTS projects_pp_vocab_key_idx ON public.projects (pp_vocab_key);
 

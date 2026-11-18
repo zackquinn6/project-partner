@@ -63,7 +63,7 @@ export const FinalCTASection = () => {
           </div>
           <div className="flex items-center gap-2 opacity-80">
             <CheckCircle className="h-5 w-5" />
-            <span className="text-sm">Success Guarantee on eligible projects</span>
+            <span className="text-sm">Money-Back Guarantee</span>
           </div>
         </div>
 

@@ -66,10 +66,6 @@ interface MobileWorkflowViewProps {
   stepPhotoCount?: number;
   onUploadPhoto?: () => void;
   canCompleteStep?: boolean;
-  /** Required gate on the current step was skipped (success guarantee coverage already ended). */
-  gateBypassed?: boolean;
-  /** Offered only on guarantee-covered runs; skipping a gate ends coverage. */
-  onSkipGate?: () => void;
   onKeysToSuccessClick?: () => void;
   onUnplannedWorkClick?: () => void;
   onNotesClick?: () => void;
@@ -115,8 +111,6 @@ export function MobileWorkflowView({
   stepPhotoCount = 0,
   onUploadPhoto,
   canCompleteStep = true,
-  gateBypassed = false,
-  onSkipGate,
   onKeysToSuccessClick,
   onUnplannedWorkClick,
   onNotesClick,
@@ -172,8 +166,7 @@ export function MobileWorkflowView({
     requiredOutputs.length === 0 ||
     requiredOutputs.every((o: { id: string }) => checkedForStep.has(o.id));
   const photosComplete = !requirePhotosPerStep || stepPhotoCount >= 1;
-  const qcBlocksComplete =
-    !isStepCompleted && !gateBypassed && (!outputsComplete || !photosComplete);
+  const qcBlocksComplete = !isStepCompleted && (!outputsComplete || !photosComplete);
 
   const handleStepToggle = () => {
     if (!currentStep?.id) return;
@@ -419,17 +412,6 @@ export function MobileWorkflowView({
                     <p className="text-[10px] text-muted-foreground">
                       Complete required checklist items{requirePhotosPerStep ? ' and photo' : ''} before marking the step done.
                     </p>
-                  ) : null}
-                  {qcBlocksComplete && onSkipGate ? (
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      className="h-8 text-[10px] text-warning-soft border-warning-soft/50"
-                      onClick={onSkipGate}
-                    >
-                      Skip gate (ends guarantee)
-                    </Button>
                   ) : null}
                 </div>
               ) : null}

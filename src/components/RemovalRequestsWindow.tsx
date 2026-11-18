@@ -8,21 +8,13 @@ import { useAuth } from '@/contexts/AuthContext';
 import { TermProposalsSection } from '@/components/TermProposalsSection';
 import { toast } from 'sonner';
 
-export type SharedItemType =
-  | 'tool'
-  | 'material'
-  | 'project'
-  | 'category'
-  | 'tool_variation'
-  | 'material_variation';
+export type SharedItemType = 'tool' | 'material' | 'project' | 'category';
 
 export const SHARED_ITEM_TYPE_LABEL: Record<SharedItemType, string> = {
   tool: 'Tool',
   material: 'Material',
   project: 'Project',
   category: 'Category',
-  tool_variation: 'Tool variation',
-  material_variation: 'Material variation',
 };
 
 type RemovalRequest = {

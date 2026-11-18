@@ -18,7 +18,6 @@ import {
   syncAttributeDefinitionsToAllMaterialVariants,
 } from '@/utils/variationAttributeDefinitions';
 import { MaterialVariationEditor } from './MaterialVariationEditor';
-import { RequestRemovalDialog } from '@/components/RequestRemovalDialog';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 const NESTED_DIALOG_OVERLAY = 'z-[150] md:top-16';
@@ -53,7 +52,6 @@ interface VariationInstance {
   description?: string;
   sku?: string;
   photo_url?: string;
-  public_key?: string | null;
   attributes: Record<string, string>;
   created_at?: string;
   updated_at?: string;
@@ -81,8 +79,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
   const [showAttributeDialog, setShowAttributeDialog] = useState(false);
   const [showValueDialog, setShowValueDialog] = useState(false);
   const [showVariationDialog, setShowVariationDialog] = useState(false);
-  const [removalTarget, setRemovalTarget] = useState<VariationInstance | null>(null);
-  const [parentPublicKey, setParentPublicKey] = useState<string | null>(null);
   
   // Common attributes that can be selected
   const [commonAttributes] = useState([
@@ -112,10 +108,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
   useEffect(() => {
     fetchAttributes();
     fetchVariations();
-    void (async () => {
-      const { data } = await supabase.from('materials' as any).select('public_key').eq('id', materialId).maybeSingle();
-      setParentPublicKey((data as { public_key?: string } | null)?.public_key ?? null);
-    })();
   }, [materialId]);
 
   // Reset selected attribute if it no longer exists in the updated attributes list
@@ -346,21 +338,18 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
     }
   };
 
-  const handleDeleteVariation = async (variation: VariationInstance) => {
-    if (variation.public_key) {
-      setRemovalTarget(variation);
-      return;
-    }
+  const handleDeleteVariation = async (variationId: string) => {
     if (!confirm('Are you sure you want to delete this variation?')) return;
 
     try {
       const { error } = await supabase
         .from('materials_variants')
         .delete()
-        .eq('id', variation.id);
+        .eq('id', variationId);
 
       if (error) throw error;
 
+      
       fetchVariations();
       onVariationUpdate?.();
     } catch (error) {
@@ -904,7 +893,7 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => handleDeleteVariation(variation)}
+                      onClick={() => handleDeleteVariation(variation.id)}
                       className="text-destructive hover:text-destructive"
                     >
                       <Trash2 className="h-4 w-4" />
@@ -921,22 +910,6 @@ export function MaterialVariationManager({ materialId, materialName, onVariation
           </ScrollArea>
         </CardContent>
       </Card>
-
-      {removalTarget?.public_key ? (
-        <RequestRemovalDialog
-          open={!!removalTarget}
-          onOpenChange={(open) => !open && setRemovalTarget(null)}
-          entity="material_variation"
-          publicKey={removalTarget.public_key}
-          name={removalTarget.name}
-          parentPublicKey={parentPublicKey}
-          onRequested={() => {
-            setRemovalTarget(null);
-            fetchVariations();
-            onVariationUpdate?.();
-          }}
-        />
-      ) : null}
 
       {/* Variation Editor Dialog */}
       {editingVariation && (

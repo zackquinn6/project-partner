@@ -23,12 +23,9 @@ BEGIN
     FROM public.inventory_items WHERE id = v_new;
 
   INSERT INTO public.inventory_items (name, sku, parent_inventory_item_id) VALUES ('Never Seen Gadget · Large', 'never-seen-gadget-large', v_new) RETURNING id INTO v_variant;
-  -- Phase 5 stand-ins left children unlinked; phase 6 sets waiting. Both are acceptable here.
-  INSERT INTO _check (result) SELECT CASE
-    WHEN pp_vocab_key IS NULL AND pp_vocab_pending THEN 'PASS new variant waits for a term'
-    WHEN pp_vocab_key IS NULL AND NOT pp_vocab_pending THEN 'PASS variant unlinked until phase-6 auto-link'
-    ELSE 'FAIL variant state'
-  END FROM public.inventory_items WHERE id = v_variant;
+  INSERT INTO _check (result) SELECT CASE WHEN pp_vocab_key IS NULL AND NOT pp_vocab_pending
+    THEN 'PASS variants carry no link and do not wait' ELSE 'FAIL variant state' END
+    FROM public.inventory_items WHERE id = v_variant;
 
   BEGIN
     UPDATE public.inventory_items SET pp_vocab_pending = false WHERE id = v_new;
@@ -51,12 +48,9 @@ BEGIN
     'id', gen_random_uuid(), 'entity', 'tool', 'proposed_key', 'never-seen-gadget-large', 'proposed_name', 'Never Seen Gadget · Large',
     'requested_by', 'staff@example.com', 'toolio_item_kind', 'inventory_core', 'toolio_item_id', v_variant,
     'status', 'approved', 'result_key', v_term.public_key, 'created_at', now(), 'updated_at', now()));
-  INSERT INTO _check (result) SELECT CASE WHEN pp_vocab_key IS NULL AND NOT coalesce(pp_vocab_pending, false)
-    THEN 'PASS a decision for an item that no longer waits changes nothing'
-    WHEN pp_vocab_key IS NULL AND pp_vocab_pending
-    THEN 'PASS core-kind decision does not link a waiting variant'
-    ELSE 'FAIL decision linked a non-waiting or wrong item'
-  END FROM public.inventory_items WHERE id = v_variant;
+  INSERT INTO _check (result) SELECT CASE WHEN pp_vocab_key IS NULL AND NOT pp_vocab_pending
+    THEN 'PASS a decision for an item that no longer waits changes nothing' ELSE 'FAIL decision linked a non-waiting item' END
+    FROM public.inventory_items WHERE id = v_variant;
 
   SELECT * INTO v_family FROM public.pp_vocab_projects WHERE kind = 'family' ORDER BY public_key LIMIT 1;
   INSERT INTO public.projects (slug, name) VALUES ('auto-link-project', v_family.name) RETURNING id INTO v_project;

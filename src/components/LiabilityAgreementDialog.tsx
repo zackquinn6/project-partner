@@ -22,7 +22,7 @@ This is placeholder content for the Project Partner Usage Agreement. It will be 
 Use of the Project Partner app and services is subject to this usage agreement.
 
 2. Assumption of Risk
-You assume all risks associated with do-it-yourself projects, use of instructions, and reliance on app content. Project Partner provides informational guidance only and does not perform, supervise, or warrant any work. The success guarantee in the Service Terms is a limited recovery and refund remedy for eligible runs, not a warranty of the work.
+You assume all risks associated with do-it-yourself projects, use of instructions, and reliance on app content. Project Partner provides informational guidance only and does not perform, supervise, or guarantee any work.
 
 3. Limitation of Liability
 To the maximum extent permitted by law, Project Partner's liability is limited. Project Partner is not liable for indirect, incidental, or consequential damages arising from your use of the app or services.

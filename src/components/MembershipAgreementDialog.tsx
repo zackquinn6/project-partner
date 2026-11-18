@@ -37,11 +37,9 @@ These Service Terms (the Terms) are between Project Partner ("Project Partner") 
 
 ---
 
-### 2. Results, the Success Guarantee, and No Professional Relationship
-- **No Outcome Guarantee Outside the Success Guarantee**  
-  Except as stated in the Success Guarantee below, Project Partner does not guarantee any particular result, fit-for-purpose outcome, or project timeline. Results depend on Participant decisions, skill, local conditions, materials, tools, and compliance with applicable laws.
-- **Success Guarantee**  
-  A project run is covered only after the Participant opts in on an eligible project, acknowledges the run's assumptions, and keeps required photos and outputs on for every step. If a covered run misses its chosen quality goal or its locked schedule, the remedy is (1) priority recovery, including the pre-built rework path for the failure, and then, if recovery cannot meet the goal, (2) a refund or membership credit no greater than the amount paid for the subscription period covering the run. Coverage ends, and cannot be restored, if a required gate is skipped, a required Quality Control setting is turned off, a custom phase is added, a failure is reported on a step with no pre-built rework path, or an assumption the plan does not cover is violated. Delays from Participant-initiated changes and safety outcomes are not covered. The Success Guarantee is a limited remedy, not a warranty of the work.
+### 2. No Guarantee of Results and No Professional Relationship
+- **No Outcome Guarantee**  
+  Project Partner does not guarantee any particular result, fit‑for‑purpose outcome, or project timeline. Results depend on Participant decisions, skill, local conditions, materials, tools, and compliance with applicable laws.
 - **No Professional Services**  
   Unless explicitly agreed in a separate written contract signed by an authorized representative of Project Partner, the Services do not create a professional-client relationship (such as contractor, engineering, legal, medical, or other licensed professional services). Participants must seek licensed professionals where required by law or where specialized expertise is needed.
 

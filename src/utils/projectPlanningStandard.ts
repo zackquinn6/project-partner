@@ -16,7 +16,7 @@ export { TOOLIO_PROJECT_STRUCTURE_STANDARD };
 export type { ToolioProjectStructureStandard };
 
 /** Bump when shared product rules change; both surfaces must show the same value. */
-export const PLANNING_STANDARD_VERSION = '1.6.0';
+export const PLANNING_STANDARD_VERSION = '1.5.0';
 
 export const PLANNING_TOPIC_IDS = [
   'product-guidelines',
@@ -35,8 +35,6 @@ export const PLANNING_TOPIC_IDS = [
   'quality-goals',
   'content-axes',
   'professional-naming',
-  'assumptions',
-  'rework-paths',
 ] as const;
 
 /**
@@ -146,9 +144,9 @@ export const CONTENT_AXES_STANDARD = {
     {
       id: 'customization',
       label: 'Customization',
-      values: 'prime / alternate / if-necessary / rework (+ micro-decisions)',
+      values: 'prime / alternate / if-necessary (+ micro-decisions)',
       effect:
-        'Branching choices. Rework operations stay out of the plan until a failure triggers them. Do not overload if-necessary for quality ladder gating or for rework.',
+        'Branching choices. Do not overload if-necessary for quality ladder gating.',
     },
   ],
   interactionRule:
@@ -288,20 +286,6 @@ export const PUBLISHING_CHECKLIST: PublishingChecklistItem[] = [
       'Good / Great / Professional outcome and process content, plus min_quality_goal on steps that differ by level.',
     aiStepRefs: [11],
   },
-  {
-    id: 'assumptions',
-    label: 'Assumptions',
-    description:
-      'Every condition the plan depends on is listed as a project assumption: checked by a step output, branched to an operation that handles it, or accepted as outside the plan.',
-    aiStepRefs: [12],
-  },
-  {
-    id: 'rework-paths',
-    label: 'Rework paths',
-    description:
-      'Every failure mode a user can cause has a pre-built rework operation (new steps plus loop-backs to existing steps) linked to it, with its own outputs, time, and PFMEA.',
-    aiStepRefs: [13],
-  },
 ];
 
 export interface CrossCuttingRule {
@@ -379,18 +363,6 @@ export const CROSS_CUTTING_RULES: CrossCuttingRule[] = [
     id: 'professional-naming',
     title: 'Professional naming (quality vs skill)',
     rule: CONTENT_AXES_STANDARD.namingRule,
-  },
-  {
-    id: 'assumptions',
-    title: 'Assumptions (coverage boundary)',
-    rule:
-      'List every condition the plan depends on in project_assumptions. Cross-project conditions (structure sound, no natural disaster, utilities available) live once on the Standard Project Foundation; project conditions live on the owning template. Handle each one as checked (a step output verifies it and a branch operation handles a failure), branched (a branch operation already in the template handles it), or accepted (the plan has no response; violation ends success guarantee coverage). Accepted is the honest gap list: convert accepted assumptions into branched ones as the plan grows, rather than deleting them.',
-  },
-  {
-    id: 'rework-paths',
-    title: 'Rework paths are planned operations',
-    rule:
-      'Rework is never free text. Author it as a phase_operations row with flow_type rework in the phase where the failure is found, containing new steps (for example, remove failed tile) and loop-back steps that re-run existing steps by reference (operation_steps.repeats_operation_step_id) so their content, controls, and durations are reused. New rework steps meet the same step requirements as any step. Link each rework operation to the failure modes and outputs it recovers (rework_operation_triggers); failure modes on the rework steps link back to their own rework operation. A template is guarantee-ready only when every failure mode with a human-variable, non-mistake-proofed cause has a rework path.',
   },
 ];
 

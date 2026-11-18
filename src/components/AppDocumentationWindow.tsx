@@ -367,7 +367,7 @@ export function AppDocumentationWindow({ open, onOpenChange }: AppDocumentationW
                           </CardHeader>
                           <CardContent className="pt-0">
                             <p className="text-sm text-muted-foreground">
-                              DIY + Home Profile tracking with 100+ project templates, and a success guarantee on eligible projects.
+                              DIY + Home Profile tracking with 100+ project templates for guaranteed first-time success.
                             </p>
                           </CardContent>
                         </Card>

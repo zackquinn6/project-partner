@@ -242,14 +242,6 @@ Note the boundary: foundation risks reach the run, but Stage 1 loading in
 `applyProjectRiskLogicToRun` only reads `project_risks` for the template root, so foundation
 risks are not scored, not dimensioned, and not personalized. See the gaps section.
 
-### Rework steps
-
-Steps inside `flow_type = 'rework'` operations carry their own PFMEA (see
-`docs/SUCCESS_GUARANTEE.md`). Stage 1 drops failure modes and register risks on those steps
-until the rework operation is in the run's `phases`, which happens when Something Wrong places
-it. Once placed, the next re-evaluation scores them like any other step. Rework steps carry no
-register risks, because the run sync copies every template register row onto every run.
-
 ## 4. Stage 2: the logic layer
 
 This is what makes the risk picture the user's rather than the template's. Two halves: signals,

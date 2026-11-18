@@ -246,15 +246,6 @@ export interface WorkflowStep {
   stepTitle?: string;
   phaseId?: string;
   phaseName?: string;
-  /** Loop-back step inside a rework operation: the template step it re-runs. */
-  repeatsStepId?: string | null;
-}
-
-/** Set on a rework operation once Something Wrong places it in the run. */
-export interface ReworkActivation {
-  activatedAt: string;
-  triggerStepId: string;
-  failureModeIds: string[];
 }
 
 export interface Operation {
@@ -265,9 +256,7 @@ export interface Operation {
   dependentOn?: string; // ID of operation that must be completed first
   // Standard content flag - marks operations from Standard Project Foundation
   isStandard?: boolean;
-  /** `rework` operations stay out of the plan until a failure triggers them. */
-  flowType?: 'prime' | 'alternate' | 'if-necessary' | 'rework';
-  reworkActivation?: ReworkActivation;
+  flowType?: 'prime' | 'alternate' | 'if-necessary';
   /** Minimum run quality goal to include this operation (null/undefined = all levels). */
   minQualityGoal?: 'great' | 'professional' | null;
   /** Alternate-group key used by Project Customizer step 3 workflow decisions. */
@@ -290,8 +279,6 @@ export interface Phase {
   description: string;
   operations: Operation[];
   flowType?: 'prime' | 'alternate' | 'if-necessary' | 'blocked' | 'dependent'; // Decision tree branching at phase level
-  /** User-authored phase with no template content. Adding one ends guarantee coverage. */
-  isCustom?: boolean;
   // Linked phase properties
   isLinked?: boolean;
   sourceProjectId?: string;

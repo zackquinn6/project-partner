@@ -37,26 +37,6 @@ import { AccountabilityMessagePopup } from './AccountabilityMessagePopup';
 import { PhaseRatingPopup } from './PhaseRatingPopup';
 import { ExpertHelpWindow } from './ExpertHelpWindow';
 import { SomethingWrongDialog } from './SomethingWrongDialog';
-import { AssumptionsAcknowledgementDialog } from './AssumptionsAcknowledgementDialog';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
-import { useSuccessGuarantee } from '@/hooks/useSuccessGuarantee';
-import { recordGuaranteeEvent } from '@/utils/successGuarantee';
-import { reworkTriggerStepId } from '@/utils/reworkPaths';
-import {
-  acknowledgeRunAssumptions,
-  fetchRunAssumptions,
-  unacknowledgedAssumptions,
-  type RunAssumption,
-} from '@/utils/projectAssumptions';
 import { ProjectHelpChatWindow } from './ProjectHelpChatWindow';
 import { PhaseCompletionPopup } from './PhaseCompletionPopup';
 import { OrderingWindow } from './OrderingWindow';
@@ -258,17 +238,6 @@ export default function UserView({
   } = useProject();
   const safeProjectRuns = projectRuns ?? [];
   const { refetchProjectRuns, updateProjectRunsCache } = useProjectData();
-  const guarantee = useSuccessGuarantee(currentProjectRun?.id, currentProjectRun?.projectId);
-  const guaranteeCovered = guarantee.coverage.status === 'covered';
-  /** Steps whose required gate was skipped this session (coverage already ended for the run). */
-  const [bypassedGateStepIds, setBypassedGateStepIds] = useState<Set<string>>(new Set());
-  const [gateBypassConfirmOpen, setGateBypassConfirmOpen] = useState(false);
-  const [gateBypassSaving, setGateBypassSaving] = useState(false);
-  /** Planning lock waits on assumption acknowledgement when any are still pending. */
-  const [assumptionGate, setAssumptionGate] = useState<{
-    tools: PlanningToolId[];
-    assumptions: RunAssumption[];
-  } | null>(null);
   const [viewMode, setViewMode] = useState<'listing' | 'workflow'>(() =>
     typeof projectRunId === 'string' && projectRunId.length > 0 ? 'workflow' : 'listing'
   );
@@ -2062,7 +2031,6 @@ export default function UserView({
   // Required outputs + optional photo rule for step completion (per project QC settings)
   const areAllOutputsCompleted = (step: typeof currentStep) => {
     if (!step) return true;
-    if (bypassedGateStepIds.has(step.id)) return true;
     const qc = mergeQualityControlSettings(currentProjectRun?.quality_control_settings);
     const outputs = step.outputs || [];
     const required = outputs.filter((o) => isOutputInQualityScope(o, qc.require_all_outputs));
@@ -2084,57 +2052,6 @@ export default function UserView({
     return true;
   };
 
-  const handleConfirmGateBypass = async () => {
-    if (!currentStep || !currentProjectRun) return;
-    setGateBypassSaving(true);
-    try {
-      await recordGuaranteeEvent(currentProjectRun.id, 'gate_bypassed', currentStep.id, currentStep.step);
-      setBypassedGateStepIds((prev) => new Set([...prev, currentStep.id]));
-      setGateBypassConfirmOpen(false);
-      await guarantee.refresh();
-      toast.message('Gate skipped', {
-        description: 'Success guarantee coverage for this run has ended.',
-      });
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not skip the gate.');
-    } finally {
-      setGateBypassSaving(false);
-    }
-  };
-
-  const handleWorkflowFullyComplete = async (tools: PlanningToolId[]) => {
-    if (!currentProjectRun) return;
-    clearPlanningStudioPending(currentProjectRun.id);
-    let runAssumptions: RunAssumption[];
-    try {
-      runAssumptions = await fetchRunAssumptions(currentProjectRun.id);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not load plan assumptions.');
-      return;
-    }
-    if (unacknowledgedAssumptions(runAssumptions).length > 0) {
-      setAssumptionGate({ tools, assumptions: runAssumptions });
-      return;
-    }
-    const completed = await handlePlanningWizardFullyComplete(tools);
-    openWorkflowAtFirstIncompleteStep(completed);
-  };
-
-  const handleAcknowledgeAssumptionsAndLock = async () => {
-    if (!assumptionGate || !currentProjectRun) return;
-    try {
-      await acknowledgeRunAssumptions(currentProjectRun.id);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : 'Could not acknowledge assumptions.');
-      return;
-    }
-    const { tools } = assumptionGate;
-    setAssumptionGate(null);
-    await guarantee.refresh();
-    const completed = await handlePlanningWizardFullyComplete(tools);
-    openWorkflowAtFirstIncompleteStep(completed);
-  };
-
   const handleStepComplete = async () => {
     if (!currentStep) return;
     
@@ -2144,18 +2061,16 @@ export default function UserView({
     try {
       
       const qc = mergeQualityControlSettings(currentProjectRun?.quality_control_settings);
-      const gateBypassed = bypassedGateStepIds.has(currentStep.id);
       const stepOutputsList = currentStep.outputs || [];
       const requiredOutputs = stepOutputsList.filter((o) =>
         isOutputInQualityScope(o, qc.require_all_outputs)
       );
       const stepCheckedOutputs = checkedOutputs[currentStep.id] || new Set();
       const allOutputsCompleted =
-        gateBypassed ||
         requiredOutputs.length === 0 ||
         requiredOutputs.every((output) => stepCheckedOutputs.has(output.id));
 
-      if (qc.require_photos_per_step && currentProjectRun && !gateBypassed) {
+      if (qc.require_photos_per_step && currentProjectRun) {
         const { count, error: photoCountError } = await supabase
           .from('project_run_photos')
           .select('id', { count: 'exact' })
@@ -3450,7 +3365,11 @@ export default function UserView({
               }
               setProjectPlanningWizardOpen(open);
             }}
-            onWorkflowFullyComplete={handleWorkflowFullyComplete}
+            onWorkflowFullyComplete={async (tools) => {
+              clearPlanningStudioPending(currentProjectRun.id);
+              const completed = await handlePlanningWizardFullyComplete(tools);
+              openWorkflowAtFirstIncompleteStep(completed);
+            }}
             onGoToWorkflow={() => {
               const scopeDone = isScopeReadyForWorkflow(currentProjectRun);
               if (!scopeDone && !currentProjectRun.planningCompletedAt) {
@@ -3577,8 +3496,6 @@ export default function UserView({
           stepPhotoCount={stepPhotoCountForCompletion ?? 0}
           onUploadPhoto={() => setMobilePhotoUploadOpen(true)}
           canCompleteStep={areAllOutputsCompleted(currentStep)}
-          gateBypassed={currentStep ? bypassedGateStepIds.has(currentStep.id) : false}
-          onSkipGate={guaranteeCovered ? () => setGateBypassConfirmOpen(true) : undefined}
           onKeysToSuccessClick={() => setKeyCharacteristicsOpen(true)}
           onUnplannedWorkClick={() => {
             setDecisionRollupMode('unplanned-work');
@@ -3987,28 +3904,16 @@ export default function UserView({
                         </Button>
                       )
                     ) : (
-                      <>
-                        <Button 
-                          disabled 
-                          variant="outline"
-                          className="opacity-50 cursor-not-allowed text-xs text-muted-foreground" 
-                          size="sm"
-                          title={isMobile ? "Complete Step Checklist First" : undefined}
-                        >
-                          <CheckCircle className="w-4 h-4" />
-                          {!isMobile && <span className="ml-2 text-xs text-muted-foreground">Complete Step Checklist First</span>}
-                        </Button>
-                        {guaranteeCovered && (
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            className="text-xs text-warning-soft border-warning-soft/50"
-                            onClick={() => setGateBypassConfirmOpen(true)}
-                          >
-                            Skip gate
-                          </Button>
-                        )}
-                      </>
+                      <Button 
+                        disabled 
+                        variant="outline"
+                        className="opacity-50 cursor-not-allowed text-xs text-muted-foreground" 
+                        size="sm"
+                        title={isMobile ? "Complete Step Checklist First" : undefined}
+                      >
+                        <CheckCircle className="w-4 h-4" />
+                        {!isMobile && <span className="ml-2 text-xs text-muted-foreground">Complete Step Checklist First</span>}
+                      </Button>
                     )
                   )}
                   
@@ -4281,13 +4186,10 @@ export default function UserView({
         phaseName={getCurrentPhase()?.name}
         stepId={currentStep?.id}
         stepTitle={currentStep?.step}
-        reworkTriggerStepId={currentStep ? reworkTriggerStepId(currentStep) : undefined}
         spaceId={(currentStep as { spaceId?: string } | null)?.spaceId}
         completedSteps={[...completedSteps]}
         updateProjectRun={updateProjectRun}
         setCompletedSteps={setCompletedSteps}
-        guaranteeCovered={guaranteeCovered}
-        onGuaranteeChanged={guarantee.refresh}
         onOpenUnplannedWork={() => setUnplannedWorkOpen(true)}
         onOpenShopping={() => setOrderingWindowOpen(true)}
         onOpenToolRentals={() => setToolRentalsOpen(true)}
@@ -4639,48 +4541,7 @@ export default function UserView({
         onJumpToStep={(stepId, spaceId) => navigateToStepInstance(stepId, spaceId)}
         onToggleOutputComplete={toggleOutputCheck}
         userDisplayName={qualityControlPdfUserLabel}
-        guarantee={guarantee}
-        onStartRecovery={() => {
-          setQualityCheckOpen(false);
-          setIssueReportOpen(true);
-        }}
       />
-
-      {assumptionGate && (
-        <AssumptionsAcknowledgementDialog
-          open
-          assumptions={assumptionGate.assumptions}
-          onCancel={() => {
-            setAssumptionGate(null);
-            setProjectPlanningWizardOpen(true);
-          }}
-          onAcknowledge={handleAcknowledgeAssumptionsAndLock}
-        />
-      )}
-
-      <AlertDialog open={gateBypassConfirmOpen} onOpenChange={setGateBypassConfirmOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Skip this gate?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Completing the step without its required checks or photo ends success guarantee
-              coverage for this run. Coverage cannot be restored.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel disabled={gateBypassSaving}>Keep the gate</AlertDialogCancel>
-            <AlertDialogAction
-              disabled={gateBypassSaving}
-              onClick={(e) => {
-                e.preventDefault();
-                void handleConfirmGateBypass();
-              }}
-            >
-              Skip gate
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
 
       {/* Upgrade prompt when launching a paid app without subscription */}
       <UpgradePrompt open={showUpgradePrompt} onOpenChange={setShowUpgradePrompt} feature={upgradePromptFeature} />
